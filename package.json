@@ -2,16 +2,33 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "publisher": "marlinfirmware",
   "icon": "icon.png",
+  "badges": [
+    {
+      "url": "https://vsmarketplacebadge.apphb.com/version-short/marlinfirmware.auto-build.svg",
+      "href": "https://marketplace.visualstudio.com/items?itemName=marlinfirmware.auto-build",
+      "description": "VS Marketplace"
+    },
+    {
+      "url": "https://vsmarketplacebadge.apphb.com/installs-short/marlinfirmware.auto-build.svg",
+      "href": "https://marketplace.visualstudio.com/items?itemName=marlinfirmware.auto-build",
+      "description": "installs"
+    },
+    {
+      "url": "https://img.shields.io/github/issues/MarlinFirmware/AutoBuildMarlin.svg",
+      "href": "https://github.com/MarlinFirmware/AutoBuildMarlin/issues",
+      "description": "GitHub issues"
+    }
+  ],
   "keywords": ["3DPrinting","PlatformIO","Embedded","AVR","ARM"],
   "engines": {
     "vscode": "^1.34.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/MarlinFirmware/AutoBuildMarlin.git"
+    "url": "https://github.com/MarlinFirmware/AutoBuildMarlin"
   },
   "homepage": "https://github.com/MarlinFirmware/AutoBuildMarlin/blob/master/README.md",
   "markdown": "github",
