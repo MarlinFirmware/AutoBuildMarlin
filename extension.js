@@ -1,5 +1,7 @@
 'use strict';
 
+String.prototype.toTitleCase = () => { return this.replace(/([A-Z])(\w+)/gi, function(m,p1,p2) { return p1.toUpperCase() + p2.toLowerCase(); }); }
+
 var vscode = require('vscode');
 
 exports.activate = function(context) {
@@ -15,9 +17,8 @@ exports.activate = function(context) {
   var NEXT_TERM_ID = 1;
   var abm_command = function(cmd, nosave) {
     if (!nosave) vscode.commands.executeCommand('workbench.action.files.saveAll');
-    var title = cmd.charAt(0).toUpperCase() + cmd.slice(1);
     var terminal = vscode.window.createTerminal({
-      name: `Marlin ${title} #${NEXT_TERM_ID++}`,
+      name: `Marlin ${cmd.toTitleCase()} #${NEXT_TERM_ID++}`, 
       env: process.env
     });
     terminal.show(true);
