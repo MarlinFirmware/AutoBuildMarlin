@@ -16,7 +16,10 @@ exports.activate = function(context) {
   var abm_command = function(cmd, nosave) {
     if (!nosave) vscode.commands.executeCommand('workbench.action.files.saveAll');
     var title = cmd.charAt(0).toUpperCase() + cmd.slice(1);
-    var terminal = vscode.window.createTerminal(`Marlin ${title} #${NEXT_TERM_ID++}`);
+    var terminal = vscode.window.createTerminal({
+      name: `Marlin ${title} #${NEXT_TERM_ID++}`,
+      env: process.env
+    });
     terminal.show(true);
     terminal.sendText(`python ${AUTO_CMD} ${cmd}`);
   };
