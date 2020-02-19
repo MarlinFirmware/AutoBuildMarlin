@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="48" height="48"
+   viewBox="0 0 48 48"
+   version="1.1">
+  <g transform="translate(0,-284.3)">
+    <g style="fill:#ffffff;stroke-width:0.682"
+       transform="matrix(1.035,-1.035,1.035,1.035,-4.503,307.493)">
+      <path
+         d="m 12.381,1.694 h 3.237 c 1.108,0 2,0.892 2,2 v 26.610 c 0,1.108 -0.892,2 -2,2 h -3.237 c -1.108,0 -2,-0.892 -2,-2 V 3.694 c 0,-1.108 0.892,-2 2,-2 z"
+         style="color:#000000;clip-rule:nonzero;overflow:visible;visibility:visible;opacity:1;solid-color:#000000;solid-opacity:1;fill:#ffffff" />
+      <path
+         d="m 3.974,3.134 c -1.108,0 -1.999,0.892 -1.999,2 v 5.730 c 0,1.108 0.891,2 1.999,2 h 0.728 c 1.108,0 1.057,-2 2,-2 c 0.942,0 0.892,2 2,2 H 18.940 c 1.034,0 1.870,-0.780 1.978,-1.785 c 0.008,-0.024 0.021,-0.035 0.021,-0.076 c 0,-5.131 2.471,-2.701 3.261,-2.220 c 0.752,0.457 2.313,-0.800 1.572,-2.105 C 25.033,5.372 20.940,3.181 18.940,3.134 H 8.703 c -1.108,0 -1.057,2 -2,2 c -0.942,0 -0.892,-2 -2,-2 z"
+         style="color:#000000;clip-rule:nonzero;overflow:visible;visibility:visible;opacity:1;solid-color:#000000;solid-opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd" />
+    </g>
+  </g>
+</svg>

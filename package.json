@@ -2,7 +2,7 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "publisher": "marlinfirmware",
   "icon": "icon.png",
   "badges": [
@@ -38,9 +38,10 @@
   ],
   "activationEvents": [
     "onCommand:mfbuild",
-    "onCommand:mfclean",
     "onCommand:mfupload",
-    "onCommand:mftraceback"
+    "onCommand:mftraceback",
+    "onCommand:mfclean",
+    "onCommand:mfconfig"
   ],
   "main": "./extension",
   "contributes": {
@@ -48,7 +49,7 @@
       "activitybar": [
         {
           "id": "autoBuildVC",
-          "title": "Marlin Build",
+          "title": "Auto Build Marlin",
           "icon": "resources/AB.svg"
         }
       ]
@@ -68,7 +69,7 @@
     "commands": [
       {
         "command": "mfbuild",
-        "title": "Build",
+        "title": "Marlin: Build",
         "icon": {
           "light": "resources/B48x48_light.svg",
           "dark": "resources/B48x48_dark.svg"
@@ -76,7 +77,7 @@
       },
       {
         "command": "mfupload",
-        "title": "Upload",
+        "title": "Marlin: Upload",
         "icon": {
           "light": "resources/U48x48_light.svg",
           "dark": "resources/U48x48_dark.svg"
@@ -84,7 +85,7 @@
       },
       {
         "command": "mftraceback",
-        "title": "Upload (traceback)",
+        "title": "Marlin: Upload (traceback)",
         "icon": {
           "light": "resources/T48x48_light.svg",
           "dark": "resources/T48x48_dark.svg"
@@ -92,10 +93,18 @@
       },
       {
         "command": "mfclean",
-        "title": "Clean",
+        "title": "Marlin: Clean",
         "icon": {
           "light": "resources/C48x48_light.svg",
           "dark": "resources/C48x48_dark.svg"
+        }
+      },
+      {
+        "command": "mfconfig",
+        "title": "Marlin: Configure",
+        "icon": {
+          "light": "resources/K48x48_light.svg",
+          "dark": "resources/K48x48_dark.svg"
         }
       }
     ],
@@ -120,6 +129,11 @@
           "command": "mfclean",
           "group": "navigation@4",
           "when": "view == autoBuildView || view == marlinView"
+        },
+        {
+          "command": "mfconfig",
+          "group": "navigation@5",
+          "when": "view == autoBuildView || view == marlinView"
         }
       ]
     }
@@ -133,5 +147,10 @@
     "tslint": "^5.16.0",
     "@types/node": "^10.14.17",
     "@types/mocha": "^2.2.42"
+  },
+  "__metadata": {
+    "id": "aeed6cc8-3e27-4932-8212-161d73cdee2d",
+    "publisherId": "cc3dab9c-e91d-467b-9b8e-b3d262181451",
+    "publisherDisplayName": "Marlin Firmware"
   }
 }

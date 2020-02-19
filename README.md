@@ -18,7 +18,7 @@ When installing "Auto Build Marlin" you'll also be prompted to install the [Plat
 
   ![](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/AB_menu.png)
 
-- Click one of the four icons
+- Click any of the tool icons to open the Auto Build panel. If there's only one target environment for your board the selected action will be started. Otherwise you will have to specify the environment.
 
   Icon|Action
   ----|------
@@ -26,3 +26,4 @@ When installing "Auto Build Marlin" you'll also be prompted to install the [Plat
   ![](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/U_small.png)|Start **Marlin Upload** to install Marlin on your board
   ![](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/T_small.png)|Start **Marlin Upload (traceback)** to install Marlin with debugging
   ![](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/C_small.png)|Start **Marlin Clean** to delete old build files
+  ![](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/K_small.png)|Open the **Configuration Tool**
