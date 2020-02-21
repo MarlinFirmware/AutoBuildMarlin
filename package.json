@@ -2,7 +2,7 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "publisher": "marlinfirmware",
   "icon": "icon.png",
   "badges": [
@@ -53,6 +53,17 @@
           "icon": "resources/AB.svg"
         }
       ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "Auto Build Marlin",
+      "properties": {
+        "auto-build.reuseTerminal": {
+          "type": "boolean",
+          "default": true,
+          "description": "Reuse the same Terminal for all commands."
+        }
+      }
     },
     "views": {
       "autoBuildVC": [

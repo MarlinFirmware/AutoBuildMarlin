@@ -7,8 +7,6 @@
  * 
  */
 
-const REUSE_TERMINAL = true;
-
 // Extend builtins
 String.prototype.lpad = function(len, chr) {
   if (chr === undefined) { chr = '&nbsp;'; }
@@ -46,32 +44,17 @@ Date.prototype.fileStamp = function(filename) {
   return fs;
 }
 
-var mfiles = [
-  { name: 'Configuration.h',
-    path: [],
-    text: '',
-    hash: '',
-    lines: 0
-  },
-  { name: 'Configuration_adv.h',
-    path: [],
-    text: '',
-    hash: '',
-    lines: 0
-  },
-  { name: 'pins.h',
-    path: ['src', 'pins'],
-    text: '',
-    hash: '',
-    lines: 0
-  },
-  { name: 'boards.h',
-    path: ['src', 'core'],
-    text: '',
-    hash: '',
-    lines: 0
-  },
-];
+// Marlin files that provide context for
+// the current build. All these are read
+// at startup. However currently only the
+// config files are watched for changes.
+var mfiles = {
+  pins:       { name: 'pins.h',              path: ['src', 'pins'] },
+  boards:     { name: 'boards.h',            path: ['src', 'core'] },
+  config:     { name: 'Configuration.h',     path: []              },
+  config_adv: { name: 'Configuration_adv.h', path: []              },
+  version:    { name: 'Version.h',           path: ['src', 'inc']  }
+};
 
 const nicer = {
   build: 'build',
@@ -80,20 +63,9 @@ const nicer = {
   clean: 'clean',
 };
 
-const vscode = require('vscode'),
-        path = require('path'),
-          fs = require('fs'),
-          os = require('os'),
-          vc = vscode.commands,
-          ws = vscode.workspace,
-          win = vscode.window;
-
-const project_path = ws.workspaceFolders[0].uri.fsPath;
-
-const boards_file = 'boards.h',
-      pins_file = 'pins.h',
-      config_file = 'Configuration.h',
-      config_adv_file = 'Configuration_adv.h';
+const path = require('path'),
+        fs = require('fs'),
+        os = require('os');
 
 var info = {},              // For general data without declaring
 
@@ -102,11 +74,16 @@ var info = {},              // For general data without declaring
     config_text = '',       // Contents of Configuration.h for parsing
     config_adv_text = '';   // Contents of Configuration_adv.h for parsing
 
-var context, abm_path, pv;
+var context, vscode, vc, ws, vw, abm_path, project_path, pv;
 
-function init(c) {
+function init(c, v) {
   context = c;
+  vscode = v;
+  vc = v.commands;
+  ws = v.workspace;
+  vw = v.window;
   abm_path = path.join(c.extensionPath, 'abm');
+  project_path = ws.workspaceFolders[0].uri.fsPath;
 }
 
 var define_list = [[],[]],  // arrays with all define names
@@ -118,7 +95,7 @@ function updateDefineList(cindex, txt) {
       leave_out_defines = ['CONFIGURATION_H', 'CONFIGURATION_H_VERSION', 'CONFIGURATION_ADV_H', 'CONFIGURATION_ADV_H_VERSION'],
       define_more = {},
       occ_list = {},
-      findDef = new RegExp('^.*(@section|#define)[ \\t]+(\\w+).*$', 'gm');
+      findDef = new RegExp('^.*(@section|#define)\\s+(\\w+).*$', 'gm');
   // scan for sections and defines
   var r;
   while((r = findDef.exec(txt)) !== null) {
@@ -148,23 +125,48 @@ function updateDefineList(cindex, txt) {
 
 // TODO: Use previously parsed config data for speed
 
-function configEnabled(txt, optname) {
-  var find = new RegExp(`\n[ \\t]*#define[ \\t]+${optname}`, 'gm'),
-         r = find.exec(txt);
+function _confEnabled(text, optname) {
+  const find = new RegExp(`^\\s*#define\\s+${optname}\\b`, 'gm'),
+        r = find.exec(text);
+  if (0) console.log(`${optname} is ${r?'ENABLED':'unset'}`);
   return (r !== null); // Any match means it's uncommented
 }
 
-// Get a single config value
-function configValue(txt, optname) {
-  var find = new RegExp(`(//[ \\t]*)?(#define)[ \\t]+(${optname})[ \\t]+(.+)([ \\t]/.+)?`, 'gm'),
-         r = find.exec(txt);
-  return (r !== null) ? r[4] : '';
+function confEnabled(fileid, optname) { return _confEnabled(mfiles[fileid].text, optname); }
+function configEnabled(optname)       { return confEnabled('config',     optname); }
+function configAdvEnabled(optname)    { return confEnabled('config_adv', optname); }
+function configAnyEnabled(optname) {
+  return configEnabled(optname) ? true : configAdvEnabled(optname);
 }
 
-function marlinFilePath(filename) {
-  const morepath = (filename == pins_file) ? path.join('src', 'pins', filename) : filename;
-  return path.join(project_path, 'Marlin', morepath);
+// Get a single config value
+function _confValue(text, optname) {
+  const find = new RegExp(`^\\s*#define\\s+${optname}\\s+(.+)(\\s+//.+$)?`, 'gm'),
+        r = find.exec(text);
+  return (r !== null) ? r[1] : '';
 }
+
+// Get a single config value
+function confValue(fileid, optname) { return _confValue(mfiles[fileid].text, optname); }
+function configValue(optname)       { return confValue('config',     optname); }
+function configAdvValue(optname)    { return confValue('config_adv', optname); }
+function configAnyValue(optname) {
+  return configEnabled(optname) ? configValue(optname) : configAdvValue(optname);
+}
+
+//
+// Get the path to a Marlin file
+//
+function _marlinFilePath(f) {
+  if (!f.fullpath) {
+    let p = '';
+    f.path.forEach((v) => { p = path.join(p, v); });
+    f.fullpath = path.join(project_path, 'Marlin', p, f.name);
+  }
+  return f.fullpath;
+}
+
+function marlinFilePath(fileid) { return _marlinFilePath(mfiles[fileid]); }
 
 function envBuildPath(env, file) {
   var bp = path.join(project_path, '.pio', 'build', env);
@@ -175,16 +177,6 @@ function envBuildPath(env, file) {
 function existingBuildPath(env) {
   var bp = envBuildPath(env);
   return fs.existsSync(bp) ? bp : null;
-}
-
-function marlinFileCheck(filename) {
-  var file_issue;
-  try {
-    fs.accessSync(marlinFilePath(filename), fs.constants.F_OK | fs.constants.W_OK);
-  } catch (err) {
-    file_issue = err.code === 'ENOENT' ? 'is missing' : 'is read-only';
-  }
-  return file_issue;
 }
 
 //
@@ -211,8 +203,8 @@ function unwatchConfigurations() {
 
 function watchConfigurations() {
   watchers = [
-    fs.watch(marlinFilePath(config_file), {}, onConfigFileChanged),
-    fs.watch(marlinFilePath(config_adv_file), {}, onConfigFileChanged)
+    fs.watch(marlinFilePath('config'), {}, onConfigFileChanged),
+    fs.watch(marlinFilePath('config_adv'), {}, onConfigFileChanged)
   ];
 }
 
@@ -271,16 +263,23 @@ function watchBuildFolder(env) {
 }
 
 var refresh_to = [];
-function clearBuildRefresh() {
+function cancelBuildRefresh() {
   refresh_to.forEach(clearTimeout);
   refresh_to = [];
 }
 
 function buildIsFinished(reason) {
   if (0) console.log(`buildIsFinished (${reason}): ${currentBuildEnv()}`);
-  clearBuildRefresh();
+
+  // Updating now so kill timers
+  cancelBuildRefresh();
+
+  // Stop watching the build folder for changes.
+  // If build.env is set it will also update the UI.
   build.active = false;
   unwatchBuildFolder();
+
+  // Clear the environment
   build.env = null;
 }
 
@@ -289,7 +288,7 @@ function onIPCFileChange() {
 }
 
 function onBuildFolderChanged(e, fname, env) {
-  clearBuildRefresh();
+  cancelBuildRefresh();
 
   if (fname == 'firmware.hex' || fname == 'firmware.bin') {
     // If the firmware file changed, assume the build is done now
@@ -308,6 +307,163 @@ function onBuildFolderChanged(e, fname, env) {
 }
 
 //
+// Get the type of geometry and stuff like that
+//
+var machine_info;
+function getMachineSettings() {
+  var out = {};
+
+  out.name = configValue('CUSTOM_MACHINE_NAME').dequote();
+
+  const mtypes = [ 'DELTA', 'MORGAN_SCARA', 'COREXY', 'COREXZ', 'COREYZ', 'COREYX', 'COREZX', 'COREZY' ],
+       mpretty = [ 'Delta', 'SCARA', 'CoreXY', 'CoreXZ', 'CoreYZ', 'CoreYX', 'CoreZX', 'CoreZY' ];
+
+  let s = 'Cartesian';
+  mtypes.every((v,i) => {
+    if (!configEnabled(v)) return true;
+    s = mpretty[i]; return false;
+  });
+  out.style = s;
+
+  let d = out.dimensions = { x: configValue('X_BED_SIZE'), y: configValue('Y_BED_SIZE'), z: configValue('Z_MAX_POS') };
+
+  out.description = `${s} ${d.x}x${d.y}x${d.z}mm`;
+
+  const bed_sensor = configValue('TEMP_SENSOR_BED');
+  out.heated_bed = !!(1 * bed_sensor);
+  if (out.heated_bed) {
+    out.bed_sensor = bed_sensor;
+    out.description += ` with Heated Bed (${bed_sensor})`;
+  }
+  else
+    out.description += ' (no Heated Bed)';
+
+  machine_info = out;
+  return machine_info;
+}
+
+//
+// Extract temperature sensor options from Configuration.h
+//
+var temp_sensor_arr;
+function extractTempSensors() {
+  var out = [];
+
+  //pv.postMessage({ command:'text', text:mfiles.config.text });
+
+  // Get all the thermistors and save them into an object
+  const findAll = new RegExp('(\\/\\*+[\\s\\S]+\\*\\/)\\s*#define\\s+TEMP_SENSOR_0', 'g'),
+        r = findAll.exec(mfiles.config.text);
+  const findEach = new RegExp('^\\s*\\*\\s*(-?\\d+)\\s*:\\s*(.+)$', 'gm');
+  let s;
+  while (s = findEach.exec(r[1])) out[s[1]] = { desc: s[2] };
+
+  temp_sensor_arr = out;
+  return temp_sensor_arr;
+}
+
+//
+// Get the number of EXTRUDERS and related options
+//
+var extruder_info;
+function getExtruderSettings() {
+  var out = {};
+  const extruders = configValue('EXTRUDERS') * 1;
+
+  out.extruders = extruders;
+  out.diam = configValue('DEFAULT_NOMINAL_FILAMENT_DIA');
+
+  // Get the extruder temp sensors
+  out.sensors = [];
+  for (let i = 0; i < extruders; i++)
+    if (!(out.sensors[i] = configValue(`TEMP_SENSOR_${i}`)))
+      out.sensor_err = true;
+
+  if (extruders == 1 && configEnabled('TEMP_SENSOR_1_AS_REDUNDANT'))
+    out.sensors[1] = configValue('TEMP_SENSOR_1');
+
+  // Only one of these types is allowed at a time
+  const etypes = [ 'SINGLENOZZLE',                           // Single nozzle, multiple steppers
+                   'DUAL_X_CARRIAGE',                        // IDEX: single, duplication or mirror
+                   'PARKING_EXTRUDER',                       // Parkable, with solenoid
+                   'MAGNETIC_PARKING_EXTRUDER',              // Parkable, with magnet
+                   'SWITCHING_TOOLHEAD',                     // Switching with servo
+                   'MAGNETIC_SWITCHING_TOOLHEAD',            // Switching with magnet
+                   'ELECTROMAGNETIC_SWITCHING_TOOLHEAD' ];
+       epretty = [ 'Single Nozzle' ];
+  etypes.every((v,i) => {
+    if (!configEnabled(v)) return true;
+    out.type = epretty[i] ? epretty[i] : v.toLabel(); return false;
+  });
+
+  // These are mutually-exclusive
+  const efancy = [ 'MIXING_EXTRUDER', 'SWITCHING_EXTRUDER', 'SWITCHING_NOZZLE', 'MK2_MULTIPLEXER', 'PRUSA_MMU2' ];
+  efancy.every((v) => {
+    if (!configEnabled(v)) return true;
+    out.fancy = v.toLabel(); return false;
+  });
+
+  if (out.fancy) {
+    let e = extruders;
+    if (out.fancy == 'Mixing Extruder')
+      e = out.steppers = configValue('MIXING_STEPPERS');
+    out.fancy += ` (${e} channels)`;
+  }
+
+  if (!out.type && !out.fancy) {
+    switch (out.extruders) {
+      case 1: out.description = '(Single Extruder)'; break;
+      case 2: out.description = '(Dual Extruder)'; break;
+      default: out.description = out.extruders + ' Extruders'; break;
+    }
+  }
+  else {
+    if (out.type && out.fancy)
+      out.description = `${out.type} with ${out.fancy}`;
+    else if (out.type == 'Single Nozzle')
+      out.description = `Single Nozzle with ${out.extruders} inputs`;
+    else if (out.type)
+      out.description = `${out.type} with ${out.extruders}`;
+    else
+      out.description = out.fancy;
+  }
+
+  extruder_info = out;
+  return extruder_info;
+}
+
+//
+// Get information from the board's pins file(s)
+//
+var pindef_info;
+function getPinDefinitionInfo() {
+  if (!mfiles.pindef) {
+    const pbits = `src/pins/${board_info.pins_file}`.split('/');
+    mfiles.pindef = { name: pbits.pop(), path: pbits };
+    processMarlinFile('pindef');
+  }
+
+  pindef_info = {
+    board_name: confValue('pindef', 'BOARD_INFO_NAME').dequote()
+  };
+
+  return pindef_info;
+}
+
+//
+// - Get Marlin version and distribution date
+//
+var version_info;
+function extractVersionInfo() {
+  var out = {
+    vers: _confValue(mfiles.version.text, 'SHORT_BUILD_VERSION').dequote(),
+    date: _confValue(mfiles.version.text, 'STRING_DISTRIBUTION_DATE').dequote()
+  };
+  version_info = out;
+  return version_info;
+}
+
+//
 // - Get pins file, archs, and envs for a board
 //   from the pins.h file.
 // - Get the status of all environment builds.
@@ -317,9 +473,8 @@ function extractBoardInfo(board) {
   var r, out = {}, sb = board.replace('BOARD_', '');
 
   // Get the include line matching the board
-  var lfind = new RegExp(`if[ \t]*MB\\(${sb}\\).*\n[ \t]*(#include.+)\n`, 'g');
-
-  if ((r = lfind.exec(pins_text))) {
+  const lfind = new RegExp(`if\\s*MB\\(${sb}\\).*\n\\s*(#include.+)\n`, 'g');
+  if ((r = lfind.exec(mfiles.pins.text))) {
 
     let inc_line = r[1];
 
@@ -332,9 +487,13 @@ function extractBoardInfo(board) {
     var efind = new RegExp('env:(\\w+)', 'g');
     while ((r = efind.exec(inc_line)))
       out.envs.push({ name: r[1] });
-
-    pins_text = undefined; // With data extracted, free some RAM
   }
+
+  // Get the description from the boards.h file
+  var cfind = new RegExp(`#define\\s+${board}\\s+\\d+\\s*//(.+)`, 'gm');
+  r = cfind.exec(mfiles.boards.text);
+  out.description = r ? r[1].trim() : '';
+
   board_info = out;
   return board_info;
 }
@@ -345,38 +504,59 @@ function extractBoardInfo(board) {
 //  - Read values from the config files
 //  - Update the UI with initial values
 //
-// TODO: Make a tree view and in that view
-//       show status and current build options
-//
 function allFilesAreLoaded() {
 
-  const mb = configValue(config_text, 'MOTHERBOARD');
-  postValue('board', mb.replace('BOARD_', '').replace(/_/g, ' '));
+  // Send text for display in the view
+  //pv.postMessage({ command:'text', text:mfiles.boards.text });
 
-  const extruders = configValue(config_text, 'EXTRUDERS');
-  postValue('extruders', extruders);
-
-  const machine = configValue(config_text, 'CUSTOM_MACHINE_NAME');
-  postValue('machine', machine.dequote());
+  const mb = configValue('MOTHERBOARD');
 
   if (mb !== undefined) {
 
-    // Send text for display in the view
-    //pv.postMessage({ command:'text', text:pins_text });
+    const sensors = extractTempSensors();
 
+    const version_info = extractVersionInfo();
+    if (0) console.log("Version Info : ", version_info);
     const board_info = extractBoardInfo(mb);
     if (0) console.log("Board Info : ", board_info);
+    const machine_info = getMachineSettings();
+    if (0) console.log("Machine Info : ", machine_info);
+    const extruder_info = getExtruderSettings();
+    if (0) console.log("Extruder Info : ", extruder_info);
+    const pindef_info = getPinDefinitionInfo();
+    if (0) console.log("Pin Defs Info : ", pindef_info);
 
-    //pv.postMessage({ command:'binfo', val:board_info });
+    // If no CUSTOM_MACHINE_NAME was set, get it from the pins file
+    if (!machine_info.name) {
+      let def = confValue('pindef', 'DEFAULT_MACHINE_NAME');
+      if (!def || def == 'BOARD_INFO_NAME')
+        def = pindef_info.board_name;
+      machine_info.name = def ? def.dequote() : '3D Printer';
+    }
 
-    // Post Pins file name, Architecture(s), and Environment(s)
+    const d = new Date(version_info.date);
+
+    postValue('vers', `${version_info.vers}`);
+    postValue('date', d.toLocaleDateString([], { weekday:'long', year:'numeric', month:'short', day:'numeric' }));
+
+    postValue('extruders', extruder_info.extruders);
+    postValue('extruder-desc', extruder_info.description);
+
+    postValue('machine', machine_info.name);
+    postValue('machine-desc', machine_info.description);
+
+    postValue('board', mb.replace('BOARD_', '').replace(/_/g, ' '));
+    postValue('board-desc', board_info.description);
+
     postValue('pins', board_info.pins_file);
+    if (pindef_info.board_name) postValue('pins-desc', pindef_info.board_name);
+
     postValue('archs', board_info.archs);
 
     refreshBuildStatus();
   }
 
-  updateDefineList(0, config_text);
+  updateDefineList(0, mfiles.config.text);
 
   watchConfigurations();
   runSelectedAction();
@@ -384,57 +564,83 @@ function allFilesAreLoaded() {
 
 function refreshOldData() { allFilesAreLoaded(); }
 
+function readFileError(err, msg) {
+  if (0) console.log("fs.readFile err: ", err);
+  pv.postMessage({ command:'error', error:msg, data:err });
+}
+
 //
 // Read a workspace file
 // If it's the last file, go on to extract data and update the UI.
 //
-function processMarlinFile(filename) {
+function processMarlinFile(fileid) {
 
-  const mf_path = marlinFilePath(filename);
+  const mf_path = marlinFilePath(fileid);
 
   if (0) console.log(`Processing... ${mf_path}`);
 
-  // Use node.js to read the file
-  fs.readFile(mf_path, (err, data) => {
-    if (err) {
-      if (0) console.log("fs.readFile err: ", err);
-      pv.postMessage({ command:'error', error:`Couldn't find ${filename}`, data:err });
-    }
-    else {
-      let t = data.toString();
-      switch (filename) {
-        case config_file:     config_text = t; break;
-        case config_adv_file: config_adv_text = t; break;
-        case pins_file:       pins_text = t; break;
+  if (info.filesToLoad) {
+    fs.readFile(mf_path, (err, data) => {
+      if (err)
+        readFileError(err, `Couldn't read ${mfiles[fileid].name}`);
+      else {
+        mfiles[fileid].text = data.toString();
+        if (--info.filesToLoad == 0) allFilesAreLoaded();
       }
+    });
+  }
+  else {
+    try {
+      // Use node.js to read the file
+      //var data = fs.readFileSync(mf_path);
+      mfiles[fileid].text = fs.readFileSync(mf_path, {encoding:'utf8'});
+    } catch (err) {
+      readFileError(err, `Couldn't read ${mfiles[fileid].name}`);
     }
-    if (--info.filesToLoad == 0) allFilesAreLoaded();
-  });
+  }
+}
+
+//
+// Verify that one of Marlin's files exists
+//
+function marlinFileCheck(fileid) {
+  var file_issue;
+  try {
+    fs.accessSync(marlinFilePath(fileid), fs.constants.F_OK | fs.constants.W_OK);
+  } catch (err) {
+    file_issue = err.code === 'ENOENT' ? 'is missing' : 'is read-only';
+  }
+  return file_issue;
 }
 
 //
 // Reload files and refresh the UI
 //
 function refreshNewData() {
-  const files = [ config_file, config_adv_file, pins_file ];
-  info.filesToLoad = files.length;
+  var is_marlin = true, files = [];
 
-  // Make sure this is a Marlin folder
-  let is_marlin = files.every((v) => {
-    let err = marlinFileCheck(v);
+  for (const k in mfiles) {
+    const err = marlinFileCheck(k);
     if (err) {
-      postError(`Error: ${v} ${err}.`);
-      return false;
+      postError(`Error: ${mfiles[k].name} ${err}.`);
+      is_marlin = false;
+      break;
     }
-    return true;
-  });
+    files.push(k);
+  }
 
-  if (is_marlin)
+  if (is_marlin) {
+    info.filesToLoad = files.length;
     files.forEach(processMarlinFile);
+  }
   else
     postError('Please open Marlin in the workspace.');
 }
 
+//
+// Get information about the last (or current) build
+//  - exists, completed, busy, stamp
+//
 function lastBuild(env) {
   var bp = envBuildPath(env),
       out = {
@@ -459,8 +665,8 @@ function lastBuild(env) {
 
     let stat = fs.lstatSync(tp),
            d = new Date(stat.mtime),
-        locd = d.toLocaleDateString({ weekday:'long', year:'numeric', month:'short', day:'numeric' }),
-        loct = d.toLocaleTimeString({ timeStyle:'full' });
+        locd = d.toLocaleDateString([], { weekday:'long', year:'numeric', month:'short', day:'numeric' }),
+        loct = d.toLocaleTimeString([], { timeStyle:'medium' });
 
     out.stamp = `at ${loct} on ${locd}`;
   }
@@ -521,18 +727,27 @@ function destroyIPCFile() {
   });
 }
 
+//
+// Open a Terminal if needed.
+// When the Terminal closes, abort the build and update the UI.
+// Send a command to the Terminal
+//
 var terminal, NEXT_TERM_ID = 1;
 function terminal_command(ttl, cmdline) {
-  if (!terminal || !REUSE_TERMINAL) {
+  // Get config options with the 'auto-build' prefix
+  const abm_config = ws.getConfiguration('auto-build', true),
+        reuse_terminal = abm_config.get('reuseTerminal');
+
+  if (!terminal || !reuse_terminal) {
     var title;
-    if (REUSE_TERMINAL)
+    if (reuse_terminal)
       title = 'Marlin Auto Build';
     else {
       title = `Marlin ${ttl.toTitleCase()} (${NEXT_TERM_ID})`;
       NEXT_TERM_ID++;
     }
-    terminal = win.createTerminal({ name:title, env:process.env });
-    win.onDidCloseTerminal((t) => {
+    terminal = vw.createTerminal({ name:title, env:process.env });
+    vw.onDidCloseTerminal((t) => {
       if (t === terminal) {
         terminal = null;
         buildIsFinished('Closed Terminal');
@@ -553,19 +768,24 @@ function terminal_command(ttl, cmdline) {
     terminal.sendText(cmdline + ` ; echo "done" >${ipc_file}`);
 }
 
+//
+// Start a PlatformIO command, update the UI, and watch the build.
+//
 function pio_command(opname, env, nosave) {
+
+  if (build.active) {
+    postError(`A build (${build.env}) is already underway.`);
+    return;
+  }
+
   let args;
   switch (opname) {
     case 'build':     args = 'run';                 break;
     case 'clean':     args = 'run --target clean';  break;
     case 'upload':    args = 'run --target upload'; break;
     case 'traceback': args = 'run --target upload'; break;
-    //case 'program':   args = 'run --target program';        break;
-    //case 'test':      args = 'test upload';                 break;
-    //case 'remote':    args = 'remote run --target program'; break;
-    //case 'debug':     args = 'debug';                       break;
     default:
-      win.showErrorMessage('Unknown action: "' + opname + '"');
+      vw.showErrorMessage('Unknown action: "' + opname + '"');
       return;
   }
   if (!nosave) vc.executeCommand('workbench.action.files.saveAll');
@@ -587,33 +807,6 @@ function postError(err, data) {
 
 function postWIP() {
   postError('Configuration Tool Under Construction');
-}
-
-function handleMessage(m) {
-  switch (m.command) {
-
-    case 'hello':
-      win.showInformationMessage(m.text);
-      return;
-
-    case 'wip':
-      postWIP();
-      break;
-
-    case 'error':
-      postError(m.error);
-      break;
-
-    case 'ui-ready':
-    case 'refresh':
-      refreshNewData();
-      return;
-
-    case 'pio':
-      //win.showInformationMessage('Starting ' + nicer[m.cmd].toTitleCase() + ' for ' + m.env);
-      pio_command(m.cmd, m.env);
-      return;
-  }
 }
 
 // Post a value to the UI
@@ -700,12 +893,13 @@ function homeContent() {
   <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Auto Build</span></h1>
   <div id="abm-main">
     <table id="info">
-      <tr><th>Machine Name:</th>  <td id="info-machine">---</td></tr>
-      <tr><th>Extruders:</th>     <td id="info-extruders">---</td></tr>
-      <tr><th>Board:</th>         <td id="info-board">---</td></tr>
-      <tr><th>Pins:</th>          <td id="info-pins">---</td></tr>
-      <tr><th>Architectures:</th> <td id="info-archs">---</td></tr>
-      <tr><th>Environments:</th>  <td id="info-envs">---</td></tr>
+      <tr><th>Firmware:</th>      <td><div>Marlin <span id="info-vers"></span></div><div id="info-date" class="abm-caption"></div></td></tr>
+      <tr><th>Machine Name:</th>  <td><div id="info-machine"></div><div id="info-machine-desc" class="abm-caption"></div></td></tr>
+      <tr><th>Extruders:</th>     <td><div id="info-extruders"></div><div id="info-extruder-desc" class="abm-caption"></div></td></tr>
+      <tr><th>Board:</th>         <td><div id="info-board"></div><div id="info-board-desc" class="abm-caption"></div></td></tr>
+      <tr><th>Pins:</th>          <td><div id="info-pins"></div><div id="info-pins-desc" class="abm-caption"></div></td></tr>
+      <tr><th>Architectures:</th> <td><div id="info-archs"></div></td></tr>
+      <tr><th>Environments:</th>  <td><div id="info-envs"></div></td></tr>
     </table>
     <div id="abm-button-src">
       <div>
@@ -714,7 +908,7 @@ function homeContent() {
         <button type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'upload' })" title="Upload"><img src="${btn_upload}" /> Upload</button>
         <button type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'traceback' })" title="Upload (Traceback)"><img src="${btn_debug}" /> Debug</button>
         <button class="clean" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'clean' })" title="Clean"><img src="${btn_clean}" /> Clean</button>
-        <div class="env-more"></div>
+        <div class="env-more abm-caption"></div>
       </div>
     </div>
     <div id="error"></div>
@@ -741,6 +935,32 @@ function homeContent() {
 }
 
 //
+// Handle a command sent from the Web View
+//
+function handleMessage(m) {
+  switch (m.command) {
+
+    case 'wip':
+      postWIP();
+      break;
+
+    case 'error':
+      postError(m.error);
+      break;
+
+    case 'ui-ready':
+    case 'refresh':
+      refreshNewData();
+      return;
+
+    case 'pio':
+      //vw.showInformationMessage('Starting ' + nicer[m.cmd].toTitleCase() + ' for ' + m.env);
+      pio_command(m.cmd, m.env);
+      return;
+  }
+}
+
+//
 // ABM command activation event handler
 //
 var panel, abm_action;
@@ -752,7 +972,7 @@ function activate(action) {
   }
   else {
 
-    panel = win.createWebviewPanel(
+    panel = vw.createWebviewPanel(
       'marlinConfig', 'Auto Build Marlin',
       vscode.ViewColumn.One,
       {
@@ -779,7 +999,7 @@ function activate(action) {
     //var view_url = pv.asWebviewUri(
     //  vscode.Uri.file( path.join(context.extensionPath, 'abm', 'css') )
     //);
-    //win.showInformationMessage("CSS URL is " + view_url);
+    //vw.showInformationMessage("CSS URL is " + view_url);
 
     //
     // Populate the Web View with a cool UI
@@ -808,8 +1028,7 @@ function activate(action) {
 }
 
 //
-// Try to run the launch action, but only
-// if the action is unambiguous.
+// Run the launch action if unambiguous, otherwise ask.
 //
 function runSelectedAction() {
   var act = abm_action;

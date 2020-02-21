@@ -19,7 +19,6 @@ var ABM = (function(){
   var self,
       pi2 = Math.PI * 2,
       my_flag = false,
-      $cfg = $('#config_text'),
       test_count = 0;
 
   // Return an anonymous object for assignment to ABM
@@ -48,12 +47,12 @@ var ABM = (function(){
         const m = event.data; // JSON sent by the extension
         switch (m.command) {
           case 'define':
-            break;
-          case 'define':
             // Update a single define element in the UI
             break;
           case 'set':
-            $('#info-' + m.tag).text(m.val);
+            const $item = $('#info-' + m.tag);
+            if (m.val) $item.text(m.val); else $item.hide();
+            if (0) console.log(`Setting ${m.tag} to ${m.val}`);
             break;
           case 'reset':
             test_count = 0;
