@@ -15,7 +15,7 @@ String.prototype.lpad = function(len, chr) {
   return s;
 };
 
-String.prototype.dequote = function()        { return this.replace(/"([^"]*)"/g, '$1'); };
+String.prototype.dequote = function()        { return this.replace(/^\s*"|"\s*$/g, '').replace(/\\/g, ''); };
 String.prototype.prePad = function(len, chr) { return len ? this.lpad(len, chr) : this; };
 String.prototype.zeroPad = function(len)     { return this.prePad(len, '0'); };
 String.prototype.toHTML = function()         { return jQuery('<div>').text(this).html(); };
@@ -141,9 +141,11 @@ function configAnyEnabled(optname) {
 
 // Get a single config value
 function _confValue(text, optname) {
-  const find = new RegExp(`^\\s*#define\\s+${optname}\\s+(.+)(\\s+//.+$)?`, 'gm'),
+  var val = '';
+  const find = new RegExp(`^\\s*#define\\s+${optname}\\s+(.+)`, 'gm'),
         r = find.exec(text);
-  return (r !== null) ? r[1] : '';
+  if (r) val = r[1].replace(/\s*(\/\/.*)?$/, '');
+  return val;
 }
 
 // Get a single config value
