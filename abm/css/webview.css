@@ -10,8 +10,8 @@
   --abm-text-color-data: #FFE;
   --abm-text-color-pale: #8A8;
   --abm-text-color-good: #6E6;
-  --abm-text-color-limbo: #FC6;
-  --abm-text-color-busy: #FC0;
+  --abm-text-color-limbo: #DB6;
+  --abm-text-color-busy: #FA0;
   --abm-text-color-error: #C44;
   --abm-text-color-caption: #58A;
   --abm-header-height: 50px;
@@ -24,6 +24,7 @@
 .clear { clear: both; }
 
 body {
+  --abm-progress-offset: 0px;
   margin: 0;
   padding: 0;
   background: var(--abm-background);
@@ -129,11 +130,12 @@ table#info {
   font-size: 14pt;
   margin-bottom: 0.5em;
   }
-table#info th, table#info td { padding: 4px; vertical-align: top; }
-table#info th {
+table#info>tbody>tr>th,
+table#info>tbody>tr>td { padding: 4px; vertical-align: top; }
+table#info>tbody>tr>th {
   text-align: right;
   white-space: nowrap;
-  color: var(--abm-text-color-label)
+  color: var(--abm-text-color-label);
   }
 
 #info div>span { color: var(--abm-text-color-pale); }
@@ -206,36 +208,54 @@ pre.config {
   margin: 0;
   }
 
-.abm-env { margin-bottom: 0.25em; }
-
-.abm-env .env-name { color: var(--abm-text-color-limbo); }
-.abm-env.exists .env-name { color: var(--abm-text-color-good); }
-.abm-env.busy .env-name, .abm-env.busy.exists .env-name { color: var(--abm-text-color-error); }
-
+/* Environment Caption cell */
 .env-more {
   display: none;
-  margin: -0.25em 0 0.5em 1em;
+  position: relative;
+  top: -12px;
   }
-
-.busy .env-more { font-style: italic; }
-.exists .env-more,
-.busy   .env-more { display: block; }
-
-.busy .env-more,
-.incomplete.busy .env-more {
-  color: var(--abm-text-color-busy);
-  margin-top: 0;
+.env-more span {
+  height: 0;
+  margin-left: 1em;
   }
-.incomplete .env-more { color: var(--abm-text-color-error); }
+/* Show the caption for exists or busy */
+.exists          .env-more,
+.busy            .env-more { display: table-cell; }
+/* Italic caption when busy */
+.busy            .env-more { font-style: italic; }
+/* The incomplete (when not busy) color */
+.incomplete      .env-more { color: var(--abm-text-color-error); }
+/* The busy color */
+.busy            .env-more,
+.incomplete.busy .env-more { color: var(--abm-text-color-busy); }
 
-.abm-env button.clean { display: none; }
-.abm-env.exists button.clean { display: inline-block; }
+/* Environments Sub-Table */
+table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
+#info-envs table td+td { padding-left: 1em; }    /* Buttons Cell */
+#info-envs table td { padding-bottom: 8px; vertical-align: top; }
 
-.abm-env.busy button,
-.abm-env.busy.exists button,
-.abm-env.busy.exists button.clean { display: none; }
+/* Environment Name Colors */
+#info-envs              .env-name { color: var(--abm-text-color-limbo); }
+#info-envs .exists      .env-name { color: var(--abm-text-color-good); }
 
-#abm-button-src,
+#info-envs .busy        .env-name,
+#info-envs .busy.exists .env-name { color: var(--abm-text-color-busy); }
+
+#info-envs .exists.incomplete .env-name { color: var(--abm-text-color-error); }
+
+/* Environment Action Buttons */
+
+/* Show CLEAN for existing build */
+#info-envs         button.clean { display: none; }
+#info-envs .exists button.clean { display: inline-block; }
+
+/* Hide ALL buttons when busy */
+#info-envs .busy button,
+#info-envs .busy.exists button,
+#info-envs .busy.exists button.clean { display: none; }
+
+/* Hide buttons template and debug text field */
+#env-rows-src,
 #debug-text { display: none; }
 
 #error, #abm-config>div {
@@ -251,3 +271,23 @@ pre.config {
   }
 
 #error { display: none; }
+
+/* Only show 'Upload' or 'Debug' depending on the env */
+                  button.debug { display: none; }
+#info-envs .debug button.debug { display: inline-block; }
+#info-envs .debug button.upload { display: none; }
+
+#info-envs       span.progress { display: none; }
+#info-envs .busy span.progress { display: inline-block; }
+
+span.progress {
+  display: inline-block;
+  width: 128px;
+  height: 0.5em;
+  border: 1px solid white;
+  border-radius: 0.25em;
+  background-color: #FF6;
+  background-image: url(progress.gif);
+  background-position-x: var(--abm-progress-offset);
+  background-repeat: repeat-x;
+  }

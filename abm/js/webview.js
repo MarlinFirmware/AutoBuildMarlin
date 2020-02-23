@@ -16,25 +16,20 @@ $(function(){
 var ABM = (function(){
 
   // private variables and functions
-  var self,
-      pi2 = Math.PI * 2,
-      my_flag = false,
-      test_count = 0;
+  var self;
 
   // Return an anonymous object for assignment to ABM
   return {
 
     // public data members
 
-    logging: 5,
+    poffset: 0,
+    ptimer: null,
 
     // public methods
 
     init: function() {
       self = this; // a 'this' for use when 'this' is something else
-
-      const $counter = $('#test-counter>span');
-      setInterval(() => { $counter.html(test_count++); }, 200);
 
       const $err = $('#error');
       $('body').click(() => { $('#error').hide('fast'); });
@@ -46,6 +41,9 @@ var ABM = (function(){
       window.addEventListener('message', event => {
         const m = event.data; // JSON sent by the extension
         switch (m.command) {
+          case 'tool':
+            abm_show(m.tool);
+            break;
           case 'define':
             // Update a single define element in the UI
             break;
@@ -53,10 +51,6 @@ var ABM = (function(){
             const $item = $('#info-' + m.tag);
             if (m.val) $item.text(m.val); else $item.hide();
             if (0) console.log(`Setting ${m.tag} to ${m.val}`);
-            break;
-          case 'reset':
-            test_count = 0;
-            $counter.text(test_count);
             break;
           case 'text':
             $('#debug-text').show().children('pre').text(m.text);
@@ -67,47 +61,57 @@ var ABM = (function(){
           case 'envs':
             // We finally got environments!
             // Make some buttons...
-            var $env_box = $('#info-envs'),
-                $btn_src = $('#abm-button-src');
+            const $env_td = $('#info-envs').html(''),
+                  $env_rows_src = $('#env-rows-src'),
+                  $envs_table = $('<table>');
 
-            $env_box.html('');
+            let has_progress = false;
             $.each(m.val, function(i,v) {
-              let btn_code = $btn_src.html().replace(/<env>/g, v.name),
-                  $btn_scrub = $(btn_code),
-                  $ediv = $('<div>').addClass(['abm-env',`env-${v.name}`]);
+              // Copy the template <table>, merging the env name. The <span> is allowed here!
+              const $env_table_copy = $($env_rows_src.html().replace(/<env>/g, v.name));
+              let $erows = $env_table_copy.find('tr').addClass(`env-${v.name}`);
 
-              $btn_scrub.find('.env-name').text(v.name);
-              let more_info = '';
+              // Set the env name in the new button row
+              $erows.find('.env-name').text(v.name);
+
+              // Set env row classes and env caption
+              let caption = '';
+              if (v.debug) $erows.addClass('debug');
               if (v.busy) {
-                $ediv.addClass('busy');
-                more_info = 'Please wait…';
+                $erows.addClass('busy');
+                caption = 'Please Wait…';
+                has_progress = true;
               }
               if (v.exists) {
-                $ediv.addClass('exists');
+                $erows.addClass('exists');
                 if (!v.busy) {
-                  more_info = `Last build ${v.stamp}`;
+                  caption = 'Last build ' + v.stamp;
                   if (!v.completed) {
-                    $ediv.addClass('incomplete');
-                    more_info += ` (incomplete)`;
+                    $erows.addClass('incomplete');
+                    caption += ' (incomplete)';
                   }
                 }
               }
-              $btn_scrub.find('.env-more').html(more_info);
-              $ediv.append($btn_scrub).appendTo($env_box);
+              $erows.find('.env-more span').html(caption);
+
+              $envs_table.append($erows);
             });
+
+            if (self.ptimer) { clearInterval(self.ptimer); self.ptimer = null; }
+            if (has_progress) {
+              self.ptimer = setInterval(() => {
+                self.poffset = (self.poffset + 30) % 32;
+                $('body').get(0).style.setProperty('--abm-progress-offset', self.poffset + 'px');
+              }, 50);
+            }
+
+            $env_td.append($envs_table);
             break;
         }
       });
 
-      msg({ command:'tool', tool:'build' });
-      //$('#abm-build').show();
+      msg({ command:'tool', tool:'build' }); // To un-hide the build view
 
-    },
-
-    /**
-     * Act on a thing
-     */
-    DoSomething: function(txt) {
     },
 
     EOF: null

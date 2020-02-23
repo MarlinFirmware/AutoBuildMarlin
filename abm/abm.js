@@ -488,7 +488,7 @@ function extractBoardInfo(board) {
     out.envs = [];
     var efind = new RegExp('env:(\\w+)', 'g');
     while ((r = efind.exec(inc_line)))
-      out.envs.push({ name: r[1] });
+      out.envs.push({ name: r[1], debug:r[1].match(/^.+_debug$/) });
   }
 
   // Get the description from the boards.h file
@@ -784,8 +784,8 @@ function pio_command(opname, env, nosave) {
   switch (opname) {
     case 'build':     args = 'run';                 break;
     case 'clean':     args = 'run --target clean';  break;
+    case 'traceback':
     case 'upload':    args = 'run --target upload'; break;
-    case 'traceback': args = 'run --target upload'; break;
     default:
       vw.showErrorMessage('Unknown action: "' + opname + '"');
       return;
@@ -807,8 +807,8 @@ function postError(err, data) {
   pv.postMessage({ command:'error', error:err, data:data });
 }
 
-function postWIP() {
-  postError('Configuration Tool Under Construction');
+function postTool(t) {
+  pv.postMessage({ command: 'tool', tool:t });   // Send a tool message back
 }
 
 // Post a value to the UI
@@ -865,14 +865,16 @@ function homeContent() {
 
   const vscode = acquireVsCodeApi();
 
-  function msg(obj) {
-    if (obj.command == 'tool') {
-      $('.abm-panel').hide();
-      $(\`#abm-\${obj.tool}\`).show();
-      $('#abm-toolbar button').removeClass();
-      $(\`#btn-\${obj.tool}\`).addClass('active');
-    }
-    vscode.postMessage(obj);
+  function abm_show(t) {
+    $('.abm-panel').hide();
+    $('#abm-'+t).show();
+    $('#abm-toolbar button').removeClass();
+    $('#btn-'+t).addClass('active');
+  }
+
+  function msg(m) {
+    if (m.command == 'tool') abm_show(m.tool);
+    vscode.postMessage(m);
   }
 
 // ]]>
@@ -895,24 +897,29 @@ function homeContent() {
   <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Auto Build</span></h1>
   <div id="abm-main">
     <table id="info">
+      <span>
       <tr><th>Firmware:</th>      <td><div>Marlin <span id="info-vers"></span></div><div id="info-date" class="abm-caption"></div></td></tr>
       <tr><th>Machine Name:</th>  <td><div id="info-machine"></div><div id="info-machine-desc" class="abm-caption"></div></td></tr>
       <tr><th>Extruders:</th>     <td><div id="info-extruders"></div><div id="info-extruder-desc" class="abm-caption"></div></td></tr>
       <tr><th>Board:</th>         <td><div id="info-board"></div><div id="info-board-desc" class="abm-caption"></div></td></tr>
       <tr><th>Pins:</th>          <td><div id="info-pins"></div><div id="info-pins-desc" class="abm-caption"></div></td></tr>
       <tr><th>Architectures:</th> <td><div id="info-archs"></div></td></tr>
-      <tr><th>Environments:</th>  <td><div id="info-envs"></div></td></tr>
+      <tr><th>Environments:</th>  <td id="info-envs"></td></tr>
+      </span>
     </table>
-    <div id="abm-button-src">
-      <div>
-        <div class="env-name"></div>
-        <button type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'build' })" title="Build"><img src="${btn_build}" /> Build</button>
-        <button type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'upload' })" title="Upload"><img src="${btn_upload}" /> Upload</button>
-        <button type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'traceback' })" title="Upload (Traceback)"><img src="${btn_debug}" /> Debug</button>
-        <button class="clean" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'clean' })" title="Clean"><img src="${btn_clean}" /> Clean</button>
-        <div class="env-more abm-caption"></div>
-      </div>
-    </div>
+    <div id="env-rows-src"><table>
+      <tr>
+        <td class="env-name"></td>
+        <td>
+          <button type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'build' })" title="Build"><img src="${btn_build}" /> Build</button>
+          <button class="upload" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'upload' })" title="Upload"><img src="${btn_upload}" /> Upload</button>
+          <button class="debug" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'traceback' })" title="Upload (Debug)"><img src="${btn_debug}" /> Debug</button>
+          <button class="clean" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'clean' })" title="Clean"><img src="${btn_clean}" /> Clean</button>
+          <span class="progress"></span>
+        </td>
+      </tr>
+      <tr><td colspan="2" class="abm-caption env-more"><span></span></td></tr>
+    </table></div>
     <div id="error"></div>
     <div id="debug-text"><pre class="hilightable config"></pre></div>
   </div>
@@ -939,23 +946,29 @@ function homeContent() {
 //
 // Handle a command sent from the Web View
 //
-function handleMessage(m) {
+function handleWebViewMessage(m) {
   switch (m.command) {
 
-    case 'wip':
-      postWIP();
+    case 'tool':
+      // On tool selection, re-populate the selected view
+      //vw.showInformationMessage('Tool: ' + m.tool);
+      break;
+
+    case 'conf':
+      // On config section selection, re-populate the selected view
+      //vw.showInformationMessage('Config Tab: ' + m.tab);
       break;
 
     case 'error':
-      postError(m.error);
+      postError(m.error);    // Error is just echoed back to the view but could also be handled here
       break;
 
-    case 'ui-ready':
-    case 'refresh':
-      refreshNewData();
+    case 'ui-ready':         // View ready
+    case 'refresh':          // Refresh button
+      refreshNewData();      // Reload configs and refresh the view
       return;
 
-    case 'pio':
+    case 'pio':              // Build, Upload, Clean...
       //vw.showInformationMessage('Starting ' + nicer[m.cmd].toTitleCase() + ' for ' + m.env);
       pio_command(m.cmd, m.env);
       return;
@@ -1009,8 +1022,6 @@ function activate(action) {
     //
     pv.html = homeContent();
 
-    //var periodic_reset = setInterval(pv.postMessage, 2000, { command: 'reset' });
-
     panel.onDidDispose(
       () => {
         panel = null;
@@ -1022,7 +1033,7 @@ function activate(action) {
     );
 
     // Handle messages from the webview
-    pv.onDidReceiveMessage(handleMessage, undefined, context.subscriptions);
+    pv.onDidReceiveMessage(handleWebViewMessage, undefined, context.subscriptions);
 
     // Create an IPC file for messages from Terminal
     createIPCFile();
@@ -1037,8 +1048,9 @@ function runSelectedAction() {
   abm_action = undefined;
   if (act !== undefined) {
     if (act == 'config')
-      postWIP();
+      postTool('config');
     else {
+      postTool('build');
       let env;
       if (board_info.envs.length == 1)
         env = board_info.envs[0].name;
