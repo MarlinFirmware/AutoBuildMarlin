@@ -63,6 +63,8 @@ const nicer = {
   clean: 'clean',
 };
 
+const bugme = false; // Lots of debug output
+
 const path = require('path'),
         fs = require('fs'),
         os = require('os');
@@ -128,7 +130,7 @@ function updateDefineList(cindex, txt) {
 function _confEnabled(text, optname) {
   const find = new RegExp(`^\\s*#define\\s+${optname}\\b`, 'gm'),
         r = find.exec(text);
-  if (0) console.log(`${optname} is ${r?'ENABLED':'unset'}`);
+  if (bugme) console.log(`${optname} is ${r?'ENABLED':'unset'}`);
   return (r !== null); // Any match means it's uncommented
 }
 
@@ -189,7 +191,7 @@ function existingBuildPath(env) {
 
 var timeouts = [];
 function onConfigFileChanged(e, fname) {
-  if (0) console.log('File changed:', e, fname);
+  if (bugme) console.log('File changed:', e, fname);
   if (timeouts[fname] !== undefined) clearTimeout(timeouts[fname]);
   timeouts[fname] = setTimeout(() => {
     timeouts[fname] = undefined;
@@ -234,7 +236,7 @@ function currentBuildEnv() {
 //
 function unwatchBuildFolder() {
   if (build.watcher) {
-    if (0) console.log(`Stop Watching Build: ${currentBuildEnv()}.`);
+    if (bugme) console.log(`Stop Watching Build: ${currentBuildEnv()}.`);
     build.watcher.close();
     build.watcher = null;
   }
@@ -253,12 +255,12 @@ function watchBuildFolder(env) {
     const bp = existingBuildPath(env);
     if (bp) {
       build.watcher = fs.watch(bp, {}, (e,f) => { onBuildFolderChanged(e,f,env); });
-      if (0) console.log("Watching Build...");
+      if (bugme) console.log("Watching Build...");
     }
     else {
       // Build folder doesn't exist (yet)
       // Keep looking for it for several seconds
-      if (0) console.log("No build folder yet. Trying in 2s...");
+      if (bugme) console.log("No build folder yet. Trying in 2s...");
       setTimeout(()=>{ watchBuildFolder(env); }, 2000);
     }
   }
@@ -271,7 +273,7 @@ function cancelBuildRefresh() {
 }
 
 function buildIsFinished(reason) {
-  if (0) console.log(`buildIsFinished (${reason}): ${currentBuildEnv()}`);
+  if (bugme) console.log(`buildIsFinished (${reason}): ${currentBuildEnv()}`);
 
   // Updating now so kill timers
   cancelBuildRefresh();
@@ -295,7 +297,7 @@ function onBuildFolderChanged(e, fname, env) {
   if (fname == 'firmware.hex' || fname == 'firmware.bin') {
     // If the firmware file changed, assume the build is done now
     refresh_to = [ setTimeout(()=>{ unwatchBuildFolder(); }, 500) ];
-    if (0) console.log(`onBuildFolderChanged (bin/hex): ${env}`);
+    if (bugme) console.log(`onBuildFolderChanged (bin/hex): ${env}`);
   }
   else {
     refresh_to = [
@@ -304,7 +306,7 @@ function onBuildFolderChanged(e, fname, env) {
       // Assume nothing will pause for more than 15 seconds
       setTimeout(()=>{ unwatchBuildFolder(); }, 15000)
     ];
-    if (0) console.log(`onBuildFolderChanged: ${env}`);
+    if (bugme) console.log(`onBuildFolderChanged: ${env}`);
   }
 }
 
@@ -354,7 +356,7 @@ function extractTempSensors() {
   //pv.postMessage({ command:'text', text:mfiles.config.text });
 
   // Get all the thermistors and save them into an object
-  const findAll = new RegExp('(\\/\\*+[\\s\\S]+\\*\\/)\\s*#define\\s+TEMP_SENSOR_0', 'g'),
+  const findAll = new RegExp('(\\/\\*+[\\s\\S]+\\*\\/)\\s*#define\\s+TEMP_SENSOR_', 'g'),
         r = findAll.exec(mfiles.config.text);
   const findEach = new RegExp('^\\s*\\*\\s*(-?\\d+)\\s*:\\s*(.+)$', 'gm');
   let s;
@@ -438,8 +440,8 @@ function getExtruderSettings() {
 // Get information from the board's pins file(s)
 //
 var pindef_info;
-function getPinDefinitionInfo() {
-  if (!mfiles.pindef) {
+function getPinDefinitionInfo(mb) {
+  if (!mfiles.pindef || board_info.mb != mb) {
     const pbits = `src/pins/${board_info.pins_file}`.split('/');
     mfiles.pindef = { name: pbits.pop(), path: pbits };
     processMarlinFile('pindef');
@@ -466,13 +468,13 @@ function extractVersionInfo() {
 }
 
 //
-// - Get pins file, archs, and envs for a board
-//   from the pins.h file.
-// - Get the status of all environment builds.
+// - Get pins file, archs, and envs for a board from pins.h.
+// - If the board isn't found, look for a rename alert.
+// - Get the status of environment builds.
 //
 var board_info;
-function extractBoardInfo(board) {
-  var r, out = {}, sb = board.replace('BOARD_', '');
+function extractBoardInfo(mb) {
+  var r, out = {}, sb = mb.replace('BOARD_', '');
 
   // Get the include line matching the board
   const lfind = new RegExp(`if\\s*MB\\(${sb}\\).*\n\\s*(#include.+)\n`, 'g');
@@ -480,6 +482,7 @@ function extractBoardInfo(board) {
 
     let inc_line = r[1];
 
+    out.mb = mb;
     out.pins_file = inc_line.replace(/.*#include\s+"([^"]*)".*/, '$1');
 
     out.archs = inc_line.replace(/.+\/\/\s*((\w+,?\s*)+)\s*env:.+/, '$1');
@@ -490,9 +493,13 @@ function extractBoardInfo(board) {
     while ((r = efind.exec(inc_line)))
       out.envs.push({ name: r[1], debug:r[1].match(/^.+_debug$/) });
   }
+  else {
+    const bfind = new RegExp(`#error\\s+"(${mb} has been renamed \\w+)`, 'g');
+    out.error = (r = bfind.exec(mfiles.pins.text)) ? r[1] : `Unknown MOTHERBOARD ${mb}`;
+  }
 
   // Get the description from the boards.h file
-  var cfind = new RegExp(`#define\\s+${board}\\s+\\d+\\s*//(.+)`, 'gm');
+  var cfind = new RegExp(`#define\\s+${mb}\\s+\\d+\\s*//(.+)`, 'gm');
   r = cfind.exec(mfiles.boards.text);
   out.description = r ? r[1].trim() : '';
 
@@ -518,15 +525,19 @@ function allFilesAreLoaded() {
     const sensors = extractTempSensors();
 
     const version_info = extractVersionInfo();
-    if (0) console.log("Version Info : ", version_info);
+    if (bugme) console.log("Version Info :", version_info);
     const board_info = extractBoardInfo(mb);
-    if (0) console.log("Board Info : ", board_info);
+    if (bugme) console.log(`Board Info for ${mb} :`, board_info);
+    if (board_info.error) {
+      postError(board_info.error);
+      return; // abort the whole deal
+    }
     const machine_info = getMachineSettings();
-    if (0) console.log("Machine Info : ", machine_info);
+    if (bugme) console.log("Machine Info :", machine_info);
     const extruder_info = getExtruderSettings();
-    if (0) console.log("Extruder Info : ", extruder_info);
-    const pindef_info = getPinDefinitionInfo();
-    if (0) console.log("Pin Defs Info : ", pindef_info);
+    if (bugme) console.log("Extruder Info :", extruder_info);
+    const pindef_info = getPinDefinitionInfo(mb);
+    if (bugme) console.log("Pin Defs Info :", pindef_info);
 
     // If no CUSTOM_MACHINE_NAME was set, get it from the pins file
     if (!machine_info.name) {
@@ -567,7 +578,7 @@ function allFilesAreLoaded() {
 function refreshOldData() { allFilesAreLoaded(); }
 
 function readFileError(err, msg) {
-  if (0) console.log("fs.readFile err: ", err);
+  if (bugme) console.log("fs.readFile err: ", err);
   pv.postMessage({ command:'error', error:msg, data:err });
 }
 
@@ -579,7 +590,7 @@ function processMarlinFile(fileid) {
 
   const mf_path = marlinFilePath(fileid);
 
-  if (0) console.log(`Processing... ${mf_path}`);
+  if (bugme) console.log(`Processing... ${mf_path}`);
 
   if (info.filesToLoad) {
     fs.readFile(mf_path, (err, data) => {
@@ -680,7 +691,8 @@ function lastBuild(env) {
 // - Send the envs data to the UI for display.
 //
 function refreshBuildStatus(env) {
-  if (0) console.log(`Refreshing Build: ${currentBuildEnv()}`);
+  if (bugme) console.log(`Refreshing Build: ${currentBuildEnv()}`);
+  if (bugme) console.log(board_info)
   board_info.envs.forEach((v) => {
     if (!env || v.name == env) {
       let b = lastBuild(v.name);
@@ -691,7 +703,7 @@ function refreshBuildStatus(env) {
     }
   });
   let m = { command:'envs', val:board_info.envs };
-  if (0) console.log("Posting:", m);
+  if (bugme) console.log("Posting:", m);
   pv.postMessage(m);
 }
 
@@ -708,11 +720,11 @@ var ipc_watcher;
 function createIPCFile() {
   fs.writeFile(ipc_file, 'ipc', (err) => {
     if (!err) {
-      if (0) console.log('IPC file created.');
+      if (bugme) console.log('IPC file created.');
       ipc_watcher = fs.watch(ipc_file, {}, () => { onIPCFileChange(); });
     }
     else
-      if (0) console.log('IPC file existed?');
+      if (bugme) console.log('IPC file existed?');
   });
 }
 
@@ -720,7 +732,7 @@ function destroyIPCFile() {
   ipc_watcher.close();
   ipc_watcher = null;
   fs.unlink(ipc_file, (err) => {
-    if (0) {
+    if (bugme) {
       if (err)
         console.log("IPC Delete Error:", err);
       else
@@ -758,7 +770,7 @@ function terminal_command(ttl, cmdline) {
     });
   }
   else
-    if (0) console.log("Terminal PID is " + terminal.processId);
+    if (bugme) console.log("Terminal PID is " + terminal.processId);
 
   terminal.show(true);
 
@@ -803,8 +815,12 @@ function pio_command(opname, env, nosave) {
   if (opname != 'clean') watchBuildFolder(env);
 }
 
-function postError(err, data) {
-  pv.postMessage({ command:'error', error:err, data:data });
+function postWarning(msg, data) {
+  pv.postMessage({ command:'warning', warning:msg, data:data });
+}
+
+function postError(msg, data) {
+  pv.postMessage({ command:'error', error:msg, data:data });
 }
 
 function postTool(t) {
@@ -814,7 +830,7 @@ function postTool(t) {
 // Post a value to the UI
 function postValue(tag, val) {
   var message = { command:'set', tag:tag, val:val };
-  if (0) console.log("Send to UI", message);
+  if (bugme) console.log("Send to UI", message);
   pv.postMessage(message);
 }
 
@@ -957,6 +973,10 @@ function handleWebViewMessage(m) {
     case 'conf':
       // On config section selection, re-populate the selected view
       //vw.showInformationMessage('Config Tab: ' + m.tab);
+      break;
+
+    case 'warning':
+      postWarning(m.warning); // Warning is echoed back to the view
       break;
 
     case 'error':
