@@ -1,0 +1,8 @@
+{
+  "view.workbench.abm.unknown": "Initializing…",
+  "view.workbench.abm.intro": "Use the buttons above to open the Auto Build Marlin panel and start a process.",
+  "view.workbench.abm.err.empty": "Nothing is open in the workspace. To use Auto Build Marlin open your [Marlin project folder](command:vscode.openFolder) in the workspace.",
+  "view.workbench.abm.err.folder": "The opened folder doesn't contain a Marlin project. To use Auto Build Marlin open your [Marlin project folder](command:vscode.openFolder) in the workspace.",
+  "view.workbench.abm.err.workspace": "The opened workspace doesn't contain a Marlin project. To use Auto Build Marlin open your [Marlin project folder](command:vscode.openFolder) in the workspace.",
+  "view.workbench.abm.err.parse": "Unable to parse one or more Marlin project files."
+}

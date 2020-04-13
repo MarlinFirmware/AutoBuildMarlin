@@ -43,6 +43,7 @@
     "Other"
   ],
   "activationEvents": [
+    "*",
     "onCommand:mfbuild",
     "onCommand:mfupload",
     "onCommand:mftraceback",
@@ -83,6 +84,38 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "autoBuildView",
+        "contents": "%view.workbench.abm.unknown%",
+        "when": "!abm.inited"
+      },
+      {
+        "view": "autoBuildView",
+        "contents": "%view.workbench.abm.intro%",
+        "when": "abm.inited && !abm.err.locate"
+      },
+      {
+        "view": "autoBuildView",
+        "contents": "%view.workbench.abm.err.empty%",
+        "when": "abm.err.locate && workbenchState == empty"
+      },
+      {
+        "view": "autoBuildView",
+        "contents": "%view.workbench.abm.err.folder%",
+        "when": "abm.err.locate && workbenchState == folder"
+      },
+      {
+        "view": "autoBuildView",
+        "contents": "%view.workbench.abm.err.workbench%",
+        "when": "abm.err.locate && workbenchState == workspace"
+      },
+      {
+        "view": "autoBuildView",
+        "contents": "%view.workbench.abm.err.parse%",
+        "when": "abm.err.parse"
+      }
+    ],
     "commands": [
       {
         "command": "mfbuild",

@@ -80,6 +80,7 @@ function init(c, v) {
   vw = v.window;
   abm_path = path.join(c.extensionPath, 'abm');
   project_path = ws.workspaceFolders[0].uri.fsPath;
+  vc.executeCommand('setContext', 'abm.inited', true);
 }
 
 var define_list,    // arrays with all define names
@@ -518,6 +519,8 @@ function extractBoardInfo(mb) {
 //
 function allFilesAreLoaded() {
 
+  vc.executeCommand('setContext', 'abm.err.parse', false);
+
   // Send text for display in the view
   //pv.postMessage({ command:'text', text:mfiles.boards.text });
 
@@ -532,6 +535,7 @@ function allFilesAreLoaded() {
     const board_info = extractBoardInfo(mb);
     if (bugme) console.log(`Board Info for ${mb} :`, board_info);
     if (board_info.error) {
+      vc.executeCommand('setContext', 'abm.err.parse', true);
       postError(board_info.error);
       return; // abort the whole deal
     }
@@ -644,6 +648,8 @@ function refreshNewData() {
     }
     files.push(k);
   }
+
+  vc.executeCommand('setContext', 'abm.err.locate', !is_marlin);
 
   if (is_marlin) {
     temp.filesToLoad = files.length;
@@ -1044,6 +1050,7 @@ function activate(action) {
     // Create an IPC file for messages from Terminal
     createIPCFile();
   }
+  vc.executeCommand('setContext', 'abm.active', true);
 }
 
 //
