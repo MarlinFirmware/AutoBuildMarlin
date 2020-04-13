@@ -850,25 +850,6 @@ function css_path(filename) { return subpath('css', filename); }
 
 // Contents of the Web View
 function homeContent() {
-  var jquery_js = js_path('jquery-3.3.1.min.js'),
-      abm_js = js_path('webview.js'),
-      abm_css = css_path('webview.css'),
-      marlin_svg = css_path('marlin.svg'),
-      abm_icon = img_path('abm-tools-70.png'),
-      btn_build = img_path('btn-build.svg'),
-      btn_upload = img_path('btn-upload.svg'),
-      btn_debug = img_path('btn-debug.svg'),
-      btn_clean = img_path('btn-clean.svg'),
-      btn_config = img_path('btn-config.svg'),
-      btn_refresh = img_path('btn-refresh.svg'),
-      tool_build = img_path('tool-build.svg'),
-      tool_config = img_path('tool-config.svg'),
-      social_mf = img_path('abm-tools-32.png'),
-      social_gh = img_path('social-gh.svg'),
-      social_tw = img_path('social-tw.svg'),
-      social_fb = img_path('social-fb.svg'),
-      social_yt = img_path('social-yt.svg')
-      ;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -877,7 +858,7 @@ function homeContent() {
 <title>Auto Build Marlin — Home</title>
 <link href="https://fonts.googleapis.com/css?family=Fira+Mono&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css" />
 <style>
-  * { --marlin-svg: url(${marlin_svg}); }
+  * { --marlin-svg: url(${ css_path('marlin.svg') }); }
 </style>
 <script>
 //<![CDATA[
@@ -898,20 +879,22 @@ function homeContent() {
 
 // ]]>
 </script>
-<script src="${jquery_js}"></script>
-<script src="${abm_js}"></script>
-<link rel="stylesheet" href="${abm_css}" type="text/css" media="all" />
+<script src="${ js_path('jquery-3.3.1.min.js') }"></script>
+<script src="${ js_path('jquery.jsonbrowser.js') }"></script>
+<script src="${ js_path('webview.js') }"></script>
+<link rel="stylesheet" href="${ css_path('jquery.jsonbrowser.css') }" type="text/css" media="all" />
+<link rel="stylesheet" href="${ css_path('webview.css') }" type="text/css" media="all" />
 </head>
 <body>
 <div id="abm-layout">
 <div id="abm-toolbar">
-  <a id="abm-icon" onclick="msg({ command:'refresh' })"><img src="${abm_icon}" width="32" /></a>
-  <button id="btn-build" type="button" onclick="msg({ command:'tool', tool:'build' })"><img src="${tool_build}" /><span>Build</span></button>
-  <button id="btn-config" type="button" onclick="msg({ command:'tool', tool:'config' })"><img src="${tool_config}" /><span>Configure</span></button>
+  <a id="abm-icon" onclick="msg({ command:'refresh' })"><img src="${ img_path('abm-tools-70.png') }" width="32" /></a>
+  <button id="btn-build" type="button" onclick="msg({ command:'tool', tool:'build' })"><img src="${ img_path('tool-build.svg') }" /><span>Build</span></button>
+  <button id="btn-config" type="button" onclick="msg({ command:'tool', tool:'config' })"><img src="${ img_path('tool-config.svg') }" /><span>Configure</span></button>
 </div>
 <div id="abm-build" class="abm-tool">
   <div id="abm-top">
-    <button type="button" onclick="msg({ command:'refresh' })"><img src="${btn_refresh}" /> Refresh</button>
+    <button type="button" onclick="msg({ command:'refresh' })"><img src="${ img_path('btn-refresh.svg') }" /> Refresh</button>
   </div>
   <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Auto Build</span></h1>
   <div id="abm-main">
@@ -930,10 +913,10 @@ function homeContent() {
       <tr>
         <td class="env-name"></td>
         <td>
-          <button type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'build' })" title="Build"><img src="${btn_build}" /> Build</button>
-          <button class="upload" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'upload' })" title="Upload"><img src="${btn_upload}" /> Upload</button>
-          <button class="debug" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'traceback' })" title="Upload (Debug)"><img src="${btn_debug}" /> Debug</button>
-          <button class="clean" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'clean' })" title="Clean"><img src="${btn_clean}" /> Clean</button>
+          <button type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'build' })" title="Build"><img src="${ img_path('btn-build.svg') }" /> Build</button>
+          <button class="upload" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'upload' })" title="Upload"><img src="${ img_path('btn-upload.svg') }" /> Upload</button>
+          <button class="debug" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'traceback' })" title="Upload (Debug)"><img src="${ img_path('btn-debug.svg') }" /> Debug</button>
+          <button class="clean" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'clean' })" title="Clean"><img src="${ img_path('btn-clean.svg') }" /> Clean</button>
           <span class="progress"></span>
         </td>
       </tr>
@@ -949,11 +932,11 @@ function homeContent() {
 </div>
 <div id="abm-sidebar">
   <div id="abm-social">
-    <a href="https://marlinfw.org/"><img src="${social_mf}" /><span>Marlin Home</span></a>
-    <a href="https://github.com/MarlinFirmware/Marlin"><img src="${social_gh}" /><span>Marlin on GitHub</span></a>
-    <a href="https://twitter.com/MarlinFirmware"><img src="${social_tw}" /><span>@MarlinFirmware</span></a>
-    <a href="https://www.facebook.com/groups/1049718498464482/"><img src="${social_fb}" /><span>Marlin on Facebook</span></a>
-    <a href="https://www.youtube.com/channel/UCOnKgXMJ5MOuuPFYVgbFsKA"><img src="${social_yt}" /><span>Marlin on YouTube</span></a>
+    <a href="https://marlinfw.org/"><img src="${ img_path('abm-tools-32.png') }" /><span>Marlin Home</span></a>
+    <a href="https://github.com/MarlinFirmware/Marlin"><img src="${ img_path('social-gh.svg') }" /><span>Marlin on GitHub</span></a>
+    <a href="https://twitter.com/MarlinFirmware"><img src="${ img_path('social-tw.svg') }" /><span>@MarlinFirmware</span></a>
+    <a href="https://www.facebook.com/groups/1049718498464482/"><img src="${ img_path('social-fb.svg') }" /><span>Marlin on Facebook</span></a>
+    <a href="https://www.youtube.com/channel/UCOnKgXMJ5MOuuPFYVgbFsKA"><img src="${ img_path('social-yt.svg') }" /><span>Marlin on YouTube</span></a>
   </div>
 </div>
 <div id="abm-footer"><span>&copy; 2020 MarlinFirmware</span></div>
