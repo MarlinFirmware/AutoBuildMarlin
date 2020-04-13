@@ -16,47 +16,79 @@ $(function(){
 var ABM = (function(){
 
   // private variables and functions
-  var self;
+  var self, poffset = 0, ptimer = null;
 
   // Return an anonymous object for assignment to ABM
   return {
 
     // public data members
-
-    poffset: 0,
-    ptimer: null,
+    // ...
 
     // public methods
 
-    init: function() {
+    abm_pane(name) {
+      var $t;
+      if (name)
+        $t = $(`.subtabs button[ref=${name}]`);
+      else {
+        $t = $('.subtabs button').first();
+        name = $t.attr('ref');
+      }
+      $('.subtabs button').removeClass();
+      $t.addClass('active');
+      $('.abm-tool .subpanes>div').hide();
+      $t.parents('.abm-tool').find(`.subpanes>.${name}`).show();
+    },
+
+    init() {
       self = this; // a 'this' for use when 'this' is something else
 
+      //
+      // Hide the Error message when clicked
+      //
       const $err = $('#error');
       $('body').click(() => { $('#error').hide('fast'); });
 
       //
-      // Calls to postMessage in extension.js arrive here:
+      // Configurator Buttons show / refresh associated subpanes
       //
+      $('.subtabs button').click((e) => {
+        self.abm_pane($(e.target).attr('ref'));
+      });
 
+      //
+      // Calls to postMessage arrive here:
+      //
       window.addEventListener('message', event => {
         const m = event.data; // JSON sent by the extension
         switch (m.command) {
-          case 'tool':
-            abm_show(m.tool);
-            break;
+
+          case 'tool': abm_tool(m.tool); break;
+
+          case 'pane': abm_pane(m.pane); break;
+
           case 'define':
             // Update a single define element in the UI
             break;
+
+          // postValue
           case 'set':
             const $item = $('#info-' + m.tag);
             if (m.val) $item.text(m.val); else $item.hide();
             if (0) console.log(`Setting ${m.tag} to ${m.val}`);
             break;
+
           case 'text':
             $('#debug-text').show().children('pre').text(m.text);
             break;
+
+          // postError
           case 'error':
-            $err.html(m.error).show('fast');
+            $err.removeClass('warning').html(m.error).show('fast');
+            break;
+          // postWarning
+          case 'warning':
+            $err.addClass('warning').html(m.warning).show('fast');
             break;
           case 'envs':
             // We finally got environments!
@@ -97,11 +129,11 @@ var ABM = (function(){
               $envs_table.append($erows);
             });
 
-            if (self.ptimer) { clearInterval(self.ptimer); self.ptimer = null; }
+            if (ptimer) { clearInterval(ptimer); ptimer = null; }
             if (has_progress) {
-              self.ptimer = setInterval(() => {
-                self.poffset = (self.poffset + 30) % 32;
-                $('body').get(0).style.setProperty('--abm-progress-offset', self.poffset + 'px');
+              ptimer = setInterval(() => {
+                poffset = (poffset + 30) % 32;
+                $('body').get(0).style.setProperty('--abm-progress-offset', poffset + 'px');
               }, 50);
             }
 
@@ -110,7 +142,8 @@ var ABM = (function(){
         }
       });
 
-      msg({ command:'tool', tool:'build' }); // To un-hide the build view
+      // Activate the "Build" tool
+      msg({ command:'tool', tool:'build' });
 
     },
 

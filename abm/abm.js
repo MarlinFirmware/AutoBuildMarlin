@@ -69,15 +69,9 @@ const path = require('path'),
         fs = require('fs'),
         os = require('os');
 
-var info = {},              // For general data without declaring
-
-    boards_text = '',       // Contents of boards.h for parsing
-    pins_text = '',         // Contents of pins.h for parsing
-    config_text = '',       // Contents of Configuration.h for parsing
-    config_adv_text = '';   // Contents of Configuration_adv.h for parsing
-
-var context, vscode, vc, ws, vw, abm_path, project_path, pv;
-
+var context, vscode, vc, ws, vw, abm_path, project_path, pv,
+    temp = {}; // For general data without declaring
+    
 function init(c, v) {
   context = c;
   vscode = v;
@@ -88,21 +82,21 @@ function init(c, v) {
   project_path = ws.workspaceFolders[0].uri.fsPath;
 }
 
-var define_list = [[],[]],  // arrays with all define names
-    define_occur = [{},{}], // lines where defines occur in each file
-    define_section = {};    // the section of each define
+var define_list,    // arrays with all define names
+    define_occur,   // lines where defines occur in each file
+    define_section; // the section of each define
 
 function updateDefineList(cindex, txt) {
   var section = 'hidden',
       leave_out_defines = ['CONFIGURATION_H', 'CONFIGURATION_H_VERSION', 'CONFIGURATION_ADV_H', 'CONFIGURATION_ADV_H_VERSION'],
       define_more = {},
       occ_list = {},
-      findDef = new RegExp('^.*(@section|#define)\\s+(\\w+).*$', 'gm');
+      findDef = new RegExp('^\\s*(//\\s*)?(@section|#define)\\s+(\\w+).*$', 'gm');
   // scan for sections and defines
   var r;
   while((r = findDef.exec(txt)) !== null) {
-    var name = r[2];
-    if (r[1] == '@section') {
+    var name = r[3];
+    if (r[2] == '@section') {
       section = name;
     }
     else if (!leave_out_defines.includes(name)) {                 // skip some defines
@@ -123,6 +117,15 @@ function updateDefineList(cindex, txt) {
   define_list[cindex] = Object.keys(define_more);
   define_occur[cindex] = occ_list;
   define_section = Object.assign({}, define_section, define_more);
+}
+
+function refreshDefineList() {
+  define_list = [[],[]];
+  define_occur = [{},{}];
+  define_section = {};
+  updateDefineList(0, mfiles.config.text);
+  updateDefineList(1, mfiles.config_adv.text);
+  //console.log("Define list:", define_list);
 }
 
 // TODO: Use previously parsed config data for speed
@@ -569,7 +572,7 @@ function allFilesAreLoaded() {
     refreshBuildStatus();
   }
 
-  updateDefineList(0, mfiles.config.text);
+  refreshDefineList();
 
   watchConfigurations();
   runSelectedAction();
@@ -592,13 +595,13 @@ function processMarlinFile(fileid) {
 
   if (bugme) console.log(`Processing... ${mf_path}`);
 
-  if (info.filesToLoad) {
+  if (temp.filesToLoad) {
     fs.readFile(mf_path, (err, data) => {
       if (err)
         readFileError(err, `Couldn't read ${mfiles[fileid].name}`);
       else {
         mfiles[fileid].text = data.toString();
-        if (--info.filesToLoad == 0) allFilesAreLoaded();
+        if (--temp.filesToLoad == 0) allFilesAreLoaded();
       }
     });
   }
@@ -643,7 +646,7 @@ function refreshNewData() {
   }
 
   if (is_marlin) {
-    info.filesToLoad = files.length;
+    temp.filesToLoad = files.length;
     files.forEach(processMarlinFile);
   }
   else
@@ -881,15 +884,15 @@ function homeContent() {
 
   const vscode = acquireVsCodeApi();
 
-  function abm_show(t) {
-    $('.abm-panel').hide();
+  function abm_tool(t) {
+    $('.abm-tool').hide();
     $('#abm-'+t).show();
     $('#abm-toolbar button').removeClass();
     $('#btn-'+t).addClass('active');
   }
 
   function msg(m) {
-    if (m.command == 'tool') abm_show(m.tool);
+    if (m.command == 'tool') abm_tool(m.tool);
     vscode.postMessage(m);
   }
 
@@ -906,7 +909,7 @@ function homeContent() {
   <button id="btn-build" type="button" onclick="msg({ command:'tool', tool:'build' })"><img src="${tool_build}" /><span>Build</span></button>
   <button id="btn-config" type="button" onclick="msg({ command:'tool', tool:'config' })"><img src="${tool_config}" /><span>Configure</span></button>
 </div>
-<div id="abm-build" class="abm-panel">
+<div id="abm-build" class="abm-tool">
   <div id="abm-top">
     <button type="button" onclick="msg({ command:'refresh' })"><img src="${btn_refresh}" /> Refresh</button>
   </div>
@@ -940,9 +943,9 @@ function homeContent() {
     <div id="debug-text"><pre class="hilightable config"></pre></div>
   </div>
 </div>
-<div id="abm-config" class="abm-panel">
+<div id="abm-config" class="abm-tool">
   <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Configuration Tool</span></h1>
-  <div>Configuration Tool Under Construction</div>
+  <div class="panel-error">Configuration Tool Under Construction</div>
 </div>
 <div id="abm-sidebar">
   <div id="abm-social">
