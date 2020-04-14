@@ -7,6 +7,8 @@
  * 
  */
 
+const bugme = false; // Lots of debug output
+
 // Extend builtins
 String.prototype.lpad = function(len, chr) {
   if (chr === undefined) { chr = '&nbsp;'; }
@@ -63,15 +65,16 @@ const nicer = {
   clean: 'clean',
 };
 
-const bugme = false; // Lots of debug output
-
 const path = require('path'),
         fs = require('fs'),
         os = require('os');
 
 var context, vscode, vc, ws, vw, abm_path, project_path, pv,
     temp = {}; // For general data without declaring
-    
+
+// Update based on "when" in package.json
+function set_context(name, value) { vc.executeCommand('setContext', name, value); }
+
 function init(c, v) {
   context = c;
   vscode = v;
@@ -80,7 +83,7 @@ function init(c, v) {
   vw = v.window;
   abm_path = path.join(c.extensionPath, 'abm');
   project_path = ws.workspaceFolders[0].uri.fsPath;
-  vc.executeCommand('setContext', 'abm.inited', true);
+  set_context('abm.inited', true);
 }
 
 var define_list,    // arrays with all define names
@@ -210,10 +213,15 @@ function unwatchConfigurations() {
 }
 
 function watchConfigurations() {
+  unwatchConfigurations();
   watchers = [
     fs.watch(marlinFilePath('config'), {}, onConfigFileChanged),
     fs.watch(marlinFilePath('config_adv'), {}, onConfigFileChanged)
   ];
+}
+
+function watchAndValidate() {
+  watchers = [ fs.watch(path.join(project_path, 'Marlin'), {}, validate) ];
 }
 
 //
@@ -478,7 +486,7 @@ function extractVersionInfo() {
 //
 var board_info;
 function extractBoardInfo(mb) {
-  var r, out = {}, sb = mb.replace('BOARD_', '');
+  var r, out = { has_debug: false }, sb = mb.replace('BOARD_', '');
 
   // Get the include line matching the board
   const lfind = new RegExp(`if\\s*MB\\(${sb}\\).*\n\\s*(#include.+)\n`, 'g');
@@ -494,9 +502,12 @@ function extractBoardInfo(mb) {
 
     out.envs = [];
     var efind = new RegExp('env:(\\w+)', 'g');
-    while ((r = efind.exec(inc_line)))
-      out.envs.push({ name: r[1], debug:r[1].match(/^.+_debug$/) });
-  }
+    while ((r = efind.exec(inc_line))) {
+      let debugenv = r[1].match(/^.+_debug$/);
+      out.envs.push({ name: r[1], debug: debugenv });
+      if (debugenv) out.has_debug = true;
+    }
+ }
   else {
     const bfind = new RegExp(`#error\\s+"(${mb} has been renamed \\w+)`, 'g');
     out.error = (r = bfind.exec(mfiles.pins.text)) ? r[1] : `Unknown MOTHERBOARD ${mb}`;
@@ -519,7 +530,7 @@ function extractBoardInfo(mb) {
 //
 function allFilesAreLoaded() {
 
-  vc.executeCommand('setContext', 'abm.err.parse', false);
+  set_context('abm.err.parse', false);
 
   // Send text for display in the view
   //pv.postMessage({ command:'text', text:mfiles.boards.text });
@@ -534,8 +545,9 @@ function allFilesAreLoaded() {
     if (bugme) console.log("Version Info :", version_info);
     const board_info = extractBoardInfo(mb);
     if (bugme) console.log(`Board Info for ${mb} :`, board_info);
+    set_context('abm.has_debug', !!board_info.has_debug);
     if (board_info.error) {
-      vc.executeCommand('setContext', 'abm.err.parse', true);
+      set_context('abm.err.parse', true);
       postError(board_info.error);
       return; // abort the whole deal
     }
@@ -597,7 +609,7 @@ function processMarlinFile(fileid) {
 
   const mf_path = marlinFilePath(fileid);
 
-  if (bugme) console.log(`Processing... ${mf_path}`);
+  if (bugme) console.log(`Reading... ${mf_path}`);
 
   if (temp.filesToLoad) {
     fs.readFile(mf_path, (err, data) => {
@@ -633,6 +645,16 @@ function marlinFileCheck(fileid) {
   return file_issue;
 }
 
+function validate() {
+  var is_marlin = true;
+  for (const k in mfiles) {
+    const err = marlinFileCheck(k);
+    if (err) { is_marlin = false; break; }
+  }
+  set_context('abm.err.locate', !is_marlin);
+  return is_marlin;
+}
+
 //
 // Reload files and refresh the UI
 //
@@ -649,7 +671,7 @@ function refreshNewData() {
     files.push(k);
   }
 
-  vc.executeCommand('setContext', 'abm.err.locate', !is_marlin);
+  set_context('abm.err.locate', !is_marlin);
 
   if (is_marlin) {
     temp.filesToLoad = files.length;
@@ -702,6 +724,7 @@ function lastBuild(env) {
 function refreshBuildStatus(env) {
   if (bugme) console.log(`Refreshing Build: ${currentBuildEnv()}`);
   if (bugme) console.log(board_info)
+  board_info.has_clean = false;
   board_info.envs.forEach((v) => {
     if (!env || v.name == env) {
       let b = lastBuild(v.name);
@@ -709,11 +732,13 @@ function refreshBuildStatus(env) {
       v.completed = b.completed;
       v.stamp     = b.stamp;
       v.busy      = b.busy;
+      if (b.exists) board_info.has_clean = true;
     }
   });
   let m = { command:'envs', val:board_info.envs };
   if (bugme) console.log("Posting:", m);
   pv.postMessage(m);
+  set_context('abm.no_clean', !board_info.has_clean);
 }
 
 //
@@ -991,7 +1016,7 @@ function handleWebViewMessage(m) {
 // ABM command activation event handler
 //
 var panel, abm_action;
-function activate(action) {
+function run_command(action) {
   abm_action = action;
   if (panel) {
     panel.reveal(vscode.ViewColumn.One);
@@ -1037,9 +1062,11 @@ function activate(action) {
     panel.onDidDispose(
       () => {
         panel = null;
-        unwatchConfigurations();
-        unwatchBuildFolder();
-        destroyIPCFile();
+        unwatchConfigurations();             // Don't watch the configs anymore
+        watchAndValidate();                  // Keep contexts updated for any changes
+        unwatchBuildFolder();                // Closing the view killed the build
+        destroyIPCFile();                    // No IPC needed unless building
+        set_context('abm.visible', false);   // Update based on "when" in package.json
       },
       null, context.subscriptions
     );
@@ -1050,7 +1077,7 @@ function activate(action) {
     // Create an IPC file for messages from Terminal
     createIPCFile();
   }
-  vc.executeCommand('setContext', 'abm.active', true);
+  set_context('abm.visible', true);
 }
 
 //
@@ -1084,4 +1111,4 @@ function runSelectedAction() {
   }
 }
 
-module.exports = { init, activate };
+module.exports = { init, set_context, run_command, validate, watchAndValidate };

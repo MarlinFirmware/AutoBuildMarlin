@@ -87,7 +87,7 @@
     "viewsWelcome": [
       {
         "view": "autoBuildView",
-        "contents": "%view.workbench.abm.unknown%",
+        "contents": "%view.workbench.abm.loading%",
         "when": "!abm.inited"
       },
       {
@@ -98,7 +98,7 @@
       {
         "view": "autoBuildView",
         "contents": "%view.workbench.abm.err.empty%",
-        "when": "abm.err.locate && workbenchState == empty"
+        "when": "abm.inited && workbenchState == empty"
       },
       {
         "view": "autoBuildView",
@@ -163,22 +163,22 @@
         {
           "command": "mfbuild",
           "group": "navigation@1",
-          "when": "view == autoBuildView || view == marlinView"
+          "when": "view == autoBuildView"
         },
         {
           "command": "mfupload",
           "group": "navigation@2",
-          "when": "view == autoBuildView || view == marlinView"
+          "when": "view == autoBuildView"
         },
         {
           "command": "mftraceback",
           "group": "navigation@3",
-          "when": "view == autoBuildView || view == marlinView"
+          "when": "abm.has_debug && view == autoBuildView"
         },
         {
           "command": "mfclean",
           "group": "navigation@4",
-          "when": "view == autoBuildView || view == marlinView"
+          "when": "!abm.no_clean && view == autoBuildView"
         },
         {
           "command": "mfconfig",
