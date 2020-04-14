@@ -453,9 +453,9 @@ function getExtruderSettings() {
 //
 var pindef_info;
 function getPinDefinitionInfo(mb) {
-  if (!mfiles.pindef || board_info.mb != mb) {
+  if (!mfiles.pindef || mfiles.pindef.mb != mb) {
     const pbits = `src/pins/${board_info.pins_file}`.split('/');
-    mfiles.pindef = { name: pbits.pop(), path: pbits };
+    mfiles.pindef = { name: pbits.pop(), path: pbits, mb: mb };
     processMarlinFile('pindef');
   }
 
