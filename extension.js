@@ -16,12 +16,12 @@ exports.activate = (context) => {
 
   const cs = context.subscriptions;
 
-  cs.push(vc.registerCommand('mfbuild',     () => { abm.run_command('build');     }));
-  cs.push(vc.registerCommand('mfupload',    () => { abm.run_command('upload');    }));
-  cs.push(vc.registerCommand('mftraceback', () => { abm.run_command('traceback'); }));
-  cs.push(vc.registerCommand('mfclean',     () => { abm.run_command('clean');     }));
-  cs.push(vc.registerCommand('mfconfig',    () => { abm.run_command('config');    }));
-  cs.push(vc.registerCommand('mfshow',      () => { abm.run_command();            }));
+  cs.push(vc.registerCommand('abm.build',     () => { abm.run_command('build');     }));
+  cs.push(vc.registerCommand('abm.upload',    () => { abm.run_command('upload');    }));
+  cs.push(vc.registerCommand('abm.traceback', () => { abm.run_command('traceback'); }));
+  cs.push(vc.registerCommand('abm.clean',     () => { abm.run_command('clean');     }));
+  cs.push(vc.registerCommand('abm.config',    () => { abm.run_command('config');    }));
+  cs.push(vc.registerCommand('abm.show',      () => { abm.run_command();            }));
 
   abm.init(context, vscode);
   abm.validate();

@@ -1,6 +1,8 @@
 {
+  "displayName": "Auto Build Marlin",
+  "description": "An easy way to build Marlin for your MOTHERBOARD.",
   "view.workbench.abm.loading": "Initializing…",
-  "view.workbench.abm.intro": "Use the buttons above to open the Auto Build Marlin panel and start a process.",
+  "view.workbench.abm.intro": "Marlin Firmware is open in the workspace. Use the buttons above to [show the ABM panel](command:abm.show) and start a process.",
   "view.workbench.abm.err.empty": "Nothing is open in the workspace. To use Auto Build Marlin open a [Marlin project folder](command:vscode.openFolder) in the workspace.",
   "view.workbench.abm.err.folder": "The currently open folder doesn't contain a (valid) Marlin project. To use Auto Build Marlin open a [Marlin project folder](command:vscode.openFolder) in the workspace.",
   "view.workbench.abm.err.workspace": "The currently open workspace doesn't contain a (valid) Marlin project. To use Auto Build Marlin open a [Marlin project folder](command:vscode.openFolder) in the workspace.",

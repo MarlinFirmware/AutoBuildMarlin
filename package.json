@@ -2,7 +2,7 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "publisher": "marlinfirmware",
   "icon": "icon.png",
   "badges": [
@@ -118,7 +118,7 @@
     ],
     "commands": [
       {
-        "command": "mfbuild",
+        "command": "abm.build",
         "title": "Marlin: Build",
         "icon": {
           "light": "resources/B48x48_light.svg",
@@ -126,7 +126,7 @@
         }
       },
       {
-        "command": "mfupload",
+        "command": "abm.upload",
         "title": "Marlin: Upload",
         "icon": {
           "light": "resources/U48x48_light.svg",
@@ -134,7 +134,7 @@
         }
       },
       {
-        "command": "mftraceback",
+        "command": "abm.traceback",
         "title": "Marlin: Upload (traceback)",
         "icon": {
           "light": "resources/T48x48_light.svg",
@@ -142,7 +142,7 @@
         }
       },
       {
-        "command": "mfclean",
+        "command": "abm.clean",
         "title": "Marlin: Clean",
         "icon": {
           "light": "resources/C48x48_light.svg",
@@ -150,7 +150,7 @@
         }
       },
       {
-        "command": "mfconfig",
+        "command": "abm.config",
         "title": "Marlin: Configure",
         "icon": {
           "light": "resources/K48x48_light.svg",
@@ -161,27 +161,27 @@
     "menus": {
       "view/title": [
         {
-          "command": "mfbuild",
+          "command": "abm.build",
           "group": "navigation@1",
           "when": "view == autoBuildView"
         },
         {
-          "command": "mfupload",
+          "command": "abm.upload",
           "group": "navigation@2",
           "when": "view == autoBuildView"
         },
         {
-          "command": "mftraceback",
+          "command": "abm.traceback",
           "group": "navigation@3",
           "when": "abm.has_debug && view == autoBuildView"
         },
         {
-          "command": "mfclean",
+          "command": "abm.clean",
           "group": "navigation@4",
           "when": "!abm.no_clean && view == autoBuildView"
         },
         {
-          "command": "mfconfig",
+          "command": "abm.config",
           "group": "navigation@5",
           "when": "view == autoBuildView || view == marlinView"
         }

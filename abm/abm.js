@@ -416,7 +416,7 @@ function getExtruderSettings() {
   const efancy = [ 'MIXING_EXTRUDER', 'SWITCHING_EXTRUDER', 'SWITCHING_NOZZLE', 'MK2_MULTIPLEXER', 'PRUSA_MMU2' ];
   efancy.every((v) => {
     if (!configEnabled(v)) return true;
-    out.fancy = v.toLabel(); return false;
+    out.fancy = v == 'PRUSA_MMU2' ? 'Prusa MMU2' : v.toLabel();
   });
 
   if (out.fancy) {
@@ -471,11 +471,11 @@ function getPinDefinitionInfo(mb) {
 //
 var version_info;
 function extractVersionInfo() {
-  var out = {
+  version_info = {
     vers: _confValue(mfiles.version.text, 'SHORT_BUILD_VERSION').dequote(),
-    date: _confValue(mfiles.version.text, 'STRING_DISTRIBUTION_DATE').dequote()
+    date: _confValue(mfiles.version.text, 'STRING_DISTRIBUTION_DATE').dequote(),
+    auth: _confValue(mfiles.config.text, 'STRING_CONFIG_H_AUTHOR').dequote()
   };
-  version_info = out;
   return version_info;
 }
 
@@ -568,7 +568,8 @@ function allFilesAreLoaded() {
 
     const d = new Date(version_info.date);
 
-    postValue('vers', `${version_info.vers}`);
+    postValue('auth', version_info.auth);
+    postValue('vers', version_info.vers);
     postValue('date', d.toLocaleDateString([], { weekday:'long', year:'numeric', month:'short', day:'numeric' }));
 
     postValue('extruders', extruder_info.extruders);
@@ -645,11 +646,18 @@ function marlinFileCheck(fileid) {
   return file_issue;
 }
 
-function validate() {
+//
+// Check for valid Marlin files
+//
+function validate(do_report) {
   var is_marlin = true;
   for (const k in mfiles) {
     const err = marlinFileCheck(k);
-    if (err) { is_marlin = false; break; }
+    if (err) {
+      if (do_report) postError(`Error: ${mfiles[k].name} ${err}.`);
+      is_marlin = false;
+      break;
+    }
   }
   set_context('abm.err.locate', !is_marlin);
   return is_marlin;
@@ -659,21 +667,8 @@ function validate() {
 // Reload files and refresh the UI
 //
 function refreshNewData() {
-  var is_marlin = true, files = [];
-
-  for (const k in mfiles) {
-    const err = marlinFileCheck(k);
-    if (err) {
-      postError(`Error: ${mfiles[k].name} ${err}.`);
-      is_marlin = false;
-      break;
-    }
-    files.push(k);
-  }
-
-  set_context('abm.err.locate', !is_marlin);
-
-  if (is_marlin) {
+  if (validate(true)) {
+    const files = Object.keys(mfiles);
     temp.filesToLoad = files.length;
     files.forEach(processMarlinFile);
   }
@@ -789,7 +784,7 @@ function terminal_command(ttl, cmdline) {
   if (!terminal || !reuse_terminal) {
     var title;
     if (reuse_terminal)
-      title = 'Marlin Auto Build';
+      title = 'Auto Build Marlin';
     else {
       title = `Marlin ${ttl.toTitleCase()} (${NEXT_TERM_ID})`;
       NEXT_TERM_ID++;
@@ -930,15 +925,14 @@ function homeContent() {
   <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Auto Build</span></h1>
   <div id="abm-main">
     <table id="info">
-      <span>
       <tr><th>Firmware:</th>      <td><div>Marlin <span id="info-vers"></span></div><div id="info-date" class="abm-caption"></div></td></tr>
+      <tr><th>Config By:</th>     <td><span id="info-auth"></span></td></tr>
       <tr><th>Machine Name:</th>  <td><div id="info-machine"></div><div id="info-machine-desc" class="abm-caption"></div></td></tr>
       <tr><th>Extruders:</th>     <td><div id="info-extruders"></div><div id="info-extruder-desc" class="abm-caption"></div></td></tr>
       <tr><th>Board:</th>         <td><div id="info-board"></div><div id="info-board-desc" class="abm-caption"></div></td></tr>
       <tr><th>Pins:</th>          <td><div id="info-pins"></div><div id="info-pins-desc" class="abm-caption"></div></td></tr>
       <tr><th>Architectures:</th> <td><div id="info-archs"></div></td></tr>
       <tr><th>Environments:</th>  <td id="info-envs"></td></tr>
-      </span>
     </table>
     <div id="env-rows-src"><table>
       <tr>

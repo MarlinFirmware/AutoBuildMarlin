@@ -71,7 +71,7 @@ var ABM = (function(){
             // Update a single define element in the UI
             break;
 
-          // postValue
+          // postValue()
           case 'set':
             const $item = $('#info-' + m.tag);
             if (m.val) $item.text(m.val); else $item.hide();
