@@ -692,16 +692,20 @@ function lastBuild(env) {
   if (out.exists) {
 
     // Get the built binary path, if any
-    out.completed = true;
-    let tp = envBuildPath(env, 'firmware.bin');
-    if (!fs.existsSync(tp)) {
-      tp = envBuildPath(env, 'firmware.hex');
-      if (!fs.existsSync(tp)) {
-        out.completed = false;
-        tp = bp;
-      }
+    const bins = [
+      'firmware.bin', 'firmware.hex',
+      'firmware_for_sd_upload.bin',
+      'mksLite.bin', 'mksLite3.bin',
+      'project.bin',
+      'Robin.bin', 'Robin_e3.bin', 'Robin_mini.bin', 'Robin_nano.bin', 'Robin_pro.bin'
+    ];
+    var tp = bp;
+    for (const fn of bins) {
+      const fp = envBuildPath(env, fn);
+      if (fs.existsSync(fp)) { tp = fp; out.completed = true; break; }
     }
 
+    // Get the date of the build (or folder)
     let stat = fs.lstatSync(tp),
            d = new Date(stat.mtime),
         locd = d.toLocaleDateString([], { weekday:'long', year:'numeric', month:'short', day:'numeric' }),
