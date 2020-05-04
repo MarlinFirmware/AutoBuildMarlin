@@ -910,7 +910,6 @@ function homeContent() {
 // ]]>
 </script>
 <script src="${ js_path('jquery-3.3.1.min.js') }"></script>
-<script src="${ js_path('jquery.jsonbrowser.js') }"></script>
 <script src="${ js_path('webview.js') }"></script>
 <link rel="stylesheet" href="${ css_path('jquery.jsonbrowser.css') }" type="text/css" media="all" />
 <link rel="stylesheet" href="${ css_path('webview.css') }" type="text/css" media="all" />
