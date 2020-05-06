@@ -361,21 +361,22 @@ function getMachineSettings() {
 //
 // Extract temperature sensor options from Configuration.h
 //
-var temp_sensor_arr;
+var temp_sensor_desc;
 function extractTempSensors() {
-  var out = [];
 
   //pv.postMessage({ command:'text', text:mfiles.config.text });
 
   // Get all the thermistors and save them into an object
-  const findAll = new RegExp('(\\/\\*+[\\s\\S]+\\*\\/)\\s*#define\\s+TEMP_SENSOR_', 'g'),
+  const findAll = new RegExp('^\\s*\\*\\s*Temperature sensors .+$([\\s\\S]+\\*\\/)', 'gm'),
+        findEach = new RegExp('^\\s*\\*\\s*(-?\\d+)\\s*:\\s*(.+)$', 'gm'),
         r = findAll.exec(mfiles.config.text);
-  const findEach = new RegExp('^\\s*\\*\\s*(-?\\d+)\\s*:\\s*(.+)$', 'gm');
+
+  var out = {};
   let s;
   while (s = findEach.exec(r[1])) out[s[1]] = { desc: s[2] };
 
-  temp_sensor_arr = out;
-  return temp_sensor_arr;
+  temp_sensor_desc = out;
+  return temp_sensor_desc;
 }
 
 //
@@ -539,7 +540,8 @@ function allFilesAreLoaded() {
 
   if (mb !== undefined) {
 
-    const sensors = extractTempSensors();
+    //const sensors = extractTempSensors();
+    //if (bugme) console.log("Sensors :", sensors);
 
     const version_info = extractVersionInfo();
     if (bugme) console.log("Version Info :", version_info);
