@@ -782,14 +782,21 @@ function destroyIPCFile() {
 // Send a command to the Terminal
 //
 var terminal, NEXT_TERM_ID = 1;
-function terminal_command(ttl, cmdline) {
-  // Get config options with the 'auto-build' prefix
-  const abm_config = ws.getConfiguration('auto-build', true),
-        reuse_terminal = abm_config.get('reuseTerminal');
 
-  if (!terminal || !reuse_terminal) {
+function should_reuse_terminal() {
+  // Get config options with the 'auto-build' prefix
+  const abm_config = ws.getConfiguration('auto-build', true);
+  return abm_config.get('reuseTerminal');
+}
+
+//
+// Make a terminal
+//
+function terminal_for_command(ttl, noping) {
+  const reuse_terminal = should_reuse_terminal();
+  if (!terminal || !reuse_terminal || noping) {
     var title;
-    if (reuse_terminal)
+    if (reuse_terminal || noping)
       title = 'Auto Build Marlin';
     else {
       title = `Marlin ${ttl.toTitleCase()} (${NEXT_TERM_ID})`;
@@ -808,13 +815,43 @@ function terminal_command(ttl, cmdline) {
     if (bugme) console.log("Terminal PID is " + terminal.processId);
 
   terminal.show(true);
+}
 
+function command_with_ping(t, cmdline, ping) {
+  const pingline = `echo "done" >${ipc_file}`;
   if (process.platform == 'win32') {
-    terminal.sendText(cmdline);
-    terminal.sendText(`echo "done" >${ipc_file}`);
+    t.sendText(cmdline);
+    if (ping) t.sendText(pingline);
   }
   else
-    terminal.sendText(cmdline + ` ; echo "done" >${ipc_file}`);
+    t.sendText(cmdline + (ping ? ` ; ${pingline}` : ''));
+}
+
+function terminal_command(ttl, cmdline, noping) {
+  terminal_for_command(ttl, noping);
+  command_with_ping(terminal, cmdline, !noping);
+}
+
+function kill_terminal() {
+  if (terminal) {
+    terminal.close();
+    terminal = null;
+  }
+}
+
+function reveal_build(env) {
+  var aterm = vw.createTerminal({ name:'reveal', env:process.env });
+  const relpath = path.join('.', '.pio', 'build', env);
+  if (process.platform != 'win32') {
+    command_with_ping(aterm, 'cd ' + relpath, false);
+    command_with_ping(aterm, 'open .', false);
+    command_with_ping(aterm, 'exit', false);
+  }
+  else
+    command_with_ping(aterm
+      , '`which xdg-open open other-open | grep -v found | head -n1` ' + relpath + ' ; exit 0'
+      , false
+    );
 }
 
 //
@@ -1007,6 +1044,10 @@ function handleWebViewMessage(m) {
     case 'pio':              // Build, Upload, Clean...
       //vw.showInformationMessage('Starting ' + nicer[m.cmd].toTitleCase() + ' for ' + m.env);
       pio_command(m.cmd, m.env);
+      return;
+
+    case 'reveal':           // Build, Upload, Clean...
+      reveal_build(m.env);
       return;
   }
 }

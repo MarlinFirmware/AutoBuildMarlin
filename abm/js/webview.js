@@ -117,7 +117,10 @@ var ABM = (function(){
               if (v.exists) {
                 $erows.addClass('exists');
                 if (!v.busy) {
-                  caption = 'Last build ' + v.stamp;
+                  caption = 'Last build';
+                  if (v.completed)
+                    caption = `<a href="#" title="Reveal" onclick="msg({ command:'reveal', env:'${v.name}' })">${caption}</a>`;
+                  caption += ' ' + v.stamp;
                   if (!v.completed) {
                     $erows.addClass('incomplete');
                     caption += ' (incomplete)';
