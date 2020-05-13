@@ -69,7 +69,7 @@ const path = require('path'),
         fs = require('fs'),
         os = require('os');
 
-var context, vscode, vc, ws, vw, abm_path, project_path, pv,
+var context, vscode, vc, ws, vw, abm_path, pane_path, project_path, pv,
     temp = {}; // For general data without declaring
 
 // Update based on "when" in package.json
@@ -82,6 +82,7 @@ function init(c, v) {
   ws = v.workspace;
   vw = v.window;
   abm_path = path.join(c.extensionPath, 'abm');
+  pane_path = path.join(c.extensionPath, 'abm', 'pane');
   project_path = ws.workspaceFolders[0].uri.fsPath;
   set_context('abm.inited', true);
 }
@@ -545,12 +546,12 @@ function allFilesAreLoaded() {
 
     const version_info = extractVersionInfo();
     if (bugme) console.log("Version Info :", version_info);
-    const board_info = extractBoardInfo(mb);
-    if (bugme) console.log(`Board Info for ${mb} :`, board_info);
-    set_context('abm.has_debug', !!board_info.has_debug);
-    if (board_info.error) {
+    const binfo = extractBoardInfo(mb);
+    if (bugme) console.log(`Board Info for ${mb} :`, binfo);
+    set_context('abm.has_debug', !!binfo.has_debug);
+    if (binfo.error) {
       set_context('abm.err.parse', true);
-      postError(board_info.error);
+      postError(binfo.error);
       return; // abort the whole deal
     }
     const machine_info = getMachineSettings();
@@ -581,12 +582,12 @@ function allFilesAreLoaded() {
     postValue('machine-desc', machine_info.description);
 
     postValue('board', mb.replace('BOARD_', '').replace(/_/g, ' '));
-    postValue('board-desc', board_info.description);
+    postValue('board-desc', binfo.description);
 
-    postValue('pins', board_info.pins_file);
+    postValue('pins', binfo.pins_file);
     if (pindef_info.board_name) postValue('pins-desc', pindef_info.board_name);
 
-    postValue('archs', board_info.archs);
+    postValue('archs', binfo.archs);
 
     refreshBuildStatus();
   }
@@ -917,99 +918,32 @@ function img_path(filename) { return subpath('img', filename); }
 function js_path(filename) { return subpath('js', filename); }
 function css_path(filename) { return subpath('css', filename); }
 
+function load_home() {
+  return fs.readFileSync(path.join(abm_path, 'abm.html'), {encoding:'utf8'});
+}
+function load_pane(name, data) {
+  var html = fs.readFileSync(path.join(pane_path, name + '.html'), {encoding:'utf8'});
+  return eval(`\`${html}\``);
+}
+
 // Contents of the Web View
 function homeContent() {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Auto Build Marlin — Home</title>
-<link href="https://fonts.googleapis.com/css?family=Fira+Mono&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css" />
-<style>
-  * { --marlin-svg: url(${ css_path('marlin.svg') }); }
-</style>
-<script>
-//<![CDATA[
 
-  const vscode = acquireVsCodeApi();
+  var panes = {};
 
-  function abm_tool(t) {
-    $('.abm-tool').hide();
-    $('#abm-'+t).show();
-    $('#abm-toolbar button').removeClass();
-    $('#btn-'+t).addClass('active');
-  }
+  // Load Geometry pane
+  panes.geometry = load_pane('geom');
 
-  function msg(m) {
-    if (m.command == 'tool') abm_tool(m.tool);
-    vscode.postMessage(m);
-  }
+  // Load LCD pane
+  panes.lcd = load_pane('lcd');
 
-// ]]>
-</script>
-<script src="${ js_path('jquery-3.3.1.min.js') }"></script>
-<script src="${ js_path('webview.js') }"></script>
-<link rel="stylesheet" href="${ css_path('jquery.jsonbrowser.css') }" type="text/css" media="all" />
-<link rel="stylesheet" href="${ css_path('webview.css') }" type="text/css" media="all" />
-</head>
-<body>
-<div id="abm-layout">
-<div id="abm-toolbar">
-  <a id="abm-icon" onclick="msg({ command:'refresh' })"><img src="${ img_path('abm-tools-70.png') }" width="32" /></a>
-  <button id="btn-build" type="button" onclick="msg({ command:'tool', tool:'build' })"><img src="${ img_path('tool-build.svg') }" /><span>Build</span></button>
-  <button id="btn-config" type="button" onclick="msg({ command:'tool', tool:'config' })"><img src="${ img_path('tool-config.svg') }" /><span>Configure</span></button>
-</div>
-<div id="abm-build" class="abm-tool">
-  <div id="abm-top">
-    <button type="button" onclick="msg({ command:'refresh' })"><img src="${ img_path('btn-refresh.svg') }" /> Refresh</button>
-  </div>
-  <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Auto Build</span></h1>
-  <div id="abm-main">
-    <table id="info">
-      <tr><th>Firmware:</th>      <td><div>Marlin <span id="info-vers"></span></div><div id="info-date" class="abm-caption"></div></td></tr>
-      <tr><th>Config By:</th>     <td><span id="info-auth"></span></td></tr>
-      <tr><th>Machine Name:</th>  <td><div id="info-machine"></div><div id="info-machine-desc" class="abm-caption"></div></td></tr>
-      <tr><th>Extruders:</th>     <td><div id="info-extruders"></div><div id="info-extruder-desc" class="abm-caption"></div></td></tr>
-      <tr><th>Board:</th>         <td><div id="info-board"></div><div id="info-board-desc" class="abm-caption"></div></td></tr>
-      <tr><th>Pins:</th>          <td><div id="info-pins"></div><div id="info-pins-desc" class="abm-caption"></div></td></tr>
-      <tr><th>Architectures:</th> <td><div id="info-archs"></div></td></tr>
-      <tr><th>Environments:</th>  <td id="info-envs"></td></tr>
-    </table>
-    <div id="env-rows-src"><table>
-      <tr>
-        <td class="env-name"></td>
-        <td>
-          <button type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'build' })" title="Build"><img src="${ img_path('btn-build.svg') }" /> Build</button>
-          <button class="upload" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'upload' })" title="Upload"><img src="${ img_path('btn-upload.svg') }" /> Upload</button>
-          <button class="debug" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'traceback' })" title="Upload (Debug)"><img src="${ img_path('btn-debug.svg') }" /> Debug</button>
-          <button class="clean" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'clean' })" title="Clean"><img src="${ img_path('btn-clean.svg') }" /> Clean</button>
-          <span class="progress"></span>
-        </td>
-      </tr>
-      <tr><td colspan="2" class="abm-caption env-more"><span></span></td></tr>
-    </table></div>
-    <div id="error"></div>
-    <div id="debug-text"><pre class="hilightable config"></pre></div>
-  </div>
-</div>
-<div id="abm-config" class="abm-tool">
-  <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Configuration Tool</span></h1>
-  <div class="panel-error">Configuration Tool Under Construction</div>
-</div>
-<div id="abm-sidebar">
-  <div id="abm-social">
-    <a href="https://marlinfw.org/"><img src="${ img_path('abm-tools-32.png') }" /><span>Marlin Home</span></a>
-    <a href="https://github.com/MarlinFirmware/Marlin"><img src="${ img_path('social-gh.svg') }" /><span>Marlin on GitHub</span></a>
-    <a href="https://twitter.com/MarlinFirmware"><img src="${ img_path('social-tw.svg') }" /><span>@MarlinFirmware</span></a>
-    <a href="https://www.facebook.com/groups/1049718498464482/"><img src="${ img_path('social-fb.svg') }" /><span>Marlin on Facebook</span></a>
-    <a href="https://www.youtube.com/channel/UCOnKgXMJ5MOuuPFYVgbFsKA"><img src="${ img_path('social-yt.svg') }" /><span>Marlin on YouTube</span></a>
-  </div>
-</div>
-<div id="abm-footer"><span>&copy; 2020 MarlinFirmware</span></div>
-</div>
-</body>
-</html>`;
+  // Load SD pane
+  panes.sd = load_pane('sd');
+
+  // Load WebView content
+  const home_html = load_home();
+  merged_html = eval(`\`${home_html}\``);
+  return merged_html;
 }
 
 //

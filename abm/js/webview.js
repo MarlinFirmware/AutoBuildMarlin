@@ -63,9 +63,9 @@ var ABM = (function(){
         const m = event.data; // JSON sent by the extension
         switch (m.command) {
 
-          case 'tool': abm_tool(m.tool); break;
+          case 'tool': self.abm_tool(m.tool); break;
 
-          case 'pane': abm_pane(m.pane); break;
+          case 'pane': self.abm_pane(m.pane); break;
 
           case 'define':
             // Update a single define element in the UI
@@ -147,6 +147,9 @@ var ABM = (function(){
 
       // Activate the "Build" tool
       msg({ command:'tool', tool:'build' });
+
+      // Un-hide the first subpane
+      self.abm_pane($('.subpanes>div').first().attr('class'));
 
     },
 

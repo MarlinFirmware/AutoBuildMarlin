@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Build Marlin — Home</title>
+<link href="https://fonts.googleapis.com/css?family=Fira+Mono&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css" />
+<style>
+  * { --marlin-svg: url(${ css_path('marlin.svg') }); }
+</style>
+<script>
+//<![CDATA[
+
+  const vscode = acquireVsCodeApi();
+
+  function abm_tool(t) {
+    $('.abm-tool').hide();
+    $('#abm-'+t).show();
+    $('#abm-toolbar button').removeClass();
+    $('#btn-'+t).addClass('active');
+  }
+
+  function msg(m) {
+    if (m.command == 'tool') abm_tool(m.tool);
+    vscode.postMessage(m);
+  }
+
+// ]]>
+</script>
+<script src="${ js_path('jquery-3.3.1.min.js') }"></script>
+<script src="${ js_path('webview.js') }"></script>
+<link rel="stylesheet" href="${ css_path('webview.css') }" type="text/css" media="all" />
+</head>
+<body>
+<div id="abm-layout">
+<div id="abm-toolbar">
+  <a id="abm-icon" onclick="msg({ command:'refresh' })"><img src="${ img_path('abm-tools-70.png') }" width="32" /></a>
+  <button id="btn-build" type="button" onclick="msg({ command:'tool', tool:'build' })"><img src="${ img_path('tool-build.svg') }" /><span>Build</span></button>
+  <button id="btn-config" type="button" onclick="msg({ command:'tool', tool:'config' })"><img src="${ img_path('tool-config.svg') }" /><span>Configure</span></button>
+</div>
+<div id="abm-build" class="abm-tool">
+  <div id="abm-top">
+    <button type="button" onclick="msg({ command:'refresh' })"><img src="${ img_path('btn-refresh.svg') }" /> Refresh</button>
+  </div>
+  <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Auto Build</span></h1>
+  <div id="abm-main">
+    <table id="info">
+      <tr><th>Firmware:</th>      <td><div>Marlin <span id="info-vers"></span></div><div id="info-date" class="abm-caption"></div></td></tr>
+      <tr><th>Config By:</th>     <td><span id="info-auth"></span></td></tr>
+      <tr><th>Machine Name:</th>  <td><div id="info-machine"></div><div id="info-machine-desc" class="abm-caption"></div></td></tr>
+      <tr><th>Extruders:</th>     <td><div id="info-extruders"></div><div id="info-extruder-desc" class="abm-caption"></div></td></tr>
+      <tr><th>Board:</th>         <td><div id="info-board"></div><div id="info-board-desc" class="abm-caption"></div></td></tr>
+      <tr><th>Pins:</th>          <td><div id="info-pins"></div><div id="info-pins-desc" class="abm-caption"></div></td></tr>
+      <tr><th>Architectures:</th> <td><div id="info-archs"></div></td></tr>
+      <tr><th>Environments:</th>  <td id="info-envs"></td></tr>
+    </table>
+    <div id="env-rows-src"><table>
+      <tr>
+        <td class="env-name"></td>
+        <td>
+          <button type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'build' })" title="Build"><img src="${ img_path('btn-build.svg') }" /> Build</button>
+          <button class="upload" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'upload' })" title="Upload"><img src="${ img_path('btn-upload.svg') }" /> Upload</button>
+          <button class="debug" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'traceback' })" title="Upload (Debug)"><img src="${ img_path('btn-debug.svg') }" /> Debug</button>
+          <button class="clean" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'clean' })" title="Clean"><img src="${ img_path('btn-clean.svg') }" /> Clean</button>
+          <span class="progress"></span>
+        </td>
+      </tr>
+      <tr><td colspan="2" class="abm-caption env-more"><span></span></td></tr>
+    </table></div>
+    <div id="error"></div>
+    <div id="debug-text"><pre class="hilightable config"></pre></div>
+  </div>
+</div>
+<div id="abm-config" class="abm-tool">
+  <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Configuration Tool</span></h1>
+  <div class="subtabs">
+    <button ref="geometry">Geometry</button> <button ref="lcd">LCD</button> <button ref="sd">SD</button> <button ref="more">More...</button>
+  </div>
+  <div class="subpanes">
+    ${panes.geometry}
+    ${panes.lcd}
+    ${panes.sd}
+  </div>
+</div>
+<div id="abm-sidebar">
+  <div id="abm-social">
+    <a href="https://marlinfw.org/"><img src="${ img_path('abm-tools-32.png') }" /><span>Marlin Home</span></a>
+    <a href="https://github.com/MarlinFirmware/Marlin"><img src="${ img_path('social-gh.svg') }" /><span>Marlin on GitHub</span></a>
+    <a href="https://twitter.com/MarlinFirmware"><img src="${ img_path('social-tw.svg') }" /><span>@MarlinFirmware</span></a>
+    <a href="https://www.facebook.com/groups/1049718498464482/"><img src="${ img_path('social-fb.svg') }" /><span>Marlin on Facebook</span></a>
+    <a href="https://www.youtube.com/channel/UCOnKgXMJ5MOuuPFYVgbFsKA"><img src="${ img_path('social-yt.svg') }" /><span>Marlin on YouTube</span></a>
+  </div>
+</div>
+<div id="abm-footer"><span>&copy; 2020 MarlinFirmware</span></div>
+</div>
+</body>
+</html>
