@@ -26,20 +26,6 @@ var ABM = (function(){
 
     // public methods
 
-    abm_pane(name) {
-      var $t;
-      if (name)
-        $t = $(`.subtabs button[ref=${name}]`);
-      else {
-        $t = $('.subtabs button').first();
-        name = $t.attr('ref');
-      }
-      $('.subtabs button').removeClass();
-      $t.addClass('active');
-      $('.abm-tool .subpanes>div').hide();
-      $t.parents('.abm-tool').find(`.subpanes>.${name}`).show();
-    },
-
     init() {
       self = this; // a 'this' for use when 'this' is something else
 
@@ -53,7 +39,7 @@ var ABM = (function(){
       // Configurator Buttons show / refresh associated subpanes
       //
       $('.subtabs button').click((e) => {
-        self.abm_pane($(e.target).attr('ref'));
+        abm_pane($(e.target).attr('ref'));
       });
 
       //
@@ -63,9 +49,9 @@ var ABM = (function(){
         const m = event.data; // JSON sent by the extension
         switch (m.command) {
 
-          case 'tool': self.abm_tool(m.tool); break;
+          case 'tool': abm_tool(m.tool); break;
 
-          case 'pane': self.abm_pane(m.pane); break;
+          case 'pane': abm_pane(m.pane); break;
 
           case 'define':
             // Update a single define element in the UI
@@ -117,14 +103,13 @@ var ABM = (function(){
               if (v.exists) {
                 $erows.addClass('exists');
                 if (!v.busy) {
-                  caption = 'Last build';
-                  if (v.completed)
-                    caption = `<a href="#" title="Reveal" onclick="msg({ command:'reveal', env:'${v.name}' })">${caption}</a>`;
-                  caption += ' ' + v.stamp;
+                  caption = 'Last build ' + v.stamp;
                   if (!v.completed) {
                     $erows.addClass('incomplete');
                     caption += ' (incomplete)';
                   }
+                  else
+                    caption = `<a href="#" title="Reveal" onclick="msg({ command:'reveal', env:'${v.name}' })">📁</a> ${caption}`;
                 }
               }
               $erows.find('.env-more span').html(caption);
@@ -149,7 +134,7 @@ var ABM = (function(){
       msg({ command:'tool', tool:'build' });
 
       // Un-hide the first subpane
-      self.abm_pane($('.subpanes>div').first().attr('class'));
+      abm_pane($('.subpanes>div').first().attr('class'));
 
     },
 

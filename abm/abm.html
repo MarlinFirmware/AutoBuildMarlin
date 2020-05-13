@@ -13,15 +13,30 @@
 
   const vscode = acquireVsCodeApi();
 
-  function abm_tool(t) {
+  function abm_tool(tool) {
     $('.abm-tool').hide();
-    $('#abm-'+t).show();
+    $('#abm-'+tool).show();
     $('#abm-toolbar button').removeClass();
-    $('#btn-'+t).addClass('active');
+    $('#btn-'+tool).addClass('active');
+  }
+
+  function abm_pane(name) {
+    var $t;
+    if (name)
+      $t = $('.subtabs button[ref=' + name + ']');
+    else {
+      $t = $('.subtabs button').first();
+      name = $t.attr('ref');
+    }
+    $('.subtabs button').removeClass();
+    $t.addClass('active');
+    $('.abm-tool .subpanes>div').hide();
+    $t.parents('.abm-tool').find('.subpanes>.' + name).show();
   }
 
   function msg(m) {
     if (m.command == 'tool') abm_tool(m.tool);
+    if (m.command == 'pane') abm_pane(m.pane);
     vscode.postMessage(m);
   }
 

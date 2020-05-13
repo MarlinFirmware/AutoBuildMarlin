@@ -122,6 +122,7 @@ function updateDefineList(cindex, txt) {
   define_list[cindex] = Object.keys(define_more);
   define_occur[cindex] = occ_list;
   define_section = Object.assign({}, define_section, define_more);
+  if (bugme) console.log("Define Section ", define_section);
 }
 
 function refreshDefineList() {
@@ -843,7 +844,7 @@ function kill_terminal() {
 function reveal_build(env) {
   var aterm = vw.createTerminal({ name:'reveal', env:process.env });
   const relpath = path.join('.', '.pio', 'build', env);
-  if (process.platform != 'win32') {
+  if (process.platform == 'win32') {
     command_with_ping(aterm, 'cd ' + relpath, false);
     command_with_ping(aterm, 'open .', false);
     command_with_ping(aterm, 'exit', false);
