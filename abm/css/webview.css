@@ -2,8 +2,17 @@
 /* Styles for Auto Build Marlin Home - and eventually Configurator */
 
 * {
+  --abm-header-height: 50px;
+  --abm-toolbar-width: 70px;
+  --abm-social-width: 40px;
+  --abm-footer-height: 40px;
+  --abm-font-size-caption: small;
+  }
+
+body.vscode-dark {
   --abm-background: #282C34;
   --abm-toolbar-bg: #333636;
+  --abm-color-border: #CCC;
   --abm-tool-bg-hover: #666;
   --abm-tool-bg-active: #4D73B9;
   --abm-text-color-label: #827461;
@@ -14,11 +23,40 @@
   --abm-text-color-busy: #FA0;
   --abm-text-color-error: #C44;
   --abm-text-color-caption: #58A;
-  --abm-header-height: 50px;
-  --abm-toolbar-width: 70px;
-  --abm-social-width: 40px;
-  --abm-footer-height: 40px;
-  --abm-font-size-caption: small;
+  --abm-color-progress-border: #FFF;
+  }
+
+body.vscode-light {
+  --abm-background: #DEF;
+  --abm-toolbar-bg: #BCD;
+  --abm-color-border: #888;
+  --abm-tool-bg-hover: #666;
+  --abm-tool-bg-active: #4D73B9;
+  --abm-text-color-label: #3C2200;
+  --abm-text-color-data: #365;
+  --abm-text-color-pale: #45F;
+  --abm-text-color-good: #00D000;
+  --abm-text-color-limbo: #A80;
+  --abm-text-color-busy: #A05900;
+  --abm-text-color-error: #C00;
+  --abm-text-color-caption: #005B98;
+  --abm-color-progress-border: #000;
+  }
+
+body.vscode-high-contrast {
+  --abm-background: #282C34;
+  --abm-toolbar-bg: #333636;
+  --abm-color-border: #666;
+  --abm-tool-bg-hover: #666;
+  --abm-tool-bg-active: #4D73B9;
+  --abm-text-color-label: #827461;
+  --abm-text-color-data: #FFE;
+  --abm-text-color-pale: #8A8;
+  --abm-text-color-good: #6E6;
+  --abm-text-color-limbo: #DB6;
+  --abm-text-color-busy: #FA0;
+  --abm-text-color-error: #C44;
+  --abm-text-color-caption: #58A;
   }
 
 .clear { clear: both; }
@@ -284,7 +322,7 @@ span.progress {
   display: inline-block;
   width: 128px;
   height: 0.5em;
-  border: 1px solid white;
+  border: 1px solid var(--abm-color-progress-border);
   border-radius: 0.25em;
   background-color: #FF6;
   background-image: url(progress.gif);
@@ -296,7 +334,8 @@ span.progress {
   display: none;
   width: 100%;
   min-height: 400px;
-  border: 1px solid #666;
+  border: 1px solid var(--abm-color-border);
+  background: #FFF3;
   }
 
 .panel-error {
@@ -316,3 +355,5 @@ div.subtabs button.active {
   background: #3BB175;
   color: #FFF;
   }
+
+a.reveal { font-size: 120%; }
