@@ -9,73 +9,21 @@
 
 const bugme = false; // Lots of debug output
 
-// Extend builtins
-String.prototype.lpad = function(len, chr) {
-  if (chr === undefined) { chr = '&nbsp;'; }
-  var s = this+'', need = len - s.length;
-  if (need > 0) { s = new Array(need+1).join(chr) + s; }
-  return s;
-};
-
-String.prototype.dequote = function()        { return this.replace(/^\s*"|"\s*$/g, '').replace(/\\/g, ''); };
-String.prototype.prePad = function(len, chr) { return len ? this.lpad(len, chr) : this; };
-String.prototype.zeroPad = function(len)     { return this.prePad(len, '0'); };
-String.prototype.toHTML = function()         { return jQuery('<div>').text(this).html(); };
-String.prototype.regEsc = function()         { return this.replace(/[.?*+^$[\]\\(){}|-]/g, "\\$&"); }
-String.prototype.lineCount = function(ind)   { var len = (ind === undefined ? this : this.substr(0,ind*1)).split(/\r?\n|\r/).length; return len > 0 ? len - 1 : 0; };
-String.prototype.lines = function()          { return this.split(/\r?\n|\r/); };
-String.prototype.line = function(num)        { var arr = this.split(/\r?\n|\r/); return num < arr.length ? arr[1*num] : ''; };
-String.prototype.replaceLine = function(num,txt) { var arr = this.split(/\r?\n|\r/); if (num < arr.length) { arr[num] = txt; return arr.join('\n'); } else return this; }
-String.prototype.toLabel = function()        { return this.replace(/[\[\]]/g, '').replace(/_/g, ' ').toTitleCase(); }
-String.prototype.toTitleCase = function()    { return this.replace(/([A-Z])(\w+)/gi, function(m,p1,p2) { return p1.toUpperCase() + p2.toLowerCase(); }); }
-Number.prototype.limit = function(m1, m2)  {
-  if (m2 == null) return this > m1 ? m1 : this;
-  return this < m1 ? m1 : this > m2 ? m2 : this;
-};
-Date.prototype.fileStamp = function(filename) {
-  var fs = this.getFullYear()
-    + ((this.getMonth()+1)+'').zeroPad(2)
-    + (this.getDate()+'').zeroPad(2)
-    + (this.getHours()+'').zeroPad(2)
-    + (this.getMinutes()+'').zeroPad(2)
-    + (this.getSeconds()+'').zeroPad(2);
-
-  if (filename !== undefined)
-    return filename.replace(/^(.+)(\.\w+)$/g, '$1-['+fs+']$2');
-
-  return fs;
-}
-
-// Marlin files that provide context for
-// the current build. All these are read
-// at startup. However currently only the
-// config files are watched for changes.
-var mfiles = {
-  pins:       { name: 'pins.h',              path: ['src', 'pins'] },
-  boards:     { name: 'boards.h',            path: ['src', 'core'] },
-  config:     { name: 'Configuration.h',     path: []              },
-  config_adv: { name: 'Configuration_adv.h', path: []              },
-  version:    { name: 'Version.h',           path: ['src', 'inc']  }
-};
-
-const nicer = {
-  build: 'build',
-  upload: 'upload',
-  traceback: 'upload (traceback)',
-  clean: 'clean',
-};
-
-const path = require('path'),
-        fs = require('fs'),
-        os = require('os');
+const marlin = require('./marlin'),
+        path = require('path'),
+          fs = require('fs'),
+          os = require('os');
 
 var context, vscode, vc, ws, vw, abm_path, pane_path, project_path, pv,
     temp = {}; // For general data without declaring
 
 // Update based on "when" in package.json
-function set_context(name, value) { vc.executeCommand('setContext', name, value); }
+function set_context(name, value) {
+  vc.executeCommand('setContext', 'abm.' + name, value);
+}
 
 function init(c, v) {
+  if (bugme) console.log('<=== AUTO BUILD MARLIN ===>');
   context = c;
   vscode = v;
   vc = v.commands;
@@ -84,102 +32,33 @@ function init(c, v) {
   abm_path = path.join(c.extensionPath, 'abm');
   pane_path = path.join(c.extensionPath, 'abm', 'pane');
   project_path = ws.workspaceFolders[0].uri.fsPath;
-  set_context('abm.inited', true);
+  marlin.init(vscode, bugme);
+  set_context('inited', true);
 }
 
-var define_list,    // arrays with all define names
-    define_occur,   // lines where defines occur in each file
-    define_section; // the section of each define
-
-function updateDefineList(cindex, txt) {
-  var section = 'hidden',
-      leave_out_defines = ['CONFIGURATION_H', 'CONFIGURATION_H_VERSION', 'CONFIGURATION_ADV_H', 'CONFIGURATION_ADV_H_VERSION'],
-      define_more = {},
-      occ_list = {},
-      findDef = new RegExp('^\\s*(//\\s*)?(@section|#define)\\s+(\\w+).*$', 'gm');
-  // scan for sections and defines
-  var r;
-  while((r = findDef.exec(txt)) !== null) {
-    var name = r[3];
-    if (r[2] == '@section') {
-      section = name;
-    }
-    else if (!leave_out_defines.includes(name)) {                 // skip some defines
-      var lineNum = txt.lineCount(r.index),                       // the line number
-          inst = { cindex:cindex, lineNum:lineNum, line:r[0] },   // config, line, section/define
-          in_sect = (name in define_more);                        // already found (locally)?
-
-      if (!in_sect) occ_list[name] = [ inst ];                    // no, first item in section
-
-      if (!in_sect && !(name in define_section)) {                // first time in section, ever
-        define_more[name] = section; // new first-time define
-      }
-      else {
-        occ_list[name].push(inst);                                // it's another occurrence
-      }
-    }
-  }
-  define_list[cindex] = Object.keys(define_more);
-  define_occur[cindex] = occ_list;
-  define_section = Object.assign({}, define_section, define_more);
-  if (bugme) console.log("Define Section ", define_section);
-}
-
-function refreshDefineList() {
-  define_list = [[],[]];
-  define_occur = [{},{}];
-  define_section = {};
-  updateDefineList(0, mfiles.config.text);
-  updateDefineList(1, mfiles.config_adv.text);
-  //console.log("Define list:", define_list);
-}
-
-// TODO: Use previously parsed config data for speed
-
-function _confEnabled(text, optname) {
-  const find = new RegExp(`^\\s*#define\\s+${optname}\\b`, 'gm'),
-        r = find.exec(text);
-  if (bugme) console.log(`${optname} is ${r?'ENABLED':'unset'}`);
-  return (r !== null); // Any match means it's uncommented
-}
-
-function confEnabled(fileid, optname) { return _confEnabled(mfiles[fileid].text, optname); }
-function configEnabled(optname)       { return confEnabled('config',     optname); }
-function configAdvEnabled(optname)    { return confEnabled('config_adv', optname); }
-function configAnyEnabled(optname) {
-  return configEnabled(optname) ? true : configAdvEnabled(optname);
-}
-
-// Get a single config value
-function _confValue(text, optname) {
-  var val = '';
-  const find = new RegExp(`^\\s*#define\\s+${optname}\\s+(.+)`, 'gm'),
-        r = find.exec(text);
-  if (r) val = r[1].replace(/\s*(\/\/.*)?$/, '');
-  return val;
-}
-
-// Get a single config value
-function confValue(fileid, optname) { return _confValue(mfiles[fileid].text, optname); }
-function configValue(optname)       { return confValue('config',     optname); }
-function configAdvValue(optname)    { return confValue('config_adv', optname); }
-function configAnyValue(optname) {
-  return configEnabled(optname) ? configValue(optname) : configAdvValue(optname);
-}
-
-//
-// Get the path to a Marlin file
-//
-function _marlinFilePath(f) {
-  if (!f.fullpath) {
-    let p = '';
-    f.path.forEach((v) => { p = path.join(p, v); });
-    f.fullpath = path.join(project_path, 'Marlin', p, f.name);
-  }
-  return f.fullpath;
-}
-
-function marlinFilePath(fileid) { return _marlinFilePath(mfiles[fileid]); }
+/**
+ * The simplest layout concept is to take the entire config
+ * and parse it in a big list. Parent items are at root, and
+ * those with children have a colored background and a
+ * "reveal" widget. Child items should be compact so we can fit
+ * 2-3 fields across. Grouped (XYZE) items need to align left.
+ *
+ * I do want to make the layouts customized for each configuration,
+ * but I also want the flexibility to grab fields from the config
+ * files as they change. So, my idea is simply to wrap all the fields
+ * in span containers. To create the panel, we send all the fields
+ * in the relevant section to the web view script as soon as the panel
+ * is selected. The web view takes care of creating the fields, adding
+ * them to the DOM, and showing the panel. The CSS uses a FLEX layout
+ * with certain named spans included, while the ones not named in the
+ * layout will be placed into the "fallback" location, probably down
+ * at the bottom.
+ *
+ * For the Geometry panel a simple hook is added to update the canvas
+ * whenever the fields are updated. And the canvas has interactive bits
+ * that update the geometry fields. If there is a pause of a few seconds
+ * or the panel is switched then the changes are applied to the configs.
+ */
 
 function envBuildPath(env, file) {
   var bp = path.join(project_path, '.pio', 'build', env);
@@ -192,11 +71,11 @@ function existingBuildPath(env) {
   return fs.existsSync(bp) ? bp : null;
 }
 
-//
-// Watch Configuration*.h files for changes and refresh the view
-// The fs.watch event is fast and usually sends several events.
-// So instead of calling refreshNewData directly, put it on a timeout.
-//
+/**
+ * Watch Configuration*.h files for changes and refresh the view
+ * The fs.watch event is fast and usually sends several events.
+ * So instead of calling refreshNewData directly, put it on a timeout.
+ */
 
 var timeouts = [];
 function onConfigFileChanged(e, fname) {
@@ -208,37 +87,19 @@ function onConfigFileChanged(e, fname) {
   }, 2000);
 }
 
-var watchers = [];
-function unwatchConfigurations() {
-  watchers.forEach((w) => { w.close() });
-  watchers = [];
-}
-
-function watchConfigurations() {
-  unwatchConfigurations();
-  watchers = [
-    fs.watch(marlinFilePath('config'), {}, onConfigFileChanged),
-    fs.watch(marlinFilePath('config_adv'), {}, onConfigFileChanged)
-  ];
-}
-
-function watchAndValidate() {
-  watchers = [ fs.watch(path.join(project_path, 'Marlin'), {}, validate) ];
-}
-
-//
-// An Environment can be in one of these states:
-//  - Does not exist. No Clean option.
-//  - Exists and has completed build. Show a Clean option.   .exists
-//  - Exists and has incomplete build. Show a Clean option.  .exists.incomplete
-//  - Does not exist but build started. Hide all buttons.    .busy
-//  - Exists and build is underway. Hide all buttons.        .exists.busy
-//
-// The strategy is to watch the build folder for changes up to the
-// state where the build is underway and the env folder exists.
-//
-// After that the IPC file signals when the build is done.
-//
+/**
+ * An Environment can be in one of these states:
+ *  - Does not exist. No Clean option.
+ *  - Exists and has completed build. Show a Clean option.   .exists
+ *  - Exists and has incomplete build. Show a Clean option.  .exists.incomplete
+ *  - Does not exist but build started. Hide all buttons.    .busy
+ *  - Exists and build is underway. Hide all buttons.        .exists.busy
+ *
+ * The strategy is to watch the build folder for changes up to the
+ * state where the build is underway and the env folder exists.
+ *
+ * After that the IPC file signals when the build is done.
+ */
 
 var build = { watcher:null, env:null, active:false };
 function currentBuildEnv() {
@@ -258,12 +119,12 @@ function unwatchBuildFolder() {
     refreshBuildStatus(build.env);
 }
 
-//
-// Watch the build folder for changes in *any* contents.
-// As long as contents are changing, a build is occurring.
-// Use the cancel-restart method to keep putting off the UI
-// update. Only the last timeouts will actually occur.
-//
+/**
+ * Watch the build folder for changes in *any* contents.
+ * As long as contents are changing, a build is occurring.
+ * Use the cancel-restart method to keep putting off the UI
+ * update. Only the last timeouts will actually occur.
+ */
 function watchBuildFolder(env) {
   if (!build.watcher) {
     const bp = existingBuildPath(env);
@@ -308,263 +169,63 @@ function onIPCFileChange() {
 function onBuildFolderChanged(e, fname, env) {
   cancelBuildRefresh();
 
-  if (fname == 'firmware.hex' || fname == 'firmware.bin') {
-    // If the firmware file changed, assume the build is done now
-    refresh_to = [ setTimeout(()=>{ unwatchBuildFolder(); }, 500) ];
+  if (fname.match(/.+\.(bin|hex)$/i)) {
+    // If the BIN or HEX file changed, assume the build is done now
+    refresh_to.push(setTimeout(()=>{ unwatchBuildFolder(); }, 500));
     if (bugme) console.log(`onBuildFolderChanged (bin/hex): ${env}`);
   }
   else {
-    refresh_to = [
-      // Set timeouts that assume lots of changes are underway
-      setTimeout(()=>{ refreshBuildStatus(env); }, 500),
-      // Assume nothing will pause for more than 15 seconds
-      setTimeout(()=>{ unwatchBuildFolder(); }, 15000)
-    ];
+    // Set timeouts that assume lots of changes are underway
+    refresh_to.push(setTimeout(()=>{ refreshBuildStatus(env); }, 500));
+    // Assume nothing will pause for more than 15 seconds
+    refresh_to.push(setTimeout(()=>{ unwatchBuildFolder(); }, 15000));
     if (bugme) console.log(`onBuildFolderChanged: ${env}`);
   }
 }
 
-//
-// Get the type of geometry and stuff like that
-//
-var machine_info;
-function getMachineSettings() {
-  var out = {};
-
-  out.name = configValue('CUSTOM_MACHINE_NAME').dequote();
-
-  const mtypes = [ 'DELTA', 'MORGAN_SCARA', 'COREXY', 'COREXZ', 'COREYZ', 'COREYX', 'COREZX', 'COREZY' ],
-       mpretty = [ 'Delta', 'SCARA', 'CoreXY', 'CoreXZ', 'CoreYZ', 'CoreYX', 'CoreZX', 'CoreZY' ];
-
-  let s = 'Cartesian';
-  mtypes.every((v,i) => {
-    if (!configEnabled(v)) return true;
-    s = mpretty[i]; return false;
-  });
-  out.style = s;
-
-  let d = out.dimensions = { x: configValue('X_BED_SIZE'), y: configValue('Y_BED_SIZE'), z: configValue('Z_MAX_POS') };
-
-  out.description = `${s} ${d.x}x${d.y}x${d.z}mm`;
-
-  const bed_sensor = configValue('TEMP_SENSOR_BED');
-  out.heated_bed = !!(1 * bed_sensor);
-  if (out.heated_bed) {
-    out.bed_sensor = bed_sensor;
-    out.description += ` with Heated Bed (${bed_sensor})`;
-  }
-  else
-    out.description += ' (no Heated Bed)';
-
-  machine_info = out;
-  return machine_info;
-}
-
-//
-// Extract temperature sensor options from Configuration.h
-//
-var temp_sensor_desc;
-function extractTempSensors() {
-
-  //pv.postMessage({ command:'text', text:mfiles.config.text });
-
-  // Get all the thermistors and save them into an object
-  const findAll = new RegExp('^\\s*\\*\\s*Temperature sensors .+$([\\s\\S]+\\*\\/)', 'gm'),
-        findEach = new RegExp('^\\s*\\*\\s*(-?\\d+)\\s*:\\s*(.+)$', 'gm'),
-        r = findAll.exec(mfiles.config.text);
-
-  var out = {};
-  let s;
-  while (s = findEach.exec(r[1])) out[s[1]] = { desc: s[2] };
-
-  temp_sensor_desc = out;
-  return temp_sensor_desc;
-}
-
-//
-// Get the number of EXTRUDERS and related options
-//
-var extruder_info;
-function getExtruderSettings() {
-  var out = {};
-  const extruders = configValue('EXTRUDERS') * 1;
-
-  out.extruders = extruders;
-  out.diam = configValue('DEFAULT_NOMINAL_FILAMENT_DIA');
-
-  // Get the extruder temp sensors
-  out.sensors = [];
-  for (let i = 0; i < extruders; i++)
-    if (!(out.sensors[i] = configValue(`TEMP_SENSOR_${i}`)))
-      out.sensor_err = true;
-
-  if (extruders == 1 && configEnabled('TEMP_SENSOR_1_AS_REDUNDANT'))
-    out.sensors[1] = configValue('TEMP_SENSOR_1');
-
-  // Only one of these types is allowed at a time
-  const etypes = [ 'SINGLENOZZLE',                           // Single nozzle, multiple steppers
-                   'DUAL_X_CARRIAGE',                        // IDEX: single, duplication or mirror
-                   'PARKING_EXTRUDER',                       // Parkable, with solenoid
-                   'MAGNETIC_PARKING_EXTRUDER',              // Parkable, with magnet
-                   'SWITCHING_TOOLHEAD',                     // Switching with servo
-                   'MAGNETIC_SWITCHING_TOOLHEAD',            // Switching with magnet
-                   'ELECTROMAGNETIC_SWITCHING_TOOLHEAD' ];
-       epretty = [ 'Single Nozzle' ];
-  etypes.every((v,i) => {
-    if (!configEnabled(v)) return true;
-    out.type = epretty[i] ? epretty[i] : v.toLabel(); return false;
-  });
-
-  // These are mutually-exclusive
-  const efancy = [ 'MIXING_EXTRUDER', 'SWITCHING_EXTRUDER', 'SWITCHING_NOZZLE', 'MK2_MULTIPLEXER', 'PRUSA_MMU2' ];
-  efancy.every((v) => {
-    if (!configEnabled(v)) return true;
-    out.fancy = v == 'PRUSA_MMU2' ? 'Prusa MMU2' : v.toLabel();
-  });
-
-  if (out.fancy) {
-    let e = extruders;
-    if (out.fancy == 'Mixing Extruder')
-      e = out.steppers = configValue('MIXING_STEPPERS');
-    out.fancy += ` (${e} channels)`;
-  }
-
-  if (!out.type && !out.fancy) {
-    switch (out.extruders) {
-      case 1: out.description = '(Single Extruder)'; break;
-      case 2: out.description = '(Dual Extruder)'; break;
-      default: out.description = out.extruders + ' Extruders'; break;
-    }
-  }
-  else {
-    if (out.type && out.fancy)
-      out.description = `${out.type} with ${out.fancy}`;
-    else if (out.type == 'Single Nozzle')
-      out.description = `Single Nozzle with ${out.extruders} inputs`;
-    else if (out.type)
-      out.description = `${out.type} with ${out.extruders}`;
-    else
-      out.description = out.fancy;
-  }
-
-  extruder_info = out;
-  return extruder_info;
-}
-
-//
-// Get information from the board's pins file(s)
-//
-var pindef_info;
-function getPinDefinitionInfo(mb) {
-  if (!mfiles.pindef || mfiles.pindef.mb != mb) {
-    const pbits = `src/pins/${board_info.pins_file}`.split('/');
-    mfiles.pindef = { name: pbits.pop(), path: pbits, mb: mb };
-    processMarlinFile('pindef');
-  }
-
-  pindef_info = {
-    board_name: confValue('pindef', 'BOARD_INFO_NAME').dequote()
-  };
-
-  return pindef_info;
-}
-
-//
-// - Get Marlin version and distribution date
-//
-var version_info;
-function extractVersionInfo() {
-  version_info = {
-    vers: _confValue(mfiles.version.text, 'SHORT_BUILD_VERSION').dequote(),
-    date: _confValue(mfiles.version.text, 'STRING_DISTRIBUTION_DATE').dequote(),
-    auth: _confValue(mfiles.config.text, 'STRING_CONFIG_H_AUTHOR').dequote()
-  };
-  return version_info;
-}
-
-//
-// - Get pins file, archs, and envs for a board from pins.h.
-// - If the board isn't found, look for a rename alert.
-// - Get the status of environment builds.
-//
+// Local reference to parsed board info
 var board_info;
-function extractBoardInfo(mb) {
-  var r, out = { has_debug: false }, sb = mb.replace('BOARD_', '');
 
-  // Get the include line matching the board
-  const lfind = new RegExp(`if\\s*MB\\(${sb}\\).*\n\\s*(#include.+)\n`, 'g');
-  if ((r = lfind.exec(mfiles.pins.text))) {
-
-    let inc_line = r[1];
-
-    out.mb = mb;
-    out.pins_file = inc_line.replace(/.*#include\s+"([^"]*)".*/, '$1');
-
-    out.archs = inc_line.replace(/.+\/\/\s*((\w+,?\s*)+)\s*env:.+/, '$1');
-    out.archs_arr = out.archs.replace(',',' ').replace(/\s+/,' ').split(' ');
-
-    out.envs = [];
-    var efind = new RegExp('env:(\\w+)', 'g');
-    while ((r = efind.exec(inc_line))) {
-      let debugenv = r[1].match(/^.+_debug$/);
-      out.envs.push({ name: r[1], debug: debugenv });
-      if (debugenv) out.has_debug = true;
-    }
- }
-  else {
-    const bfind = new RegExp(`#error\\s+"(${mb} has been renamed \\w+)`, 'g');
-    out.error = (r = bfind.exec(mfiles.pins.text)) ? r[1] : `Unknown MOTHERBOARD ${mb}`;
-  }
-
-  // Get the description from the boards.h file
-  var cfind = new RegExp(`#define\\s+${mb}\\s+\\d+\\s*//(.+)`, 'gm');
-  r = cfind.exec(mfiles.boards.text);
-  out.description = r ? r[1].trim() : '';
-
-  board_info = out;
-  return board_info;
-}
-
-//
-// Process data now that all files are loaded
-//
-//  - Read values from the config files
-//  - Update the UI with initial values
-//
+/**
+ * Process data now that all files are loaded
+ *
+ *  - Read values from the config files
+ *  - Update the UI with initial values
+ */
 function allFilesAreLoaded() {
 
-  set_context('abm.err.parse', false);
+  set_context('err.parse', false);
 
   // Send text for display in the view
-  //pv.postMessage({ command:'text', text:mfiles.boards.text });
+  //pv.postMessage({ command:'text', text:marlin.files.boards.text });
 
-  const mb = configValue('MOTHERBOARD');
+  const mb = marlin.configValue('MOTHERBOARD');
 
   if (mb !== undefined) {
 
     //const sensors = extractTempSensors();
     //if (bugme) console.log("Sensors :", sensors);
 
-    const version_info = extractVersionInfo();
+    const version_info = marlin.extractVersionInfo();
     if (bugme) console.log("Version Info :", version_info);
-    const binfo = extractBoardInfo(mb);
-    if (bugme) console.log(`Board Info for ${mb} :`, binfo);
-    set_context('abm.has_debug', !!binfo.has_debug);
-    if (binfo.error) {
-      set_context('abm.err.parse', true);
-      postError(binfo.error);
+    board_info = marlin.extractBoardInfo(mb);
+    if (bugme) console.log(`Board Info for ${mb} :`, board_info);
+    set_context('has_debug', !!board_info.has_debug);
+    if (board_info.error) {
+      set_context('err.parse', true);
+      postError(board_info.error);
       return; // abort the whole deal
     }
-    const machine_info = getMachineSettings();
+    const machine_info = marlin.getMachineSettings();
     if (bugme) console.log("Machine Info :", machine_info);
-    const extruder_info = getExtruderSettings();
+    const extruder_info = marlin.getExtruderSettings();
     if (bugme) console.log("Extruder Info :", extruder_info);
-    const pindef_info = getPinDefinitionInfo(mb);
+    const pindef_info = marlin.getPinDefinitionInfo(mb);
     if (bugme) console.log("Pin Defs Info :", pindef_info);
 
     // If no CUSTOM_MACHINE_NAME was set, get it from the pins file
     if (!machine_info.name) {
-      let def = confValue('pindef', 'DEFAULT_MACHINE_NAME');
+      let def = marlin.confValue('pindef', 'DEFAULT_MACHINE_NAME');
       if (!def || def == 'BOARD_INFO_NAME')
         def = pindef_info.board_name;
       machine_info.name = def ? def.dequote() : '3D Printer';
@@ -583,19 +244,19 @@ function allFilesAreLoaded() {
     postValue('machine-desc', machine_info.description);
 
     postValue('board', mb.replace('BOARD_', '').replace(/_/g, ' '));
-    postValue('board-desc', binfo.description);
+    postValue('board-desc', board_info.description);
 
-    postValue('pins', binfo.pins_file);
+    postValue('pins', board_info.pins_file);
     if (pindef_info.board_name) postValue('pins-desc', pindef_info.board_name);
 
-    postValue('archs', binfo.archs);
+    postValue('archs', board_info.archs);
 
     refreshBuildStatus();
   }
 
-  refreshDefineList();
+  //marlin.refreshDefineList();
 
-  watchConfigurations();
+  marlin.watchConfigurations(onConfigFileChanged);
   runSelectedAction();
 }
 
@@ -607,75 +268,23 @@ function readFileError(err, msg) {
 }
 
 //
-// Read a workspace file
-// If it's the last file, go on to extract data and update the UI.
-//
-function processMarlinFile(fileid) {
-
-  const mf_path = marlinFilePath(fileid);
-
-  if (bugme) console.log(`Reading... ${mf_path}`);
-
-  if (temp.filesToLoad) {
-    fs.readFile(mf_path, (err, data) => {
-      if (err)
-        readFileError(err, `Couldn't read ${mfiles[fileid].name}`);
-      else {
-        mfiles[fileid].text = data.toString();
-        if (--temp.filesToLoad == 0) allFilesAreLoaded();
-      }
-    });
-  }
-  else {
-    try {
-      // Use node.js to read the file
-      //var data = fs.readFileSync(mf_path);
-      mfiles[fileid].text = fs.readFileSync(mf_path, {encoding:'utf8'});
-    } catch (err) {
-      readFileError(err, `Couldn't read ${mfiles[fileid].name}`);
-    }
-  }
-}
-
-//
-// Verify that one of Marlin's files exists
-//
-function marlinFileCheck(fileid) {
-  var file_issue;
-  try {
-    fs.accessSync(marlinFilePath(fileid), fs.constants.F_OK | fs.constants.W_OK);
-  } catch (err) {
-    file_issue = err.code === 'ENOENT' ? 'is missing' : 'is read-only';
-  }
-  return file_issue;
-}
-
-//
 // Check for valid Marlin files
 //
 function validate(do_report) {
-  var is_marlin = true;
-  for (const k in mfiles) {
-    const err = marlinFileCheck(k);
-    if (err) {
-      if (do_report) postError(`Error: ${mfiles[k].name} ${err}.`);
-      is_marlin = false;
-      break;
-    }
-  }
-  set_context('abm.err.locate', !is_marlin);
-  return is_marlin;
+  const result = marlin.validate();
+  if (!result.ok && do_report) postError(result.error);
+  set_context('err.locate', !result.ok);
+  return result.ok;
 }
+
+function watchAndValidate() { marlin.watchAndValidate(validate); }
 
 //
 // Reload files and refresh the UI
 //
 function refreshNewData() {
-  if (validate(true)) {
-    const files = Object.keys(mfiles);
-    temp.filesToLoad = files.length;
-    files.forEach(processMarlinFile);
-  }
+  if (validate(true))
+    marlin.refreshAll(allFilesAreLoaded, readFileError);
   else
     postError('Please open Marlin in the workspace.');
 }
@@ -693,20 +302,19 @@ function lastBuild(env) {
         stamp: ''
       };
 
+  // If the build folder exists...
   if (out.exists) {
 
-    // Get the built binary path, if any
-    const bins = [
-      'firmware.bin', 'firmware.hex',
-      'firmware_for_sd_upload.bin',
-      'mksLite.bin', 'mksLite3.bin',
-      'project.bin',
-      'Robin.bin', 'Robin_e3.bin', 'Robin_mini.bin', 'Robin_nano.bin', 'Robin_pro.bin'
-    ];
+    // Find a .bin or .hex file in the folder
+    const dirlist = fs.readdirSync(bp);
+    const bins = dirlist.filter((n) => {
+      return n.match(/.+\.(bin|hex)$/i);
+    });
+
     var tp = bp;
-    for (const fn of bins) {
-      const fp = envBuildPath(env, fn);
-      if (fs.existsSync(fp)) { tp = fp; out.completed = true; break; }
+    if (bins.length) {
+      tp = envBuildPath(env, bins[0]);
+      out.completed = true;
     }
 
     // Get the date of the build (or folder)
@@ -741,7 +349,7 @@ function refreshBuildStatus(env) {
   let m = { command:'envs', val:board_info.envs };
   if (bugme) console.log("Posting:", m);
   pv.postMessage(m);
-  set_context('abm.no_clean', !board_info.has_clean);
+  set_context('no_clean', !board_info.has_clean);
 }
 
 //
@@ -792,7 +400,7 @@ function should_reuse_terminal() {
 }
 
 //
-// Make a terminal
+// Reuse or create a new Terminal for a command
 //
 function terminal_for_command(ttl, noping) {
   const reuse_terminal = should_reuse_terminal();
@@ -819,6 +427,9 @@ function terminal_for_command(ttl, noping) {
   terminal.show(true);
 }
 
+//
+// Send a command and ping back when it completes
+//
 function command_with_ping(t, cmdline, ping) {
   const pingline = `echo "done" >${ipc_file}`;
   if (process.platform == 'win32') {
@@ -829,18 +440,17 @@ function command_with_ping(t, cmdline, ping) {
     t.sendText(cmdline + (ping ? ` ; ${pingline}` : ''));
 }
 
+//
+// Get a terminal and send a command
+//
 function terminal_command(ttl, cmdline, noping) {
   terminal_for_command(ttl, noping);
   command_with_ping(terminal, cmdline, !noping);
 }
 
-function kill_terminal() {
-  if (terminal) {
-    terminal.close();
-    terminal = null;
-  }
-}
-
+//
+// Use a native shell command to open the build folder
+//
 function reveal_build(env) {
   var aterm = vw.createTerminal({ name:'reveal', env:process.env });
   const relpath = path.join('.', '.pio', 'build', env);
@@ -889,14 +499,24 @@ function pio_command(opname, env, nosave) {
   if (opname != 'clean') watchBuildFolder(env);
 }
 
+const nicer = {
+  build: 'build',
+  upload: 'upload',
+  traceback: 'upload (traceback)',
+  clean: 'clean',
+};
+
+// Send a Warning message for display
 function postWarning(msg, data) {
   pv.postMessage({ command:'warning', warning:msg, data:data });
 }
 
+// Send an Error message for display
 function postError(msg, data) {
   pv.postMessage({ command:'error', error:msg, data:data });
 }
 
+// Send a Tool Select message
 function postTool(t) {
   pv.postMessage({ command: 'tool', tool:t });   // Send a tool message back
 }
@@ -908,16 +528,20 @@ function postValue(tag, val) {
   pv.postMessage(message);
 }
 
-function subpath(sub, filename) {
+//
+//  HTML Templates with interpreted Javascript
+//
+
+// Get WebView-safe local file URIs
+function subpath_uri(sub, filename) {
   var uri = abm_path;
   if (sub !== '') uri = path.join(uri, sub);
   if (filename !== undefined) uri = path.join(uri, filename);
   return pv.asWebviewUri(vscode.Uri.file(uri));
 }
-
-function img_path(filename) { return subpath('img', filename); }
-function js_path(filename) { return subpath('js', filename); }
-function css_path(filename) { return subpath('css', filename); }
+function img_path(filename) { return subpath_uri('img', filename); }
+function js_path(filename) { return subpath_uri('js', filename); }
+function css_path(filename) { return subpath_uri('css', filename); }
 
 function load_home() {
   return fs.readFileSync(path.join(abm_path, 'abm.html'), {encoding:'utf8'});
@@ -928,7 +552,7 @@ function load_pane(name, data) {
 }
 
 // Contents of the Web View
-function homeContent() {
+function webViewContent() {
 
   var panes = {};
 
@@ -976,6 +600,10 @@ function handleWebViewMessage(m) {
       refreshNewData();      // Reload configs and refresh the view
       return;
 
+    case 'monitor':          // Monitor button
+      vc.executeCommand('platformio-ide.serialMonitor');
+      return;
+
     case 'pio':              // Build, Upload, Clean...
       //vw.showInformationMessage('Starting ' + nicer[m.cmd].toTitleCase() + ' for ' + m.env);
       pio_command(m.cmd, m.env);
@@ -1007,7 +635,7 @@ function run_command(action) {
         retainContextWhenHidden: true,   // getState / setState require more work
         enableScripts: true,             // Scripts are needed for command passing, at least?
         localResourceRoots: [
-          vscode.Uri.file(abm_path)
+          vscode.Uri.file(abm_path)      // Parent of this file
         ]
       }
     );
@@ -1032,16 +660,15 @@ function run_command(action) {
     // Populate the Web View with a cool UI
     // This method lets us pre-generate the HTML
     //
-    pv.html = homeContent();
+    pv.html = webViewContent();
 
     panel.onDidDispose(
       () => {
         panel = null;
-        unwatchConfigurations();             // Don't watch the configs anymore
-        watchAndValidate();                  // Keep contexts updated for any changes
+        watchAndValidate();                  // Switch to watching the folder (only on writes?)
         unwatchBuildFolder();                // Closing the view killed the build
         destroyIPCFile();                    // No IPC needed unless building
-        set_context('abm.visible', false);   // Update based on "when" in package.json
+        set_context('visible', false);   // Update based on "when" in package.json
       },
       null, context.subscriptions
     );
@@ -1052,7 +679,7 @@ function run_command(action) {
     // Create an IPC file for messages from Terminal
     createIPCFile();
   }
-  set_context('abm.visible', true);
+  set_context('visible', true);
 }
 
 //

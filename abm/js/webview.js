@@ -109,7 +109,7 @@ var ABM = (function(){
                     caption += ' (incomplete)';
                   }
                   else
-                    caption = `<a href="#" title="Reveal" onclick="msg({ command:'reveal', env:'${v.name}' })">📁</a> ${caption}`;
+                    caption = `<a class="reveal" href="#" title="Reveal" onclick="msg({ command:'reveal', env:'${v.name}' })">📁</a> ${caption}`;
                 }
               }
               $erows.find('.env-more span').html(caption);
