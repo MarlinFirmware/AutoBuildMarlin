@@ -59,6 +59,8 @@ body.vscode-high-contrast {
   --abm-text-color-caption: #58A;
   }
 
+/* Styles based on theme variant. Where to get a set of hues? */
+
 .clear { clear: both; }
 
 body {
@@ -143,7 +145,7 @@ pre {
   text-align: center;
   }
 
-#abm-icon img { padding: 12px 0 4px; }
+#abm-icon img { padding: 10px 0 5px; }
 
 .abm-tool>div { margin: 10px; }
 
@@ -203,6 +205,13 @@ button img { vertical-align: text-bottom; }
   opacity: 1.0;
   }
 #abm-toolbar button:hover { background: var(--abm-tool-bg-hover); }
+
+/* Blend Modes for middle-gray SVG */
+#abm-toolbar button * { color: #808080; mix-blend-mode: color-dodge; }
+#abm-toolbar button:hover * { mix-blend-mode: difference; }
+#abm-toolbar button:active *,
+#abm-toolbar button.active:hover *,
+#abm-toolbar button.active * { mix-blend-mode: color-dodge; }
 
 #info button>img, #abm-top button>img {
   width: 1.1em;
