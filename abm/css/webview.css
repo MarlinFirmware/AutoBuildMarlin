@@ -287,10 +287,20 @@ table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
 #info-envs         button.clean { display: none; }
 #info-envs .exists button.clean { display: inline-block; }
 
+/* Only show 'Upload' or 'Debug' depending on the env */
+                  button.debug { display: none; }
+#info-envs .debug button.debug { display: inline-block; }
+#info-envs .debug button.upload { display: none; }
+
 /* Hide ALL buttons when busy */
 #info-envs .busy button,
 #info-envs .busy.exists button,
-#info-envs .busy.exists button.clean { display: none; }
+#info-envs .busy.exists button.clean,
+#info-envs .busy.exists button.debug { display: none; }
+
+/* Show busy indicator when busy */
+#info-envs       span.progress { display: none; }
+#info-envs .busy span.progress { display: inline-block; }
 
 /* Hide buttons template and debug text field */
 #env-rows-src,
@@ -309,14 +319,6 @@ table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
   }
 
 #error { display: none; }
-
-/* Only show 'Upload' or 'Debug' depending on the env */
-                  button.debug { display: none; }
-#info-envs .debug button.debug { display: inline-block; }
-#info-envs .debug button.upload { display: none; }
-
-#info-envs       span.progress { display: none; }
-#info-envs .busy span.progress { display: inline-block; }
 
 span.progress {
   display: inline-block;
