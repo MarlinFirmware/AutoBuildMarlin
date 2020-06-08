@@ -17,7 +17,8 @@ function init(v, b) {
   vscode = v;
   //vc = v.commands;
   ws = v.workspace;
-  project_path = ws.workspaceFolders[0].uri.fsPath;
+  if (ws.workspaceFolders.length)
+    project_path = ws.workspaceFolders[0].uri.fsPath;
 }
 
 function reboot() {
@@ -171,7 +172,9 @@ function watchConfigurations(handler) {
 
 function watchAndValidate(handler) {
   unwatchConfigurations();
-  watchers = [ fs.watch(path.join(project_path, 'Marlin'), {}, handler) ];
+  const marlin_path = path.join(project_path, 'Marlin');
+  if (fs.existsSync(marlin_path))
+    watchers = [ fs.watch(marlin_path, {}, handler) ];
 }
 
 //
