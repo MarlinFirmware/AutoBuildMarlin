@@ -1,49 +1,6 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   width="48" height="48"
-   viewBox="0 0 48 48"
-   version="1.1">
-  <g transform="translate(0,-284.3)">
-    <g transform="matrix(0.888,0,0,0.888,4.557,46.942)"
-       style="fill:none;stroke:#ff00ff;stroke-width:1.125;stroke-linejoin:miter;stroke-linecap:square" />
-    <path
-       style="color:#000000;opacity:1;solid-color:#000000;solid-opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd"
-       d="m 11,303.3 v 3 h 26 v -3 z" />
-    <path
-       style="color:#000000;opacity:1;solid-color:#000000;solid-opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd"
-       d="m 26,305.3 h -4 v 20 h 4 z" />
-    <path
-       style="color:#000000;opacity:1;solid-color:#000000;solid-opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd"
-       d="m 24,294.805 c -8.815,0 -16.000,7.184 -16.000,16.000 c 0,8.815 7.184,16.000 16.000,16.000 c 8.815,0 16.000,-7.184 16.000,-16.000 c 0,-8.815 -7.184,-16.000 -16.000,-16.000 z m 0,3.000 c 7.201,0 13,5.798 13,12.999 c 0,7.201 -5.798,12.999 -13,12.999 c -7.201,0 -13,-5.798 -13,-12.999 c 0,-7.201 5.798,-12.999 13,-12.999 z" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 4,306.805 l 6,2" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 3,314.805 h 7" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 6,322.805 l 6,-3" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 44,306.805 l -6,2" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="M 45,314.805 H 38" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 42,322.805 l -6,-3" />
-    <path
-       style="opacity:1;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       d="m 37,291.805 c 0,0 -10,-5 -10,5" />
-    <path
-       style="opacity:1;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       d="m 11,291.805 c 0,0 10,-5 10,5" />
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48">
+  <path style="solid-color:#000;solid-opacity:1" d="M11 19v3h26v-3z" color="#000" fill="#fff" fill-rule="evenodd"/>
+  <path style="solid-color:#000;solid-opacity:1" d="M26 21h-4v20h4z" color="#000" fill="#fff" fill-rule="evenodd"/>
+  <path style="solid-color:#000;solid-opacity:1" d="M24 10.505c-8.815 0-16 7.184-16 16 0 8.815 7.184 16 16 16 8.815 0 16-7.184 16-16 0-8.815-7.184-16-16-16zm0 3c7.201 0 13 5.798 13 12.999a12.971 12.971 0 01-13 12.999c-7.201 0-13-5.798-13-12.999a12.971 12.971 0 0113-12.999z" color="#000" fill="#fff" fill-rule="evenodd"/>
+  <path d="M4 22.505l6 2M3 30.505h7M6 38.505l6-3M44 22.505l-6 2M45 30.505h-7M42 38.505l-6-3M37 7.505s-10-5-10 5M11 7.505s10-5 10 5" fill="none" stroke="#fff" stroke-width="3"/>
 </svg>

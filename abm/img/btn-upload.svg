@@ -1,18 +1,3 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   width="48" height="48"
-   viewBox="0 0 48 48"
-   version="1.1">
-  <g transform="translate(0,-284.3)">
-    <path style="fill:#ffffff;opacity:1"
-       d="M 24.001,298.579 L 9,317.3 h 10 v 10 h 10 v -10 h 10 z" />
-    <path style="fill:#ffffff;opacity:1"
-       d="m 9,291.3 v 6 h 30 v -6 z" />
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48">
+  <path d="M24.001 14.279L9 33h10v10h10V33h10zM9 7v6h30V7z" fill="#fff"/>
 </svg>
