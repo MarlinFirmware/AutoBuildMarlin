@@ -314,6 +314,7 @@ function lastBuild(env) {
     var tp = bp;
     if (bins.length) {
       tp = envBuildPath(env, bins[0]);
+      out.filename = bins[0];
       out.completed = true;
     }
 
@@ -326,6 +327,13 @@ function lastBuild(env) {
     out.stamp = `at ${loct} on ${locd}`;
   }
   return out;
+}
+
+function getBuildStatus(env) {
+  for (let i = 0; i < board_info.envs.length; i++)
+    if (board_info.envs[i].name == env)
+      return board_info.envs[i];
+  return null;
 }
 
 //
@@ -341,6 +349,7 @@ function refreshBuildStatus(env) {
       let b = lastBuild(v.name);
       v.exists    = b.exists;
       v.completed = b.completed;
+      v.filename  = b.filename;
       v.stamp     = b.stamp;
       v.busy      = b.busy;
       if (b.exists) board_info.has_clean = true;
@@ -453,16 +462,20 @@ function terminal_command(ttl, cmdline, noping) {
 //
 function reveal_build(env) {
   var aterm = vw.createTerminal({ name:'reveal', env:process.env });
-  const relpath = path.join('.', '.pio', 'build', env);
+  const relpath = path.join('.', '.pio', 'build', env),
+        fname = getBuildStatus(env).filename;
+  command_with_ping(aterm, 'cd ' + relpath);
   if (process.platform == 'win32') {
-    command_with_ping(aterm, 'cd ' + relpath, false);
-    command_with_ping(aterm, 'open .', false);
-    command_with_ping(aterm, 'exit', false);
+    command_with_ping(aterm, 'Explorer /select,' + fname);
+    command_with_ping(aterm, 'exit');
+  }
+  else if (process.platform == 'darwin') {
+    command_with_ping(aterm, 'open -R ' + fname);
+    command_with_ping(aterm, 'exit');
   }
   else
     command_with_ping(aterm
-      , '`which xdg-open open other-open | grep -v found | head -n1` ' + relpath + ' ; exit 0'
-      , false
+      , '`which xdg-open open other-open | grep -v found | head -n1` . ; exit 0'
     );
 }
 
