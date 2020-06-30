@@ -163,27 +163,27 @@
         {
           "command": "abm.build",
           "group": "navigation@1",
-          "when": "view == autoBuildView"
+          "when": "abm.inited && view == autoBuildView"
         },
         {
           "command": "abm.upload",
           "group": "navigation@2",
-          "when": "view == autoBuildView"
+          "when": "abm.inited && view == autoBuildView"
         },
         {
           "command": "abm.traceback",
           "group": "navigation@3",
-          "when": "abm.has_debug && view == autoBuildView"
+          "when": "abm.inited && abm.has_debug && view == autoBuildView"
         },
         {
           "command": "abm.clean",
           "group": "navigation@4",
-          "when": "!abm.no_clean && view == autoBuildView"
+          "when": "abm.inited && !abm.no_clean && view == autoBuildView"
         },
         {
           "command": "abm.config",
           "group": "navigation@5",
-          "when": "view == autoBuildView || view == marlinView"
+          "when": "abm.inited && view == autoBuildView || view == marlinView"
         }
       ]
     }

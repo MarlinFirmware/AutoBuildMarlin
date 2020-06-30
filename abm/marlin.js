@@ -17,8 +17,7 @@ function init(v, b) {
   vscode = v;
   //vc = v.commands;
   ws = v.workspace;
-  if (ws.workspaceFolders.length)
-    project_path = ws.workspaceFolders[0].uri.fsPath;
+  project_path = (ws && ws.workspaceFolders && ws.workspaceFolders.length) ? ws.workspaceFolders[0].uri.fsPath : '';
 }
 
 function reboot() {
@@ -170,8 +169,22 @@ function watchConfigurations(handler) {
   ];
 }
 
+//
+// Check for valid Marlin files
+//
+function validate() {
+  if (project_path == '') return { ok: false, error: 'Error: No folder is open.' };
+  for (const k in files) {      // Iterate keys
+    const err = fileCheck(k);
+    if (err)
+      return { ok: false, error: `Error: ${files[k].name} ${err}.` };
+  }
+  return { ok: true };
+}
+
 function watchAndValidate(handler) {
   unwatchConfigurations();
+  if (project_path == '') return;
   const marlin_path = path.join(project_path, 'Marlin');
   if (fs.existsSync(marlin_path))
     watchers = [ fs.watch(marlin_path, {}, handler) ];
@@ -188,18 +201,6 @@ function fileCheck(fileid) {
     file_issue = err.code === 'ENOENT' ? 'is missing' : 'is read-only';
   }
   return file_issue;
-}
-
-//
-// Check for valid Marlin files
-//
-function validate() {
-  for (const k in files) {      // Iterate keys
-    const err = fileCheck(k);
-    if (err)
-      return { ok: false, error: `Error: ${files[k].name} ${err}.` };
-  }
-  return { ok: true };
 }
 
 //

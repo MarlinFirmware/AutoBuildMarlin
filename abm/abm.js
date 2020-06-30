@@ -31,7 +31,7 @@ function init(c, v) {
   vw = v.window;
   abm_path = path.join(c.extensionPath, 'abm');
   pane_path = path.join(c.extensionPath, 'abm', 'pane');
-  project_path = ws.workspaceFolders[0].uri.fsPath;
+  project_path = (ws && ws.workspaceFolders && ws.workspaceFolders.length) ? ws.workspaceFolders[0].uri.fsPath : '';
   marlin.init(vscode, bugme);
   set_context('inited', true);
 }
@@ -271,13 +271,18 @@ function readFileError(err, msg) {
 // Check for valid Marlin files
 //
 function validate(do_report) {
-  const result = marlin.validate();
-  if (!result.ok && do_report) postError(result.error);
-  set_context('err.locate', !result.ok);
-  return result.ok;
+  const result = marlin.validate();                     // Let the data model validate itself
+  if (!result.ok && do_report) postError(result.error); // Post the error, if flagged
+  set_context('err.locate', !result.ok);                // Provide context for welcome messages
+  return result.ok;                                     // Return 'true' for valid Marlin files
 }
 
-function watchAndValidate() { marlin.watchAndValidate(validate); }
+//
+// Watch project files and call validate() if changed
+//
+function watchAndValidate() {
+  marlin.watchAndValidate(validate);
+}
 
 //
 // Reload files and refresh the UI
@@ -678,9 +683,9 @@ function run_command(action) {
     panel.onDidDispose(
       () => {
         panel = null;
-        watchAndValidate();                  // Switch to watching the folder (only on writes?)
-        unwatchBuildFolder();                // Closing the view killed the build
-        destroyIPCFile();                    // No IPC needed unless building
+        watchAndValidate();              // Switch to watching the folder (only on writes?)
+        unwatchBuildFolder();            // Closing the view killed the build
+        destroyIPCFile();                // No IPC needed unless building
         set_context('visible', false);   // Update based on "when" in package.json
       },
       null, context.subscriptions
