@@ -295,14 +295,23 @@ function extractBoardInfo(mb) {
     out.mb = mb;
     out.pins_file = inc_line.replace(/.*#include\s+"([^"]*)".*/, '$1');
 
-    out.archs = inc_line.replace(/.+\/\/\s*((\w+,?\s*)+)\s*env:.+/, '$1');
+    out.archs = inc_line.replace(/.+\/\/\s*((\w+,?\s*)+)\s*(env|mac|win|lin|uni):.+/, '$1');
     out.archs_arr = out.archs.replace(',',' ').replace(/\s+/,' ').split(' ');
 
     out.envs = [];
-    var efind = new RegExp('env:(\\w+)', 'g');
+    var efind = new RegExp('(env|mac|win|lin|uni):(\\w+)', 'g');
+    const plat = process.platform;
     while ((r = efind.exec(inc_line))) {
-      let debugenv = r[1].match(/^.+_debug$/);
-      out.envs.push({ name: r[1], debug: debugenv });
+      var is_win = plat == 'win32',
+          is_mac = plat == 'darwin',
+          is_lin = plat == 'linux';
+      if ( r[1] == 'win' && !is_win
+        || r[1] == 'mac' && !is_mac
+        || r[1] == 'lin' && !is_lin
+        || r[1] == 'uni' && (is_win || is_mac || is_lin)
+      ) continue;
+      let debugenv = r[2].match(/^.+_debug$/);
+      out.envs.push({ name: r[2], debug: debugenv });
       if (debugenv) out.has_debug = true;
     }
  }
