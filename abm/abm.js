@@ -300,8 +300,9 @@ function refreshNewData() {
 //
 function lastBuild(env) {
   var bp = envBuildPath(env),
+      src_path = path.join(bp, 'src'),
       out = {
-        exists: fs.existsSync(bp),
+        exists: fs.existsSync(src_path),
         completed: false,
         busy: build.active && build.env == env,
         stamp: ''
