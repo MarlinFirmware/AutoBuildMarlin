@@ -95,6 +95,7 @@ var ABM = (function(){
               // Set env row classes and env caption
               let caption = '';
               if (v.debug) $erows.addClass('debug');
+              if (v.native) $erows.addClass('native');
               if (v.busy) {
                 $erows.addClass('busy');
                 caption = 'Please Wait…';

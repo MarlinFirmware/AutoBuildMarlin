@@ -2,7 +2,7 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.1.17",
+  "version": "2.1.18",
   "publisher": "marlinfirmware",
   "icon": "icon.png",
   "badges": [
@@ -43,12 +43,7 @@
     "Other"
   ],
   "activationEvents": [
-    "*",
-    "onCommand:mfbuild",
-    "onCommand:mfupload",
-    "onCommand:mftraceback",
-    "onCommand:mfclean",
-    "onCommand:mfconfig"
+    "*"
   ],
   "main": "./extension",
   "contributes": {

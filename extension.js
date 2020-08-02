@@ -26,10 +26,10 @@ exports.activate = (context) => {
   abm.init(context, vscode);
   abm.validate();
   abm.watchAndValidate();
-  abm.set_context('abm.active', true);
+  abm.set_context('active', true);
 };
 
-exports.deactivate = () => { abm.set_context('abm.active', false); };
+exports.deactivate = () => { abm.set_context('active', false); };
 
 //
 // Extend String, Number, and Date with extras

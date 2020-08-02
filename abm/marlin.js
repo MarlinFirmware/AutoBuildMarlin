@@ -311,7 +311,7 @@ function extractBoardInfo(mb) {
         || r[1] == 'uni' && (is_win || is_mac || is_lin)
       ) continue;
       let debugenv = r[2].match(/^.+_debug$/);
-      out.envs.push({ name: r[2], debug: debugenv });
+      out.envs.push({ name: r[2], debug: debugenv, native: r[1] != 'env' });
       if (debugenv) out.has_debug = true;
     }
  }
@@ -452,7 +452,6 @@ function getPinDefinitionInfo(mb) {
 
   return pindef_info;
 }
-
 
 module.exports = {
   files, init, reboot, validate, refreshAll,

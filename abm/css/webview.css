@@ -299,7 +299,12 @@ table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
 /* Only show 'Upload' or 'Debug' depending on the env */
                   button.debug { display: none; }
 #info-envs .debug button.debug { display: inline-block; }
-#info-envs .debug button.upload { display: none; }
+#info-envs .debug button.upload,
+#info-envs .native button.upload { display: none; }
+
+/* Only show the "Run" button for a Native target */
+#info-envs                button.run { display: none; }
+#info-envs .exists.native button.run { display: inline-block; }
 
 /* Hide ALL buttons when busy */
 #info-envs .busy button,

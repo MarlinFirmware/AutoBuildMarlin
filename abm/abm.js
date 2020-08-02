@@ -169,10 +169,10 @@ function onIPCFileChange() {
 function onBuildFolderChanged(e, fname, env) {
   cancelBuildRefresh();
 
-  if (fname.match(/.+\.(bin|hex)$/i)) {
+  if (fname.match(/(.+\.(bin|hex|exe)|program)$/i)) {
     // If the BIN or HEX file changed, assume the build is done now
     refresh_to.push(setTimeout(()=>{ unwatchBuildFolder(); }, 500));
-    if (bugme) console.log(`onBuildFolderChanged (bin/hex): ${env}`);
+    if (bugme) console.log(`onBuildFolderChanged (bin/hex/program): ${env}`);
   }
   else {
     // Set timeouts that assume lots of changes are underway
@@ -311,10 +311,10 @@ function lastBuild(env) {
   // If the build folder exists...
   if (out.exists) {
 
-    // Find a .bin or .hex file in the folder
+    // Find a 'program', .exe, .bin, or .hex file in the folder
     const dirlist = fs.readdirSync(bp);
     const bins = dirlist.filter((n) => {
-      return n.match(/.+\.(bin|hex)$/i);
+      return n.match(/(.+\.(bin|hex|exe)|program)$/i);
     });
 
     var tp = bp;
@@ -492,6 +492,14 @@ function pio_command(opname, env, nosave) {
 
   if (build.active) {
     postError(`A build (${build.env}) is already underway.`);
+    return;
+  }
+
+  // Run the built native target, if there is one
+  if (opname == 'run') {
+    const stat = getBuildStatus(env);
+    if (stat && stat.completed && stat.filename)
+      terminal_command(opname, `.pio/build/${env}/${stat.filename}`, true);
     return;
   }
 
