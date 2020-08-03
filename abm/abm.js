@@ -468,8 +468,9 @@ function terminal_command(ttl, cmdline, noping) {
 //
 function reveal_build(env) {
   var aterm = vw.createTerminal({ name:'reveal', env:process.env });
-  const relpath = path.join('.', '.pio', 'build', env),
-        fname = getBuildStatus(env).filename;
+  const relpath = envBuildPath(env),
+        stat = getBuildStatus(env),
+        fname = stat.filename;
   command_with_ping(aterm, 'cd ' + relpath);
   if (process.platform == 'win32') {
     command_with_ping(aterm, 'Explorer /select,' + fname);
@@ -486,6 +487,22 @@ function reveal_build(env) {
 }
 
 //
+// Use a native shell command to run the simulator in background
+//
+function run_built_exe(env) {
+  const stat = getBuildStatus(env);
+  if (stat && stat.completed && stat.filename) {
+    const exe = envBuildPath(env, stat.filename),
+          aterm = vw.createTerminal({ name:'run', env:process.env });
+    if (process.platform == 'win32')
+      command_with_ping(aterm, 'START /B ' + exe);
+    else
+      command_with_ping(aterm, exe + ' &');
+    command_with_ping(aterm, 'exit');
+  }
+}
+
+//
 // Start a PlatformIO command, update the UI, and watch the build.
 //
 function pio_command(opname, env, nosave) {
@@ -495,16 +512,11 @@ function pio_command(opname, env, nosave) {
     return;
   }
 
-  // Run the built native target, if there is one
-  if (opname == 'run') {
-    const stat = getBuildStatus(env);
-    if (stat && stat.completed && stat.filename)
-      terminal_command(opname, `.pio/build/${env}/${stat.filename}`, true);
-    return;
-  }
-
   let args;
   switch (opname) {
+    case 'run':
+      run_built_exe(env); // Run the built native target, if there is one
+      return;
     case 'build':     args = 'run';                 break;
     case 'clean':     args = 'run --target clean';  break;
     case 'traceback':
