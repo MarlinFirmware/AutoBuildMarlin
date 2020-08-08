@@ -169,7 +169,7 @@ function onIPCFileChange() {
 function onBuildFolderChanged(e, fname, env) {
   cancelBuildRefresh();
 
-  if (fname.match(/(.+\.(bin|hex|exe)|program)$/i)) {
+  if (fname.match(/(.+\.(bin|hex|exe)|program|MarlinSimulator)$/i)) {
     // If the BIN or HEX file changed, assume the build is done now
     refresh_to.push(setTimeout(()=>{ unwatchBuildFolder(); }, 500));
     if (bugme) console.log(`onBuildFolderChanged (bin/hex/program): ${env}`);
@@ -314,7 +314,7 @@ function lastBuild(env) {
     // Find a 'program', .exe, .bin, or .hex file in the folder
     const dirlist = fs.readdirSync(bp);
     const bins = dirlist.filter((n) => {
-      return n.match(/(.+\.(bin|hex|exe)|program)$/i);
+      return n.match(/(.+\.(bin|hex|exe)|program|MarlinSimulator)$/i);
     });
 
     var tp = bp;
