@@ -319,8 +319,8 @@ function lastBuild(env) {
 
     var tp = bp;
     if (bins.length) {
-      tp = envBuildPath(env, bins[0]);
-      out.filename = bins[0];
+      tp = envBuildPath(env, bins[bins.length-1]);
+      out.filename = bins[bins.length-1];
       out.completed = true;
     }
 
