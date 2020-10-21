@@ -427,7 +427,15 @@ function terminal_for_command(ttl, noping) {
       title = `Marlin ${ttl.toTitleCase()} (${NEXT_TERM_ID})`;
       NEXT_TERM_ID++;
     }
-    terminal = vw.createTerminal({ name:title, env:process.env });
+
+    // If PLATFORMIO_PATH exists, use as environment PATH (#22)
+    const envClone = Object.create(process.env);
+    if (process.env.PLATFORMIO_PATH) {
+      envClone.PATH = process.env.PLATFORMIO_PATH;
+      envClone.Path = process.env.PLATFORMIO_PATH;
+    }
+
+    terminal = vw.createTerminal({ name:title, env:envClone });
     vw.onDidCloseTerminal((t) => {
       if (t === terminal) {
         terminal = null;
