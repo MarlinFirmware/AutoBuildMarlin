@@ -598,6 +598,14 @@ function load_pane(name, data) {
   return eval(`\`${html}\``);
 }
 
+function getNonce() {
+  let text = '';
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let i = 0; i < 32; i++)
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  return text;
+}
+
 // Contents of the Web View
 function webViewContent() {
 
@@ -614,6 +622,7 @@ function webViewContent() {
 
   // Load WebView content
   const home_html = load_home();
+  const nonce = getNonce();
   merged_html = eval(`\`${home_html}\``);
   return merged_html;
 }

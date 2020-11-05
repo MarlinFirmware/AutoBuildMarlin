@@ -3,9 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'nonce-${nonce}'; font-src https://fonts.gstatic.com/; style-src ${ pv.cspSource } https://fonts.googleapis.com/; img-src ${ pv.cspSource }; script-src 'unsafe-inline' ${ pv.cspSource };"
+/>
 <title>Auto Build Marlin — Home</title>
-<link href="https://fonts.googleapis.com/css?family=Fira+Mono&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css" />
-<script>
+<link nonce="${nonce}" href="https://fonts.googleapis.com/css?family=Fira+Mono&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css" />
+<script nonce="${nonce}">
 //<![CDATA[
 
   const vscode = acquireVsCodeApi();
@@ -41,7 +45,7 @@
 </script>
 <script src="${ js_path('jquery-3.3.1.min.js') }"></script>
 <script src="${ js_path('webview.js') }"></script>
-<link rel="stylesheet" href="${ css_path('webview.css') }" type="text/css" media="all" />
+<link nonce="${nonce}" rel="stylesheet" href="${ css_path('webview.css') }" type="text/css" media="all" />
 </head>
 <body>
 <div id="abm-layout">
