@@ -1,6 +1,8 @@
 /* abm.css */
 /* Styles for Auto Build Marlin Home - and eventually Configurator */
 
+html#abm { --marlin-svg: url(marlin.svg); }
+
 * {
   --abm-header-height: 50px;
   --abm-toolbar-width: 70px;
