@@ -66,8 +66,18 @@ function envBuildPath(env, file) {
   return bp;
 }
 
-function existingBuildPath(env) {
-  var bp = envBuildPath(env);
+/**
+ * Find an existing build folder. If 'debug' exists, prefer it.
+ */
+function existingBuildPath(env, file) {
+  var bp = envBuildPath(env, 'debug');
+  if (file !== undefined) bp = path.join(bp, file);
+  if (fs.existsSync(bp)) return bp;
+  return envBuildPath(env, file);
+}
+
+function existingBuildPathOrNull(env) {
+  var bp = existingBuildPath(env);
   return fs.existsSync(bp) ? bp : null;
 }
 
@@ -127,7 +137,7 @@ function unwatchBuildFolder() {
  */
 function watchBuildFolder(env) {
   if (!build.watcher) {
-    const bp = existingBuildPath(env);
+    const bp = existingBuildPathOrNull(env);
     if (bp) {
       build.watcher = fs.watch(bp, {}, (e,f) => { onBuildFolderChanged(e,f,env); });
       if (bugme) console.log("Watching Build...");
@@ -299,7 +309,7 @@ function refreshNewData() {
 //  - exists, completed, busy, stamp
 //
 function lastBuild(env) {
-  var bp = envBuildPath(env),
+  var bp = existingBuildPath(env),
       src_path = path.join(bp, 'src'),
       out = {
         exists: fs.existsSync(src_path),
@@ -319,7 +329,7 @@ function lastBuild(env) {
 
     var tp = bp;
     if (bins.length) {
-      tp = envBuildPath(env, bins[bins.length-1]);
+      tp = existingBuildPath(env, bins[bins.length-1]);
       out.filename = bins[bins.length-1];
       out.completed = true;
     }
@@ -476,7 +486,7 @@ function terminal_command(ttl, cmdline, noping) {
 //
 function reveal_build(env) {
   var aterm = vw.createTerminal({ name:'reveal', env:process.env });
-  const relpath = envBuildPath(env),
+  const relpath = existingBuildPath(env),
         stat = getBuildStatus(env),
         fname = stat.filename;
   command_with_ping(aterm, 'cd ' + relpath);
@@ -500,7 +510,7 @@ function reveal_build(env) {
 function run_built_exe(env) {
   const stat = getBuildStatus(env);
   if (stat && stat.completed && stat.filename) {
-    const exe = envBuildPath(env, stat.filename),
+    const exe = existingBuildPath(env, stat.filename),
           aterm = vw.createTerminal({ name:'run', env:process.env });
     if (process.platform == 'win32')
       command_with_ping(aterm, 'START /B ' + exe);
