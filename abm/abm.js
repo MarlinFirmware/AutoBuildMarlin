@@ -464,13 +464,12 @@ function terminal_for_command(ttl, noping) {
 // Send a command and ping back when it completes
 //
 function command_with_ping(t, cmdline, ping) {
-  const pingline = `echo "done" >${ipc_file}`;
   if (process.platform == 'win32') {
     t.sendText(cmdline);
-    if (ping) t.sendText(pingline);
+    if (ping) t.sendText(`echo "done" >${ipc_file}`);
   }
   else
-    t.sendText(cmdline + (ping ? ` ; ${pingline}` : ''));
+    t.sendText(cmdline + (ping ? ` ; echo "done" >|${ipc_file}` : ''));
 }
 
 //
