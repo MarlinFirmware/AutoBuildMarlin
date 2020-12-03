@@ -287,7 +287,7 @@ function extractBoardInfo(mb) {
   var r, out = { has_debug: false }, sb = mb.replace('BOARD_', '');
 
   // Get the include line matching the board
-  const lfind = new RegExp(`if\\s*MB\\(${sb}\\).*\n\\s*(#include.+)\n`, 'g');
+  const lfind = new RegExp(`if\\s*MB\\(.*\\b${sb}\\b.*\\).*\n\\s*(#include.+)\n`, 'g');
   if ((r = lfind.exec(files.pins.text))) {
 
     let inc_line = r[1];
@@ -314,7 +314,7 @@ function extractBoardInfo(mb) {
       out.envs.push({ name: r[2], debug: debugenv, native: r[1] != 'env' });
       if (debugenv) out.has_debug = true;
     }
- }
+  }
   else {
     const bfind = new RegExp(`#error\\s+"(${mb} has been renamed \\w+)`, 'g');
     out.error = (r = bfind.exec(files.pins.text)) ? r[1] : `Unknown MOTHERBOARD ${mb}`;
