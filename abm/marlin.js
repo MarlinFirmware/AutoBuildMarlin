@@ -305,10 +305,10 @@ function extractBoardInfo(mb) {
       var is_win = plat == 'win32',
           is_mac = plat == 'darwin',
           is_lin = plat == 'linux';
-      if ( r[1] == 'win' && !is_win
-        || r[1] == 'mac' && !is_mac
-        || r[1] == 'lin' && !is_lin
-        || r[1] == 'uni' && (is_win || is_mac || is_lin)
+      if ( (r[1] == 'win' && !is_win)
+        || (r[1] == 'mac' && !is_mac)
+        || (r[1] == 'lin' && !is_lin)
+        || (r[1] == 'uni' && (is_win || is_mac || is_lin))
       ) continue;
       let debugenv = r[2].match(/^.+_debug$/);
       out.envs.push({ name: r[2], debug: debugenv, native: r[1] != 'env' });
