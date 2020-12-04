@@ -301,7 +301,10 @@ table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
 /* Only show 'Upload' or 'Debug' depending on the env */
                   button.debug { display: none; }
 #info-envs .debug button.debug { display: inline-block; }
+
+/* No upload button for debug or native */
 #info-envs .debug button.upload,
+#info-envs .native button.debug,
 #info-envs .native button.upload { display: none; }
 
 /* Only show the "Run" button for a Native target */
@@ -310,7 +313,9 @@ table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
 
 /* Hide ALL buttons when busy */
 #info-envs .busy button,
+#info-envs .debug.busy button,
 #info-envs .busy.exists button,
+#info-envs .debug.busy.exists button,
 #info-envs .busy.exists button.clean,
 #info-envs .busy.exists button.debug,
 #info-envs .busy.exists button.run { display: none; }
