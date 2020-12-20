@@ -179,10 +179,10 @@ function onIPCFileChange() {
 function onBuildFolderChanged(e, fname, env) {
   cancelBuildRefresh();
 
-  if (fname.match(/(.+\.(bin|hex|exe)|program|MarlinSimulator)$/i)) {
+  if (fname.match(/(.+\.(bin|hex|exe|srec)|program|MarlinSimulator)$/i)) {
     // If the BIN or HEX file changed, assume the build is done now
     refresh_to.push(setTimeout(()=>{ unwatchBuildFolder(); }, 500));
-    if (bugme) console.log(`onBuildFolderChanged (bin/hex/program): ${env}`);
+    if (bugme) console.log(`onBuildFolderChanged (firmware binary): ${env}`);
   }
   else {
     // Set timeouts that assume lots of changes are underway
