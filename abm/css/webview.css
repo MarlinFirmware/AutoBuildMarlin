@@ -382,3 +382,5 @@ div.subtabs button.active {
   }
 
 a.reveal { font-size: 120%; }
+
+form#showy { display: block; position: relative; float: right; }

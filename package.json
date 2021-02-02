@@ -64,6 +64,11 @@
           "type": "boolean",
           "default": true,
           "description": "Reuse the same Terminal for all commands."
+        },
+        "auto-build.showOnStartup": {
+          "type": "boolean",
+          "default": false,
+          "description": "Open the Auto Build Marlin panel on startup."
         }
       }
     },

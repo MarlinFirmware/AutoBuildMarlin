@@ -424,6 +424,12 @@ function should_reuse_terminal() {
   return abm_config.get('reuseTerminal');
 }
 
+function show_on_startup() {
+  // Get config options with the 'auto-build' prefix
+  const abm_config = ws.getConfiguration('auto-build', true);
+  return abm_config.get('showOnStartup');
+}
+
 //
 // Reuse or create a new Terminal for a command
 //
@@ -778,4 +784,4 @@ function runSelectedAction() {
   }
 }
 
-module.exports = { init, set_context, run_command, validate, watchAndValidate };
+module.exports = { init, set_context, run_command, validate, watchAndValidate, show_on_startup };
