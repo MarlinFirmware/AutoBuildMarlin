@@ -328,7 +328,7 @@ table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
 #env-rows-src,
 #debug-text { display: none; }
 
-#error, div.panel-err {
+#error {
   width: 70%;
   margin: 1em auto;
   padding: 0.5em 0;
@@ -342,6 +342,12 @@ table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
 
 #error { display: none; }
 
+.panel-error {
+  text-align: center;
+  color: red;
+  font-size: 150%;
+  }
+
 span.progress {
   display: inline-block;
   width: 128px;
@@ -354,6 +360,8 @@ span.progress {
   background-repeat: repeat-x;
   }
 
+div.subpanes { margin-top: 0; }
+
 .subpanes>div {
   display: none;
   width: 100%;
@@ -362,14 +370,7 @@ span.progress {
   background: #FFF3;
   }
 
-.panel-error {
-  text-align: center;
-  color: red;
-  font-size: 150%;
-  }
-
 div.subtabs { margin-bottom: 0; }
-div.subpanes { margin-top: 0; }
 div.subtabs button {
   border-radius: 0.25em 0.25em 0 0;
   margin: 0 2px 0 0;
