@@ -118,6 +118,7 @@
     ],
     "commands": [
       {
+        "category": "Auto Build Marlin",
         "command": "abm.build",
         "title": "Marlin: Build",
         "icon": {
@@ -126,6 +127,7 @@
         }
       },
       {
+        "category": "Auto Build Marlin",
         "command": "abm.upload",
         "title": "Marlin: Upload",
         "icon": {
@@ -134,6 +136,7 @@
         }
       },
       {
+        "category": "Auto Build Marlin",
         "command": "abm.traceback",
         "title": "Marlin: Upload (traceback)",
         "icon": {
@@ -142,6 +145,7 @@
         }
       },
       {
+        "category": "Auto Build Marlin",
         "command": "abm.clean",
         "title": "Marlin: Clean",
         "icon": {
@@ -150,6 +154,7 @@
         }
       },
       {
+        "category": "Auto Build Marlin",
         "command": "abm.config",
         "title": "Marlin: Configure",
         "icon": {
