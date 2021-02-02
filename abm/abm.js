@@ -580,7 +580,7 @@ function postError(msg, data) {
 
 // Send a Tool Select message
 function postTool(t) {
-  pv.postMessage({ command: 'tool', tool:t });   // Send a tool message back
+  pv.postMessage({ command:'tool', tool:t });   // Send a tool message back
 }
 
 // Post a value to the UI
@@ -644,6 +644,8 @@ function webViewContent() {
 
 //
 // Handle a command sent from the Web View
+// Commands are sent using the msg() function
+// defined in abm.html.
 //
 function handleWebViewMessage(m) {
   switch (m.command) {

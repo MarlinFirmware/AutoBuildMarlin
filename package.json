@@ -2,7 +2,7 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.1.27",
+  "version": "2.1.28",
   "publisher": "marlinfirmware",
   "icon": "icon.png",
   "badges": [
@@ -24,6 +24,7 @@
   ],
   "keywords": [
     "3DPrinting",
+    "Firmware",
     "PlatformIO",
     "Embedded",
     "AVR",
