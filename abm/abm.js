@@ -301,7 +301,7 @@ function refreshNewData() {
   if (validate(true))
     marlin.refreshAll(allFilesAreLoaded, readFileError);
   else
-    postError('Please open Marlin in the workspace.');
+    postError('Please open Marlin 2.x in the workspace.');
 }
 
 //
