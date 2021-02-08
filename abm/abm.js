@@ -36,6 +36,14 @@ function init(c, v) {
   set_context('inited', true);
 }
 
+//
+// ABM Settings
+//
+function settings()              { return ws.getConfiguration('auto-build'); }
+function should_reuse_terminal() { return settings().get('reuseTerminal', true); }
+function show_on_startup()       { return settings().get('showOnStartup', false); }
+function set_show_on_startup(sh) { settings().update('showOnStartup', sh); }
+
 /**
  * The simplest layout concept is to take the entire config
  * and parse it in a big list. Parent items are at root, and
@@ -418,18 +426,6 @@ function destroyIPCFile() {
 //
 var terminal, NEXT_TERM_ID = 1;
 
-function should_reuse_terminal() {
-  // Get config options with the 'auto-build' prefix
-  const abm_config = ws.getConfiguration('auto-build', true);
-  return abm_config.get('reuseTerminal');
-}
-
-function show_on_startup() {
-  // Get config options with the 'auto-build' prefix
-  const abm_config = ws.getConfiguration('auto-build', true);
-  return abm_config.get('showOnStartup');
-}
-
 //
 // Reuse or create a new Terminal for a command
 //
@@ -675,6 +671,10 @@ function handleWebViewMessage(m) {
 
     case 'monitor':          // Monitor button
       vc.executeCommand('platformio-ide.serialMonitor');
+      return;
+
+    case 'show_on_start':    // Show on Startup checkbox
+      set_show_on_startup(m.show);
       return;
 
     case 'pio':              // Build, Upload, Clean...

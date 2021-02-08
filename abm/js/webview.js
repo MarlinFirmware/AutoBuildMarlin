@@ -3,7 +3,7 @@
  *
  * webview.js
  *
- * Manage the WebView UI using messaging with extension.js
+ * Manage the WebView UI using messaging with abm.js
  * Built on jQuery for easier DOM manipulation.
  * 
  */
@@ -40,6 +40,13 @@ var ABM = (function(){
       //
       $('.subtabs button').click((e) => {
         abm_pane($(e.target).attr('ref'));
+      });
+
+      //
+      // Show on Startup checkbox updates the config
+      //
+      $('#showy input').change((e) => {
+        msg({ command:'show_on_start', show:e.target.checked });
       });
 
       //
