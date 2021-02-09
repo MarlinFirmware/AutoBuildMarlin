@@ -42,7 +42,10 @@ function init(c, v) {
 function settings()              { return ws.getConfiguration('auto-build'); }
 function should_reuse_terminal() { return settings().get('reuseTerminal', true); }
 function show_on_startup()       { return settings().get('showOnStartup', false); }
-function set_show_on_startup(sh) { settings().update('showOnStartup', sh); }
+function set_show_on_startup(sh) {
+  var glob = settings().inspect('showOnStartup').workspaceValue == undefined;
+  settings().update('showOnStartup', sh, glob);
+}
 
 /**
  * The simplest layout concept is to take the entire config
@@ -735,6 +738,8 @@ function run_command(action) {
     //
     pv.html = webViewContent();
 
+    const cs = context.subscriptions;
+
     panel.onDidDispose(
       () => {
         panel = null;
@@ -743,11 +748,17 @@ function run_command(action) {
         destroyIPCFile();                // No IPC needed unless building
         set_context('visible', false);   // Update based on "when" in package.json
       },
-      null, context.subscriptions
+      null, cs
+    );
+
+    // Update the "Show on Startup" checkbox when shown
+    panel.onDidChangeViewState(
+      () => { if (panel.active) pv.postMessage({ command:'start', start:show_on_startup() }); },
+      null, cs
     );
 
     // Handle messages from the webview
-    pv.onDidReceiveMessage(handleWebViewMessage, undefined, context.subscriptions);
+    pv.onDidReceiveMessage(handleWebViewMessage, undefined, cs);
 
     // Create an IPC file for messages from Terminal
     createIPCFile();

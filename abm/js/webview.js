@@ -83,6 +83,9 @@ var ABM = (function(){
           case 'warning':
             $err.addClass('warning').html(m.warning).show('fast');
             break;
+          case 'start':
+            $('#showy input[name="show_on_startup"]').prop('checked', m.start);
+            break;
           case 'envs':
             // We finally got environments!
             // Make some buttons...
