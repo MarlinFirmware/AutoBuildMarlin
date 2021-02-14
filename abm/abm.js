@@ -345,7 +345,7 @@ function lastBuild(env) {
     // Find a 'program', .exe, .bin, or .hex file in the folder
     const dirlist = fs.readdirSync(bp);
     const bins = dirlist.filter((n) => {
-      return n.match(/(.+\.(bin|hex|exe)|program|MarlinSimulator)$/i);
+      return n.match(/(.+\.(bin|hex|exe|srec)|program|MarlinSimulator)$/i);
     });
 
     var tp = bp;
