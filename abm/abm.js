@@ -312,7 +312,7 @@ function refreshNewData() {
   if (validate(true))
     marlin.refreshAll(allFilesAreLoaded, readFileError);
   else
-    postError('Please open Marlin 2.x in the workspace.');
+    postError('Please <a href="#" onclick="msg({ command:\'open\' })">open Marlin 2.x</a> in the workspace.');
 }
 
 //
@@ -648,6 +648,10 @@ function webViewContent() {
 //
 function handleWebViewMessage(m) {
   switch (m.command) {
+
+    case 'open':
+      vc.executeCommand('vscode.openFolder');
+      break;
 
     case 'tool':
       // On tool selection, re-populate the selected view
