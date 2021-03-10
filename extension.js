@@ -22,6 +22,7 @@ exports.activate = (context) => {
   cs.push(vc.registerCommand('abm.clean',     () => { abm.run_command('clean');     }));
   cs.push(vc.registerCommand('abm.config',    () => { abm.run_command('config');    }));
   cs.push(vc.registerCommand('abm.show',      () => { abm.run_command();            }));
+  cs.push(vc.registerCommand('abm.sponsor',   () => { abm.sponsor();                }));
 
   abm.init(context, vscode);
   abm.validate();

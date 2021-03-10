@@ -696,6 +696,13 @@ function handleWebViewMessage(m) {
 }
 
 //
+// Open the author's sponsorship page
+//
+function sponsor() {
+  vscode.env.openExternal(vscode.Uri.parse('https://github.com/sponsors/thinkyhead'));
+}
+
+//
 // ABM command activation event handler
 //
 var panel, abm_action;
@@ -801,4 +808,4 @@ function runSelectedAction() {
   }
 }
 
-module.exports = { init, set_context, run_command, validate, watchAndValidate, show_on_startup };
+module.exports = { init, set_context, run_command, validate, watchAndValidate, show_on_startup, sponsor };

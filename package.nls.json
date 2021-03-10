@@ -1,10 +1,10 @@
 {
   "displayName": "Auto Build Marlin",
-  "description": "An easy way to build Marlin for your MOTHERBOARD.",
+  "description": "Quickly build Marlin for your MOTHERBOARD.",
   "view.workbench.abm.loading": "Initializing…",
-  "view.workbench.abm.intro": "Marlin Firmware is open in the workspace. Use the buttons above to [show the ABM panel](command:abm.show) and start a process.",
-  "view.workbench.abm.err.empty": "Nothing is open in the workspace. To use Auto Build Marlin open a [Marlin 2.x project folder](command:vscode.openFolder) in the workspace.",
-  "view.workbench.abm.err.folder": "The currently open folder doesn't contain a (valid) Marlin 2.x project. To use Auto Build Marlin open a [Marlin 2.x project folder](command:vscode.openFolder) in the workspace.",
-  "view.workbench.abm.err.workspace": "The currently open workspace doesn't contain a (valid) Marlin 2.x project. To use Auto Build Marlin open a [Marlin 2.x project folder](command:vscode.openFolder) in the workspace.",
-  "view.workbench.abm.err.parse": "Unable to parse one or more Marlin 2.x project files."
+  "view.workbench.abm.intro": "Marlin Firmware 2.x is open in the workspace!\n\n[Show ABM Panel](command:abm.show)\n\n…or use one of the buttons above to Build, Upload, Clean, etc.\n\n[Sponsor Marlin ❤](command:abm.sponsor)\n\nIf you find Marlin useful, please consider sponsoring it.\n\n[Close](command:workbench.action.closeSidebar \"Close the Welcome view\")",
+  "view.workbench.abm.err.empty": "Nothing open in the workspace. To use this extension\n\n[Open a Marlin 2.x Folder](command:vscode.openFolder)\n\nin the workspace.\n\n[Sponsor Marlin ❤](command:abm.sponsor)\n\nIf you find Marlin useful, please consider sponsoring it.\n\n[Close](command:workbench.action.closeSidebar \"Close the Welcome view\")",
+  "view.workbench.abm.err.folder": "The currently open folder doesn't contain a (valid) Marlin 2.x project. To use this extension\n\n[Open a Marlin 2.x Folder](command:vscode.openFolder)\n\nin the workspace.\n\n[Sponsor Marlin ❤](command:abm.sponsor)\n\nIf you find Marlin useful, please consider sponsoring it.\n\n[Close](command:workbench.action.closeSidebar \"Close the Welcome view\")",
+  "view.workbench.abm.err.workspace": "The workspace doesn't contain a (valid) Marlin 2.x project. To use this extension\n\n[Open a Marlin 2.x Folder](command:vscode.openFolder)\n\nin the workspace.\n\n[Sponsor Marlin ❤](command:abm.sponsor)\n\nIf you find Marlin useful, please consider sponsoring it.\n\n[Close](command:workbench.action.closeSidebar \"Close the Welcome view\")",
+  "view.workbench.abm.err.parse": "Unable to parse Marlin 2.x project files. Repair the project and reload the window."
 }
