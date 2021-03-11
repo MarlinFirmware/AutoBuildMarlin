@@ -4,7 +4,7 @@
  * abm.js
  *
  * Build Tool methods. Config Tool can be separate.
- * 
+ *
  */
 
 const bugme = false; // Lots of debug output
@@ -42,9 +42,14 @@ function init(c, v) {
 function settings()              { return ws.getConfiguration('auto-build'); }
 function should_reuse_terminal() { return settings().get('reuseTerminal', true); }
 function show_on_startup()       { return settings().get('showOnStartup', false); }
+function default_env()           { return settings().get('defaultEnv', ''); }
 function set_show_on_startup(sh) {
   var glob = settings().inspect('showOnStartup').workspaceValue == undefined;
   settings().update('showOnStartup', sh, glob);
+}
+function set_default_env(e) {
+  var glob = settings().inspect('defaultEnv').workspaceValue == undefined;
+  settings().update('defaultEnv', e, glob);
 }
 
 /**
@@ -534,6 +539,8 @@ function pio_command(opname, env, nosave) {
     return;
   }
 
+  set_default_env(env); // sloppy, updated every time
+
   let args;
   switch (opname) {
     case 'run':
@@ -789,9 +796,11 @@ function runSelectedAction() {
     else {
       postTool('build');
       let env;
-      if (board_info.envs.length == 1)
+      if (board_info.envs.length == 1) { // only 1 board is available
         env = board_info.envs[0].name;
-      else if (act == 'clean') {
+      } else if (board_info.envs.length > 1 && board_info.envs.includes(default_env())) { // use default env
+        env = default_env();
+      } else if (act == 'clean') {
         let cleanme, cnt = 0;
         board_info.envs.forEach((v) => { if (v.exists) { cleanme = v.name; cnt++; } });
         if (cnt == 0) {
