@@ -71,12 +71,12 @@
           "default": false,
           "description": "Open the Auto Build Marlin panel on startup."
         },
-        "auto-build.defaultEnv": {
+        "auto-build.defaultEnv.env": {
           "type": "string",
           "default": "",
           "description": "Default environment to use when using sidebar shortcut to build or upload. Set when building or uploading from the ABM panel"
         },
-        "auto-build.autoUpdateDefaultEnv": {
+        "auto-build.defaultEnv.autoUpdate": {
           "type": "boolean",
           "default": true,
           "description": "Whether to update the default environment when building or uploading"

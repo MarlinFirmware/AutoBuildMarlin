@@ -42,15 +42,15 @@ function init(c, v) {
 function settings()                  { return ws.getConfiguration('auto-build'); }
 function should_reuse_terminal()     { return settings().get('reuseTerminal', true); }
 function show_on_startup()           { return settings().get('showOnStartup', false); }
-function default_env()               { return settings().get('defaultEnv', ''); }
-function should_update_default_env() { return settings().get('autoUpdateDefaultEnv', true); }
+function default_env()               { return settings().get('defaultEnv.env', ''); }
+function should_update_default_env() { return settings().get('defaultEnv.autoUpdate', true); }
 function set_show_on_startup(sh) {
   var glob = settings().inspect('showOnStartup').workspaceValue == undefined;
   settings().update('showOnStartup', sh, glob);
 }
 function set_default_env(e) {
-  var glob = settings().inspect('defaultEnv').workspaceValue == undefined;
-  settings().update('defaultEnv', e, glob);
+  var glob = settings().inspect('defaultEnv.env').workspaceValue == undefined;
+  settings().update('defaultEnv.env', e, glob);
 }
 
 /**
