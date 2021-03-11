@@ -75,6 +75,11 @@
           "type": "string",
           "default": "",
           "description": "Default environment to use when using sidebar shortcut to build or upload. Set when building or uploading from the ABM panel"
+        },
+        "auto-build.autoUpdateDefaultEnv": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to update the default environment when building or uploading"
         }
       }
     },
