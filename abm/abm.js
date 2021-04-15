@@ -39,18 +39,22 @@ function init(c, v) {
 //
 // ABM Settings
 //
-function settings()                  { return ws.getConfiguration('auto-build'); }
-function should_reuse_terminal()     { return settings().get('reuseTerminal', true); }
-function show_on_startup()           { return settings().get('showOnStartup', false); }
-function default_env()               { return settings().get('defaultEnv.env', ''); }
-function should_update_default_env() { return settings().get('defaultEnv.autoUpdate', true); }
+function settings()               { return ws.getConfiguration('auto-build'); }
+function should_reuse_terminal()  { return settings().get('reuseTerminal', true); }
+function show_on_startup()        { return settings().get('showOnStartup', false); }
+function default_env()            { return settings().get('defaultEnv.name', ''); }
+function default_env_autoupdate() { return settings().get('defaultEnv.autoUpdate', true); }
+
 function set_show_on_startup(sh) {
-  var glob = settings().inspect('showOnStartup').workspaceValue == undefined;
-  settings().update('showOnStartup', sh, glob);
+  const s = 'showOnStartup';
+  var glob = settings().inspect(s).workspaceValue == undefined;
+  settings().update(s, sh, glob);
 }
+
 function set_default_env(e) {
-  var glob = settings().inspect('defaultEnv.env').workspaceValue == undefined;
-  settings().update('defaultEnv.env', e, glob);
+  const s = 'defaultEnv.name';
+  var glob = settings().inspect(s).workspaceValue == undefined;
+  settings().update(s, e, glob);
 }
 
 /**
@@ -540,8 +544,7 @@ function pio_command(opname, env, nosave) {
     return;
   }
 
-  if (should_update_default_env())
-    set_default_env(env); // sloppy, updated every time
+  if (default_env_autoupdate()) set_default_env(env);
 
   let args;
   switch (opname) {
