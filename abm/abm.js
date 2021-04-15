@@ -39,11 +39,11 @@ function init(c, v) {
 //
 // ABM Settings
 //
-function settings()               { return ws.getConfiguration('auto-build'); }
-function should_reuse_terminal()  { return settings().get('reuseTerminal', true); }
-function show_on_startup()        { return settings().get('showOnStartup', false); }
-function default_env()            { return settings().get('defaultEnv.name', ''); }
-function default_env_autoupdate() { return settings().get('defaultEnv.autoUpdate', true); }
+function settings()              { return ws.getConfiguration('auto-build'); }
+function should_reuse_terminal() { return settings().get('reuseTerminal', true); }
+function show_on_startup()       { return settings().get('showOnStartup', false); }
+function default_env()           { return settings().get('defaultEnv.name', ''); }
+function default_env_update()    { return settings().get('defaultEnv.update', true); }
 
 function set_show_on_startup(sh) {
   const s = 'showOnStartup';
@@ -544,7 +544,7 @@ function pio_command(opname, env, nosave) {
     return;
   }
 
-  if (default_env_autoupdate()) set_default_env(env);
+  if (default_env_update()) set_default_env(env);
 
   let args;
   switch (opname) {
