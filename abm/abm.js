@@ -4,7 +4,7 @@
  * abm.js
  *
  * Build Tool methods. Config Tool can be separate.
- * 
+ *
  */
 
 const bugme = false; // Lots of debug output
@@ -471,7 +471,10 @@ function terminal_for_command(ttl, noping) {
 function command_with_ping(t, cmdline, ping) {
   if (process.platform == 'win32') {
     t.sendText(cmdline);
-    if (ping) t.sendText(`echo "done" >${ipc_file}`);
+    var cmd = `echo "done" >${ipc_file}`;
+    if (vscode.env.shell.indexOf('bash') != -1)
+      cmd = `echo "done" >'${ipc_file}'`;
+    if (ping) t.sendText(cmd);
   }
   else
     t.sendText(cmdline + (ping ? ` ; echo "done" >|${ipc_file}` : ''));
