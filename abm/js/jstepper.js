@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * jQuery "stepper" Plugin
  * version 0.0.1
  * @requires jQuery v1.3.2 or later
