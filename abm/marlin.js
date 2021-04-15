@@ -21,7 +21,7 @@ function init(v, b) {
 }
 
 function reboot() {
-  
+
 }
 
 //
