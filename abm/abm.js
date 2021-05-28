@@ -506,7 +506,8 @@ function reveal_build(env) {
   const relpath = existingBuildPath(env),
         stat = getBuildStatus(env),
         fname = stat.filename;
-  command_with_ping(aterm, 'cd ' + relpath);
+  const escpath = relpath.replace(' ', '\\ ')
+  command_with_ping(aterm, 'cd ' + escpath);
   if (process.platform == 'win32') {
     command_with_ping(aterm, 'Explorer /select,' + fname);
     command_with_ping(aterm, 'exit');
