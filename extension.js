@@ -29,7 +29,7 @@ exports.activate = (context) => {
   abm.watchAndValidate();
   abm.set_context('active', true);
 
-  if (abm.show_on_startup()) abm.run_command();
+  if (abm.show_on_startup()) setTimeout(abm.run_command, 1000);
 };
 
 exports.deactivate = () => { abm.set_context('active', false); };
