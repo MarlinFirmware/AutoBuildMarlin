@@ -266,6 +266,7 @@ pre.config {
 .env-more span {
   height: 0;
   margin-left: 1em;
+  vertical-align: middle;
   }
 /* Show the caption for exists or busy */
 .exists          .env-more,
@@ -381,6 +382,6 @@ div.subtabs button.active {
   color: #FFF;
   }
 
-a.reveal { font-size: 120%; }
+a.reveal { font-size: small; }
 
 form#showy { display: block; position: relative; float: right; }

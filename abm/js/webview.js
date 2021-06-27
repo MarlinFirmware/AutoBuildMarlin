@@ -114,13 +114,13 @@ var ABM = (function(){
               if (v.exists) {
                 $erows.addClass('exists');
                 if (!v.busy) {
-                  caption = 'Last build ' + v.stamp;
+                  caption = 'Built "' + v.filename + '" ' + v.stamp;
                   if (!v.completed) {
                     $erows.addClass('incomplete');
                     caption += ' (incomplete)';
                   }
                   else
-                    caption = `<a class="reveal" href="#" title="Reveal" onclick="msg({ command:'reveal', env:'${v.name}' })">📁</a>&nbsp; ${caption}`;
+                    caption = `<a class="reveal" href="#" title="Reveal" onclick="msg({ command:'reveal', env:'${v.name}' })"><span>📁</span>&nbsp; ${caption}</a>`;
                 }
               }
               $erows.find('.env-more span').html(caption);
