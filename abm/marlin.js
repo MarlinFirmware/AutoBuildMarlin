@@ -310,7 +310,7 @@ function extractBoardInfo(mb) {
         || (r[1] == 'mac' && !is_mac)
         || (r[1] == 'lin' && !is_lin)
         || (r[1] == 'uni' && !is_uni && !is_lin) ) continue;
-      let debugenv = r[2].match(/^.+_debug$/);
+      let debugenv = r[2].match(/^.+_debug$/i);
       out.envs.push({ name: r[2], debug: debugenv, native: r[1] != 'env' });
       if (debugenv) out.has_debug = true;
     }
