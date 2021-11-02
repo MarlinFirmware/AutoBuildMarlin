@@ -39,7 +39,6 @@
   },
   "homepage": "https://github.com/MarlinFirmware/AutoBuildMarlin/blob/master/README.md",
   "markdown": "github",
-  "enableProposedApi": true,
   "categories": [
     "Other"
   ],
