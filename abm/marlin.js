@@ -311,7 +311,10 @@ function extractBoardInfo(mb) {
         || (r[1] == 'lin' && !is_lin)
         || (r[1] == 'uni' && !is_uni && !is_lin) ) continue;
       let debugenv = r[2].match(/^.+_debug$/i);
-      out.envs.push({ name: r[2], debug: debugenv, native: r[1] != 'env' });
+      let note = '';
+      if (r[2].match(/STM32F....E/)) note = '(512K)';
+      else if (r[2].match(/STM32F....C/)) note = '(256K)';
+      out.envs.push({ name: r[2], note: note, debug: debugenv, native: r[1] != 'env' });
       if (debugenv) out.has_debug = true;
     }
   }

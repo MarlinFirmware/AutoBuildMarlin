@@ -100,7 +100,7 @@ var ABM = (function(){
               let $erows = $env_table_copy.find('tr').addClass(`env-${v.name}`);
 
               // Set the env name in the new button row
-              $erows.find('.env-name').text(v.name);
+              $erows.find('.env-name').text(v.name + (v.note ? ` ${v.note}` : ''));
 
               // Set env row classes and env caption
               let caption = '';
