@@ -2,6 +2,11 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.37
+
+- Debuggable postMessage
+- Show STM32F1 chip flash size
+
 ## 2.1.36
 
 - Recognize `.srec` as a complete build.
