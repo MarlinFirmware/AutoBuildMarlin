@@ -214,6 +214,11 @@ function onBuildFolderChanged(e, fname, env) {
   }
 }
 
+function postMessage(msg) {
+  if (bugme) console.log("Posting:", msg);
+  pv.postMessage(msg);
+}
+
 // Local reference to parsed board info
 var board_info;
 
@@ -228,7 +233,7 @@ function allFilesAreLoaded() {
   set_context('err.parse', false);
 
   // Send text for display in the view
-  //pv.postMessage({ command:'text', text:marlin.files.boards.text });
+  //postMessage({ command:'text', text:marlin.files.boards.text });
 
   const mb = marlin.configValue('MOTHERBOARD');
 
@@ -295,7 +300,7 @@ function refreshOldData() { allFilesAreLoaded(); }
 
 function readFileError(err, msg) {
   if (bugme) console.log("fs.readFile err: ", err);
-  pv.postMessage({ command:'error', error:msg, data:err });
+  postMessage({ command:'error', error:msg, data:err });
 }
 
 //
@@ -394,7 +399,7 @@ function refreshBuildStatus(env) {
   });
   let m = { command:'envs', val:board_info.envs };
   if (bugme) console.log("Posting:", m);
-  pv.postMessage(m);
+  postMessage(m);
   set_context('no_clean', !board_info.has_clean);
 }
 
@@ -585,24 +590,24 @@ const nicer = {
 
 // Send a Warning message for display
 function postWarning(msg, data) {
-  pv.postMessage({ command:'warning', warning:msg, data:data });
+  postMessage({ command:'warning', warning:msg, data:data });
 }
 
 // Send an Error message for display
 function postError(msg, data) {
-  pv.postMessage({ command:'error', error:msg, data:data });
+  postMessage({ command:'error', error:msg, data:data });
 }
 
 // Send a Tool Select message
 function postTool(t) {
-  pv.postMessage({ command:'tool', tool:t });   // Send a tool message back
+  postMessage({ command:'tool', tool:t });   // Send a tool message back
 }
 
 // Post a value to the UI
 function postValue(tag, val) {
   var message = { command:'set', tag:tag, val:val };
   if (bugme) console.log("Send to UI", message);
-  pv.postMessage(message);
+  postMessage(message);
 }
 
 //
@@ -780,7 +785,7 @@ function run_command(action) {
 
     // Update the "Show on Startup" checkbox when shown
     panel.onDidChangeViewState(
-      () => { if (panel.active) pv.postMessage({ command:'start', start:show_on_startup() }); },
+      () => { if (panel.active) postMessage({ command:'start', start:show_on_startup() }); },
       null, cs
     );
 
