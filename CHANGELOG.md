@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.38
+
+- Silent Build setting with checkbox
+
 ## 2.1.37
 
 - Debuggable postMessage

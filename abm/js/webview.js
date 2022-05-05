@@ -46,11 +46,11 @@ var ABM = (function(){
       // Show on Startup checkbox updates the config
       //
       $('#showy input').change((e) => {
-        msg({ command:'show_on_start', show:e.target.checked });
+        msg({ command:$(e.target).attr('name'), value:e.target.checked });
       });
 
       //
-      // Calls to postMessage arrive here:
+      // Calls to postMessage arrive here, to update the user interface.
       //
       window.addEventListener('message', event => {
         const m = event.data; // JSON sent by the extension
@@ -83,9 +83,14 @@ var ABM = (function(){
           case 'warning':
             $err.addClass('warning').html(m.warning).show('fast');
             break;
+
           case 'start':
             $('#showy input[name="show_on_startup"]').prop('checked', m.start);
             break;
+          case 'silent':
+            $('#showy input[name="silent_build"]').prop('checked', m.silent);
+            break;
+
           case 'envs':
             // We finally got environments!
             // Make some buttons...

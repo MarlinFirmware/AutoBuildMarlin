@@ -40,22 +40,19 @@ function init(c, v) {
 // ABM Settings
 //
 function settings()              { return ws.getConfiguration('auto-build'); }
-function should_reuse_terminal() { return settings().get('reuseTerminal', true); }
-function show_on_startup()       { return settings().get('showOnStartup', false); }
+function pref_reuse_terminal()   { return settings().get('reuseTerminal', true); }
+function pref_show_on_startup()  { return settings().get('showOnStartup', false); }
+function pref_silent_build()     { return settings().get('silentBuild', false); }
 function default_env()           { return settings().get('defaultEnv.name', ''); }
 function default_env_update()    { return settings().get('defaultEnv.update', true); }
 
-function set_show_on_startup(sh) {
-  const s = 'showOnStartup';
-  var glob = settings().inspect(s).workspaceValue == undefined;
-  settings().update(s, sh, glob);
+function set_setting(name, val) {
+  var glob = settings().inspect(name).workspaceValue == undefined;
+  settings().update(name, val, glob);
 }
-
-function set_default_env(e) {
-  const s = 'defaultEnv.name';
-  var glob = settings().inspect(s).workspaceValue == undefined;
-  settings().update(s, e, glob);
-}
+function set_show_on_startup(sh) { set_setting('showOnStartup', sh); }
+function set_silent_build(sb) { set_setting('silentBuild', sb); }
+function set_default_env(e) { set_setting('defaultEnv.name', e); }
 
 /**
  * The simplest layout concept is to take the entire config
@@ -448,7 +445,7 @@ var terminal, NEXT_TERM_ID = 1;
 // Reuse or create a new Terminal for a command
 //
 function terminal_for_command(ttl, noping) {
-  const reuse_terminal = should_reuse_terminal();
+  const reuse_terminal = pref_reuse_terminal();
   if (!terminal || !reuse_terminal || noping) {
     var title;
     if (reuse_terminal || noping)
@@ -569,6 +566,8 @@ function pio_command(opname, env, nosave) {
       return;
   }
   if (!nosave) vc.executeCommand('workbench.action.files.saveAll');
+
+  if (pref_silent_build()) args += " --silent"
   terminal_command(opname, `platformio ${args} -e ${env}`);
 
   // Show the build as 'busy'
@@ -701,8 +700,12 @@ function handleWebViewMessage(m) {
       vc.executeCommand('platformio-ide.serialMonitor');
       return;
 
-    case 'show_on_start':    // Show on Startup checkbox
-      set_show_on_startup(m.show);
+    case 'show_on_startup':  // Show on Startup checkbox
+      set_show_on_startup(m.value);
+      return;
+
+    case 'silent_build':     // Silent Build checkbox
+      set_silent_build(m.value);
       return;
 
     case 'pio':              // Build, Upload, Clean...
@@ -783,9 +786,14 @@ function run_command(action) {
       null, cs
     );
 
-    // Update the "Show on Startup" checkbox when shown
+    // Update the "Show on Startup" and "Silent Build" checkboxes when shown
     panel.onDidChangeViewState(
-      () => { if (panel.active) postMessage({ command:'start', start:show_on_startup() }); },
+      () => {
+        if (panel.active) {
+          postMessage({ command:'start', start:pref_show_on_startup() });
+          postMessage({ command:'silent', silent:pref_silent_build() });
+        }
+      },
       null, cs
     );
 
@@ -831,4 +839,4 @@ function runSelectedAction() {
   }
 }
 
-module.exports = { init, set_context, run_command, validate, watchAndValidate, show_on_startup, sponsor };
+module.exports = { init, set_context, run_command, validate, watchAndValidate, pref_show_on_startup, sponsor };
