@@ -50,104 +50,9 @@ var ABM = (function(){
       });
 
       //
-      // Calls to postMessage arrive here, to update the user interface.
+      // Add a handler for webview.postMessage
       //
-      window.addEventListener('message', event => {
-        const m = event.data; // JSON sent by the extension
-        switch (m.command) {
-
-          case 'tool': abm_tool(m.tool); break;
-
-          case 'pane': abm_pane(m.pane); break;
-
-          case 'define':
-            // Update a single define element in the UI
-            break;
-
-          // postValue()
-          case 'set':
-            const $item = $('#info-' + m.tag);
-            if (m.val) $item.text(m.val); else $item.hide();
-            if (0) console.log(`Setting ${m.tag} to ${m.val}`);
-            break;
-
-          case 'text':
-            $('#debug-text').show().children('pre').text(m.text);
-            break;
-
-          // postError
-          case 'error':
-            $err.removeClass('warning').html(m.error).show('fast');
-            break;
-          // postWarning
-          case 'warning':
-            $err.addClass('warning').html(m.warning).show('fast');
-            break;
-
-          case 'start':
-            $('#showy input[name="show_on_startup"]').prop('checked', m.start);
-            break;
-          case 'silent':
-            $('#showy input[name="silent_build"]').prop('checked', m.silent);
-            break;
-
-          case 'envs':
-            // We finally got environments!
-            // Make some buttons...
-            const $env_td = $('#info-envs').html(''),
-                  $env_rows_src = $('#env-rows-src'),
-                  $envs_table = $('<table>');
-
-            let has_progress = false;
-            $.each(m.val, function(i,v) {
-              // Copy the template <table>, merging the env name. The <span> is allowed here!
-              const $env_table_copy = $($env_rows_src.html().replace(/<env>/g, v.name));
-              let $erows = $env_table_copy.find('tr').addClass(`env-${v.name}`);
-
-              // Set the env name in the new button row
-              $erows.find('.env-name').text(v.name + (v.note ? ` ${v.note}` : ''));
-
-              // Set env row classes and env caption
-              let caption = '';
-              if (v.debug) $erows.addClass('debug');
-              if (v.native) $erows.addClass('native');
-              if (v.busy) {
-                $erows.addClass('busy');
-                caption = 'Please Wait…';
-                has_progress = true;
-              }
-              if (v.exists) {
-                $erows.addClass('exists');
-                if (!v.busy) {
-                  caption = 'Built ';
-                  if (v.filename !== undefined)
-                    caption += `"${v.filename}" `;
-                  caption += v.stamp;
-                  if (!v.completed) {
-                    $erows.addClass('incomplete');
-                    caption += ' (incomplete)';
-                  }
-                  else
-                    caption = `<a class="reveal" href="#" title="Reveal" onclick="msg({ command:'reveal', env:'${v.name}' })"><span>📁</span>&nbsp; ${caption}</a>`;
-                }
-              }
-              $erows.find('.env-more span').html(caption);
-
-              $envs_table.append($erows);
-            });
-
-            if (ptimer) { clearInterval(ptimer); ptimer = null; }
-            if (has_progress) {
-              ptimer = setInterval(() => {
-                poffset = (poffset + 30) % 32;
-                $('body').get(0).style.setProperty('--abm-progress-offset', poffset + 'px');
-              }, 50);
-            }
-
-            $env_td.append($envs_table);
-            break;
-        }
-      });
+      window.addEventListener('message', this.messageEventListener);
 
       // Activate the "Build" tool
       msg({ command:'tool', tool:'build' });
@@ -155,6 +60,115 @@ var ABM = (function(){
       // Un-hide the first subpane
       abm_pane($('.subpanes>div').first().attr('class'));
 
+    },
+
+    //
+    // Calls to postMessage arrive here:
+    //
+    messageEventListener(event) {
+      const m = event.data; // JSON sent by the extension
+      switch (m.command) {
+
+        case 'tool': abm_tool(m.tool); break;
+
+        case 'pane': abm_pane(m.pane); break;
+
+        case 'define':
+          // Update a single define element in the UI
+          break;
+
+        // postValue()
+        case 'info':
+          const $item = $('#info-' + m.tag);
+          if (m.val) $item.text(m.val); else $item.hide();
+          if (0) console.log(`Setting ${m.tag} to ${m.val}`);
+          break;
+
+        case 'text':
+          $('#debug-text').show().children('pre').text(m.text);
+          break;
+
+        // postError()
+        case 'error':
+          $err.removeClass('warning').html(m.error).show('fast');
+          break;
+        // postWarning()
+        case 'warning':
+          $err.addClass('warning').html(m.warning).show('fast');
+          break;
+
+        case 'start':
+          $('#showy input[name="show_on_startup"]').prop('checked', m.start);
+          break;
+        case 'silent':
+          $('#showy input[name="silent_build"]').prop('checked', m.silent);
+          break;
+
+        case 'envs':
+          // Environments for building the current Configuration
+          //
+          // m.val = an array of env objects:
+          //   .name      - Environment Name
+          //   .debug     - Debug Allowed
+          //   .native    - Native (Runnable)
+          //   .busy      - Show "Please Wait..." State
+          //   .exists    - The env build folder exists
+          //   .completed - Build Completed
+          //   .filename  - The built binary Filename (if it exists)
+          //   .stamp     - Timestamp Message
+          const $env_td = $('#info-envs').html(''),
+                $env_rows_src = $('#env-rows-src'),
+                $envs_table = $('<table>');
+
+          let has_progress = false;
+          $.each(m.val, function(i,v) {
+            // Copy the template <table>, merging the env name. The <span> is allowed here!
+            const $env_table_copy = $($env_rows_src.html().replace(/<env>/g, v.name));
+            let $erows = $env_table_copy.find('tr').addClass(`env-${v.name}`);
+
+            // Set the env name in the new button row
+            $erows.find('.env-name').text(v.name + (v.note ? ` ${v.note}` : ''));
+
+            // Set env row classes and env caption
+            let caption = '';
+            if (v.debug) $erows.addClass('debug');
+            if (v.native) $erows.addClass('native');
+            if (v.busy) {
+              $erows.addClass('busy');
+              caption = 'Please Wait…';
+              has_progress = true;
+            }
+            if (v.exists) {
+              $erows.addClass('exists');
+              if (!v.busy) {
+                caption = 'Built ';
+                if (v.filename !== undefined)
+                  caption += `"${v.filename}" `;
+                caption += v.stamp;
+                if (!v.completed) {
+                  $erows.addClass('incomplete');
+                  caption += ' (incomplete)';
+                }
+                else
+                  caption = `<a class="reveal" href="#" title="Reveal" onclick="msg({ command:'reveal', env:'${v.name}' })"><span>📁</span>&nbsp; ${caption}</a>`;
+              }
+            }
+            $erows.find('.env-more span').html(caption);
+
+            $envs_table.append($erows);
+          });
+
+          if (ptimer) { clearInterval(ptimer); ptimer = null; }
+          if (has_progress) {
+            ptimer = setInterval(() => {
+              poffset = (poffset + 30) % 32;
+              $('body').get(0).style.setProperty('--abm-progress-offset', poffset + 'px');
+            }, 50);
+          }
+
+          $env_td.append($envs_table);
+          break;
+      }
     },
 
     EOF: null

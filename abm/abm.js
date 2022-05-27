@@ -264,10 +264,11 @@ function allFilesAreLoaded() {
       machine_info.name = def ? def.dequote() : '3D Printer';
     }
 
-    const d = new Date(version_info.date);
-
+    // Post values to the UI filling them in by ID
     postValue('auth', version_info.auth);
     postValue('vers', version_info.vers);
+
+    const d = new Date(version_info.date);
     postValue('date', d.toLocaleDateString([], { weekday:'long', year:'numeric', month:'short', day:'numeric' }));
 
     postValue('extruders', extruder_info.extruders);
@@ -284,6 +285,7 @@ function allFilesAreLoaded() {
 
     postValue('archs', board_info.archs);
 
+    // Fill in the build status in the UI
     refreshBuildStatus();
   }
 
@@ -403,10 +405,7 @@ function refreshBuildStatus(env) {
 //
 // An IPC file for message passing from the Terminal
 // This is watched for a command during a build.
-// The IPC file is deleted after reading, or when the Terminal or View close.
-// (The extension could cancel the Terminal when closing for simplicity,
-//  or it could look for a build in progress.)
-// It's preferred to put it into the TMP folder, if standard
+// The IPC file is deleted after reading, or when the Terminal or View closes.
 //
 const ipc_file = path.join(os.tmpdir(), 'ipc');
 var ipc_watcher;
@@ -603,7 +602,7 @@ function postTool(t) {
 
 // Post a value to the UI
 function postValue(tag, val) {
-  var message = { command:'set', tag:tag, val:val };
+  var message = { command:'info', tag:tag, val:val };
   if (bugme) console.log("Send to UI", message);
   postMessage(message);
 }

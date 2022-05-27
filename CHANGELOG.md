@@ -2,14 +2,19 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.39
+
+- Minor code reorganization.
+- Fix path escaping for reveal build.
+
 ## 2.1.38
 
-- Silent Build setting with checkbox
+- Silent Build setting, with checkbox.
 
 ## 2.1.37
 
-- Debuggable postMessage
-- Show STM32F1 chip flash size
+- Debuggable postMessage.
+- Show STM32F1 chip flash size.
 
 ## 2.1.36
 
