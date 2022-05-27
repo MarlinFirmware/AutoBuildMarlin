@@ -504,18 +504,17 @@ function terminal_command(ttl, cmdline, noping) {
 // Use a native shell command to open the build folder
 //
 function reveal_build(env) {
-  var aterm = vw.createTerminal({ name:'reveal', env:process.env });
-  const relpath = existingBuildPath(env),
-        stat = getBuildStatus(env),
-        fname = stat.filename;
-  const escpath = relpath.replace(' ', '\\ ')
-  command_with_ping(aterm, 'cd ' + escpath);
+  const aterm = vw.createTerminal({ name:'reveal', env:process.env });
+  const stat = getBuildStatus(env),
+        fname = stat.filename,
+        escpath = existingBuildPath(env).replace('"', '\\"')
+  command_with_ping(aterm, `cd "${escpath}"`);
   if (process.platform == 'win32') {
-    command_with_ping(aterm, 'Explorer /select,' + fname);
+    command_with_ping(aterm, `Explorer /select,${fname}`);
     command_with_ping(aterm, 'exit');
   }
   else if (process.platform == 'darwin') {
-    command_with_ping(aterm, 'open -R ' + fname);
+    command_with_ping(aterm, `open -R ${fname}`);
     command_with_ping(aterm, 'exit');
   }
   else
