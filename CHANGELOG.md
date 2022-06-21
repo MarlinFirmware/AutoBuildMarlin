@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.40
+
+- Add 'sponsor' field.
+
 ## 2.1.39
 
 - Minor code reorganization.

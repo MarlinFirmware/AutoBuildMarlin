@@ -2,9 +2,12 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.1.39",
+  "version": "2.1.40",
   "publisher": "marlinfirmware",
   "icon": "icon.png",
+  "sponsor": {
+    "url": "https://github.com/sponsors/thinkyhead"
+  },
   "badges": [
     {
       "url": "https://vsmarketplacebadge.apphb.com/version-short/marlinfirmware.auto-build.svg",
