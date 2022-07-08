@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.41
+
+- Hide 'Run' for incomplete build
+
 ## 2.1.40
 
 - Add 'sponsor' field.

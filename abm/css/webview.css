@@ -309,8 +309,9 @@ table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
 #info-envs .native button.upload { display: none; }
 
 /* Only show the "Run" button for a Native target */
-#info-envs                button.run { display: none; }
-#info-envs .exists.native button.run { display: inline-block; }
+#info-envs                           button.run,
+#info-envs .exists.native.incomplete button.run { display: none; }
+#info-envs .exists.native            button.run { display: inline-block; }
 
 /* Hide ALL buttons when busy */
 #info-envs .busy button,
