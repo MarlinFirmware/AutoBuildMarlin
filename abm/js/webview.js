@@ -17,6 +17,7 @@ var ABM = (function(){
 
   // private variables and functions
   var self, poffset = 0, ptimer = null;
+  const $err = $('#error');
 
   // Return an anonymous object for assignment to ABM
   return {
@@ -32,7 +33,6 @@ var ABM = (function(){
       //
       // Hide the Error message when clicked
       //
-      const $err = $('#error');
       $('body').click(() => { $('#error').hide('fast'); });
 
       //

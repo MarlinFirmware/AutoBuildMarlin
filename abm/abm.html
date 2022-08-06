@@ -62,6 +62,7 @@
   <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Auto Build</span></h1>
   <div id="abm-main">
     <form id="showy"><label><input type="checkbox" value="1" name="show_on_startup" ${ pref_show_on_startup() ? 'checked="checked"' : '' }/>Show on Startup</label><br/><label><input type="checkbox" value="0" name="silent_build" ${ pref_silent_build() ? 'checked="checked"' : '' }/>Silent Build</label></form>
+    <div id="error"></div>
     <table id="info">
       <tr><th>Firmware:</th>      <td><div>Marlin <span id="info-vers"></span></div><div id="info-date" class="abm-caption"></div></td></tr>
       <tr><th>Config By:</th>     <td><span id="info-auth"></span></td></tr>
@@ -86,7 +87,6 @@
       </tr>
       <tr><td colspan="2" class="abm-caption env-more"><span></span></td></tr>
     </table></div>
-    <div id="error"></div>
     <div id="debug-text"><pre class="hilightable config"></pre></div>
   </div>
 </div>

@@ -2,6 +2,13 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.42
+
+- Only init extension for a Marlin folder
+- Fix schema @section detection
+- Fix build view error
+- Run sim/native in fg
+
 ## 2.1.41
 
 - Hide 'Run' for incomplete build

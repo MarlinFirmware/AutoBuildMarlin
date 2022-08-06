@@ -25,10 +25,10 @@ exports.activate = (context) => {
   cs.push(vc.registerCommand('abm.show',      () => { abm.run_command();            }));
   cs.push(vc.registerCommand('abm.sponsor',   () => { abm.sponsor();                }));
 
-  abm.init(context, vscode);
-  abm.validate();
-  abm.watchAndValidate();
-  abm.set_context('active', true);
+  abm.init(context, vscode);          // Init the extension (only for Marlin 1.x/2.x folder)
+  abm.validate();                     // Validate the workspace for ABM
+  abm.watchAndValidate();             // Watch files and folders for changes to update the status
+  abm.set_context('active', true);    // Tell VSCode the status to update the UI
 
   if (abm.pref_show_on_startup()) setTimeout(abm.run_command, 1000);
 };

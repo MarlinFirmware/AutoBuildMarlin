@@ -57,19 +57,19 @@ var define_list,    // arrays with all define names
 
 function updateDefineList(cindex, txt) {
   var section = 'hidden',
-      leave_out_defines = ['CONFIGURATION_H', 'CONFIGURATION_H_VERSION', 'CONFIGURATION_ADV_H', 'CONFIGURATION_ADV_H_VERSION'],
+      ignore = ['CONFIGURATION_H', 'CONFIGURATION_H_VERSION', 'CONFIGURATION_ADV_H', 'CONFIGURATION_ADV_H_VERSION', 'CONFIG_EXAMPLES_DIR'],
       define_more = {},
       occ_list = {},
-      findDef = new RegExp('^\\s*(//\\s*)?(@section|#define)\\s+(\\w+).*$', 'gm');
+      findDef = new RegExp('^\\s*(//\\s*)?(.*(@section)|#define)\\s+(\\w+).*$', 'gm');
   // scan for sections and defines
   var r;
   while((r = findDef.exec(txt)) !== null) {
-    var name = r[3];
-    if (r[2] == '@section') {
+    var name = r[4];
+    if (r[3] == '@section') {
       section = name;
       //console.log("Section: " + name);
     }
-    else if (!leave_out_defines.includes(name)) {                 // skip some defines
+    else if (!ignore.includes(name)) {                            // skip some defines
       //console.log("Define: " + name);
       var lineNum = txt.lineCount(r.index),                       // the line number
           inst = { cindex:cindex, lineNum:lineNum, line:r[0] },   // config, line, section/define
@@ -77,8 +77,8 @@ function updateDefineList(cindex, txt) {
 
       if (!in_sect) occ_list[name] = [ inst ];                    // no, first item in section
 
-      if (!in_sect && !(name in define_section)) {         // first time in section, ever
-        define_more[name] = section; // new first-time define
+      if (!in_sect && !(name in define_section)) {                // first time in section, ever
+        define_more[name] = section;                              // new first-time define
       }
       else {
         occ_list[name].push(inst);                                // it's another occurrence

@@ -1,4 +1,4 @@
-/* abm.css */
+/* webview.css */
 /* Styles for Auto Build Marlin Home - and eventually Configurator */
 
 html#abm { --marlin-svg: url(marlin.svg); }
@@ -331,14 +331,14 @@ table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
 #debug-text { display: none; }
 
 #error {
-  width: 70%;
+  width: 60%;
   margin: 1em auto;
-  padding: 0.5em 0;
-  border: 2px solid #FFB4B2;
-  border-radius: 1.25em;
+  padding: 0.25em 0;
+  border: 2px solid #000;
+  border-radius: 0.25em;
   text-align: center;
-  font-size: large;
-  color: #FFB4B2;
+  font-size: 1.25em;
+  color: #EF1;
   background: #790000;
   }
 

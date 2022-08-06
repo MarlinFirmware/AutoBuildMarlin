@@ -399,7 +399,7 @@ function refreshBuildStatus(env) {
   let m = { command:'envs', val:board_info.envs };
   if (bugme) console.log("Posting:", m);
   postMessage(m);
-  set_context('no_clean', !board_info.has_clean);
+  set_context('can_clean', board_info.has_clean);
 }
 
 //
@@ -533,7 +533,7 @@ function run_built_exe(env) {
     if (process.platform == 'win32')
       command_with_ping(aterm, 'START /B ' + exe);
     else
-      command_with_ping(aterm, exe + ' &');
+      command_with_ping(aterm, exe);
     command_with_ping(aterm, 'exit');
   }
 }

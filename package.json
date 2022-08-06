@@ -2,7 +2,7 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.1.41",
+  "version": "2.1.42",
   "publisher": "marlinfirmware",
   "icon": "icon.png",
   "sponsor": {
@@ -46,7 +46,7 @@
     "Other"
   ],
   "activationEvents": [
-    "*"
+    "workspaceContains:/Marlin/Configuration.h"
   ],
   "main": "./extension",
   "contributes": {
@@ -104,7 +104,7 @@
     "viewsWelcome": [
       {
         "view": "autoBuildView",
-        "contents": "%view.workbench.abm.loading%",
+        "contents": "%view.workbench.abm.inactive%",
         "when": "!abm.inited"
       },
       {
@@ -137,7 +137,7 @@
       {
         "category": "Auto Build Marlin",
         "command": "abm.build",
-        "title": "Marlin: Build",
+        "title": "Build",
         "icon": {
           "light": "resources/B48x48_light.svg",
           "dark": "resources/B48x48_dark.svg"
@@ -146,7 +146,7 @@
       {
         "category": "Auto Build Marlin",
         "command": "abm.upload",
-        "title": "Marlin: Upload",
+        "title": "Upload",
         "icon": {
           "light": "resources/U48x48_light.svg",
           "dark": "resources/U48x48_dark.svg"
@@ -155,7 +155,7 @@
       {
         "category": "Auto Build Marlin",
         "command": "abm.traceback",
-        "title": "Marlin: Upload (traceback)",
+        "title": "Upload (traceback)",
         "icon": {
           "light": "resources/T48x48_light.svg",
           "dark": "resources/T48x48_dark.svg"
@@ -164,7 +164,7 @@
       {
         "category": "Auto Build Marlin",
         "command": "abm.clean",
-        "title": "Marlin: Clean",
+        "title": "Clean",
         "icon": {
           "light": "resources/C48x48_light.svg",
           "dark": "resources/C48x48_dark.svg"
@@ -173,7 +173,7 @@
       {
         "category": "Auto Build Marlin",
         "command": "abm.config",
-        "title": "Marlin: Configure",
+        "title": "Configure",
         "icon": {
           "light": "resources/K48x48_light.svg",
           "dark": "resources/K48x48_dark.svg"
@@ -185,27 +185,49 @@
         {
           "command": "abm.build",
           "group": "navigation@1",
-          "when": "abm.inited && view == autoBuildView"
+          "when": "abm.active && view == autoBuildView"
         },
         {
           "command": "abm.upload",
           "group": "navigation@2",
-          "when": "abm.inited && view == autoBuildView"
+          "when": "abm.active && view == autoBuildView"
         },
         {
           "command": "abm.traceback",
           "group": "navigation@3",
-          "when": "abm.inited && abm.has_debug && view == autoBuildView"
+          "when": "abm.active && abm.has_debug && view == autoBuildView"
         },
         {
           "command": "abm.clean",
           "group": "navigation@4",
-          "when": "abm.inited && !abm.no_clean && view == autoBuildView"
+          "when": "abm.active && abm.can_clean && view == autoBuildView"
         },
         {
           "command": "abm.config",
           "group": "navigation@5",
-          "when": "abm.inited && view == autoBuildView || view == marlinView"
+          "when": "abm.active && view == autoBuildView || view == marlinView"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "abm.build",
+          "when": "abm.active"
+        },
+        {
+          "command": "abm.upload",
+          "when": "abm.active"
+        },
+        {
+          "command": "abm.traceback",
+          "when": "abm.active && abm.has_debug"
+        },
+        {
+          "command": "abm.clean",
+          "when": "abm.active && abm.can_clean"
+        },
+        {
+          "command": "abm.config",
+          "when": "abm.active || view == marlinView"
         }
       ]
     }
