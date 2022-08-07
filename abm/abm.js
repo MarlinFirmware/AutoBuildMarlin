@@ -22,8 +22,10 @@ function set_context(name, value) {
 }
 
 const bugme = false; // Lots of debug output
-function log(s, d=null) {
-  if (bugme) { console.log(s); if (d) console.dir(d); }
+function log(message, data) {
+  if (!bugme) return;
+  const msg = `[abm] ${message}`;
+  if (data !== undefined) console.dir([msg, data ]); else console.log(msg);
 }
 
 function init(c) {
@@ -202,7 +204,7 @@ function onBuildFolderChanged(e, fname, env) {
 }
 
 function postMessage(msg) {
-  log("Posting:", msg);
+  log("postMessage:", msg);
   pv.postMessage(msg);
 }
 
@@ -709,11 +711,11 @@ function webViewContent() {
 }
 
 //
-// Handle a command sent from the ABM WebView.
-// Commands are sent using the msg() function defined in abm.html.
+// Handle a command sent from the ABM WebView via vscode.postMessage(m).
+// Commands are sent using the _msg() function.
 //
-function handleMessage(m) {
-  //console.log('handleMessage', m);
+function handleMessageFromUI(m) {
+  //console.log('handleMessageFromUI', m);
   switch (m.command) {
 
     case 'openfolder':        // Show a file dialog to choose a folder for the workspace
@@ -861,7 +863,7 @@ function run_command(action) {
     );
 
     // Handle messages from the webview
-    pv.onDidReceiveMessage(handleMessage, undefined, cs);
+    pv.onDidReceiveMessage(handleMessageFromUI, undefined, cs);
 
     // Create an IPC file for messages from Terminal
     createIPCFile();
@@ -931,4 +933,4 @@ function runPython(script, needs, args) {
 function run_schema_py(type) { runPython('schema.py', '', type); }
 function run_configuration_py() { runPython('configuration.py', path.join('Marlin', 'config.ini')); }
 
-module.exports = { init, set_context, run_command, validate, watchAndValidate, sponsor, getNonce, run_configuration_py, run_schema_py };
+module.exports = { init, log, set_context, run_command, validate, watchAndValidate, sponsor, getNonce, run_configuration_py, run_schema_py };

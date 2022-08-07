@@ -22,6 +22,8 @@ body.vscode-light {
   --abm-info-color-comment: #3C2200;
   --abm-info-legend-color: #000;
   --abm-info-legend-bg: #FFFA;
+  --abm-info-color-warn: #CC0;
+  --abm-info-color-alert: #D00;
   }
 
 body.vscode-dark {
@@ -34,6 +36,8 @@ body.vscode-dark {
   --abm-info-color-comment: #827461;
   --abm-info-legend-color: #FFF;
   --abm-info-legend-bg: #0008;
+  --abm-info-color-warn: #EE0;
+  --abm-info-color-alert: #F22;
   }
 
 body.vscode-high-contrast {
@@ -46,6 +50,8 @@ body.vscode-high-contrast {
   --abm-info-color-comment: #827461;
   --abm-info-legend-color: #FF0;
   --abm-info-legend-bg: #009;
+  --abm-info-color-warn: #FF0;
+  --abm-info-color-alert: #F00;
   }
 body.vscode-high-contrast-light {
   --abm-info-legend-color: #009;
@@ -87,3 +93,15 @@ pre {
 /* Media variants for wider and small screens */
 @media screen and (min-width: 800px) {
   }
+
+/* Centered Message like "Please wait" */
+#abm-info div.alert, #abm-info div.warn {
+  font-size: large;
+  font-weight: bold;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 2;
+  padding: 40vh 0.5em;
+  }
+div.warn { color: var(--abm-info-color-warn); }
+div.alert { color: var(--abm-info-color-alert); }

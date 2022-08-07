@@ -117,12 +117,11 @@ $(function () {
   var verbose = false;
   function log(message, data) {
     if (!verbose) return;
-    console.log(`[editview] ${message}`);
-    if (data !== undefined) console.dir(data);
+    const msg = `[editview] ${message}`;
+    if (data !== undefined) console.dir([msg, data ]); else console.log(msg);
   }
   function log_(message, data) {
-    const oldverbose = verbose;
-    verbose = 1;
+    const oldverbose = verbose; verbose = true;
     log(message, data);
     verbose = oldverbose;
   }
@@ -711,25 +710,25 @@ $(function () {
    *              error(text) : Show an error message.
    * @param {object} message - The message object.
    */
-  function handleMessage(message) {
-    log("handleMessage", message);
-    switch (message.type) {
+  function handleMessageToUI(m) {
+    log("handleMessageToUI", m);
+    switch (m.type) {
       // Update the whole form in response to an external change.
       case 'update':
         if (ignore_update)  // This view caused the update? Ignore it.
           ignore_update = false;
         else
-          buildConfigFormWithData(message.schema);  // Use the provided data to rebuild the form.
-          //buildConfigFormWithText(message.text);
+          buildConfigFormWithData(m.schema);  // Use the provided data to rebuild the form.
+          //buildConfigFormWithText(m.text);
         break;
 
       // Display an error message
       case 'error':
-        $('#error').text(message.text).show().click(() => { $('#error').hide(); });
+        $('#error').text(m.text).show().click(() => { $('#error').hide(); });
         break;
     }
   }
-  window.addEventListener('message', (e) => { handleMessage(e.data); });
+  window.addEventListener('message', (e) => { handleMessageToUI(e.data); });
 
   //
   // File Loaded / Tab Revealed

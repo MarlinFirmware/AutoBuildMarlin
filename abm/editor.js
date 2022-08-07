@@ -174,7 +174,7 @@ class ConfigEditorProvider {
    * This provider method is called when a custom editor is opened.
    * The passed document creates a closure, since it is used in subfunctions.
    */
-  async resolveCustomTextEditor(document, webviewPanel, _token) {
+  async resolveCustomTextEditor(document, panel, _token) {
     //console.log("ConfigEditorProvider.resolveCustomTextEditor", document.uri);
 
     // Set values for items in this closure to use
@@ -183,7 +183,7 @@ class ConfigEditorProvider {
           schema = is_adv ? schemas.advanced : schemas.basic;
 
     // Set up the webview with options and basic html.
-    const wv = webviewPanel.webview;
+    const wv = panel.webview;
     wv.options = { enableScripts: true };
     wv.html = this.getWebViewHtml(wv);
 
@@ -239,7 +239,7 @@ class ConfigEditorProvider {
     });
 
     // Get rid of the listener when our editor is closed.
-    webviewPanel.onDidDispose(() => {
+    panel.onDidDispose(() => {
       changeDocumentSubscription.dispose();
       delete webviews[name];
     });
@@ -310,28 +310,28 @@ class ConfigEditorProvider {
       if (inplace) ws.applyEdit(edit);
     }
 
-    // Receive message from the webview via vscode.postMessage.
-    function handleMessage(e) {
-      //console.log("(ConfigEditorProvider) handleMessage", e);
-      switch (e.type) {
+    // Receive message sent directly to the webview.
+    function handleMessageToUI(m) {
+      abm.log("(ConfigEditorProvider) handleMessageToUI", m);
+      switch (m.type) {
         case 'change':
-          applyConfigChange(document, e.data); // Update the document line based on the data.
+          applyConfigChange(document, m.data); // Update the document line based on the data.
           break;
 
         case 'multi-change':
           const edit = new vscode.WorkspaceEdit();
-          e.changes.forEach(d => {
+          m.changes.forEach(d => {
             applyConfigChange(document, d.data, edit);
           });
           ws.applyEdit(edit); // Update the document line based on the data.
           break;
 
         case 'hello':
-          vw.showInformationMessage("Hello from the webview!");
+          vw.showInformationMessage("Hello received by the Editor webview!");
           break;
       }
     }
-    wv.onDidReceiveMessage(handleMessage);
+    wv.onDidReceiveMessage(handleMessageToUI);
 
     // Tell the webview to display the Configuration header file contents.
     initWebview();
