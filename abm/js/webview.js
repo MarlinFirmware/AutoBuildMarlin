@@ -76,6 +76,8 @@ var ABM = (function(){
 
         case 'boards': abm_boards(m.data); break;
 
+        case 'clist': update_config_list(m.list); break;
+
         case 'define':
           // Update a single define element in the UI
           break;
