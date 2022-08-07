@@ -203,7 +203,7 @@ function onBuildFolderChanged(e, fname, env) {
 
 // Post a message to the view controller abmview.js:handleMessageToUI
 function postMessage(msg) {
-  log("Posting:", msg);
+  log("postMessage:", msg);
   pv.postMessage(msg);
 }
 
@@ -710,8 +710,8 @@ function webViewContent() {
 }
 
 //
-// Handle a command sent from the ABM WebView.
-// Commands are sent using the msg() function defined in abm.html.
+// Handle a command sent from the ABM WebView via vscode.postMessage(m).
+// Commands are sent using the _msg() function.
 //
 function handleMessageFromUI(m) {
   //console.log('handleMessageFromUI', m);

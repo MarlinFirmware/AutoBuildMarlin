@@ -154,12 +154,11 @@ $(function () {
   var verbose = false;
   function log(s, d) {
     if (!verbose) return;
-    console.log(`[editview] ${s}`);
-    if (d !== undefined) console.dir(d);
+    const msg = `[editview] ${s}`;
+    if (d !== undefined) console.dir([msg, d]); else console.log(msg);
   }
   function log_(s, d) {
-    const oldverbose = verbose;
-    verbose = true;
+    const oldverbose = verbose; verbose = true;
     log(s, d);
     verbose = oldverbose;
   }
@@ -837,27 +836,27 @@ $(function () {
    *              error(text) : Show an error message.
    * @param {object} message - The message object.
    */
-  function handleMessageToUI(message) {
-    log("editview.js:handleMessageToUI", message);
-    switch (message.type) {
+  function handleMessageToUI(m) {
+    log("editview.js:handleMessageToUI", m);
+    switch (m.type) {
       // Update the whole form in response to an external change.
       case 'update':
         if (ignore_update)  // This view caused the update? Ignore it.
           ignore_update = false;
         else
-          buildConfigFormWithData(message.schema);  // Use the provided data to rebuild the form.
+          buildConfigFormWithData(m.schema);  // Use the provided data to rebuild the form.
         break;
 
       case 'text-update':
         if (ignore_update)  // This view caused the update? Ignore it.
           ignore_update = false;
         else
-          buildConfigFormWithText(message.text);  // Use the provided text to rebuild the form.
+          buildConfigFormWithText(m.text);  // Use the provided text to rebuild the form.
         break;
 
       // Display an error message
       case 'error':
-        $('#error').text(message.text).show().click(() => { $('#error').hide(); });
+        $('#error').text(m.text).show().click(() => { $('#error').hide(); });
         break;
     }
   }

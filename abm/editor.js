@@ -327,23 +327,23 @@ class ConfigEditorProvider {
 
     // Receive message from the webview via vscode.postMessage.
     // The webview sends changes to apply to the underlying document.
-    function handleMessageFromUI(e) {
-      abm.log("(ConfigEditorProvider) handleMessageFromUI", e);
-      switch (e.type) {
+    function handleMessageFromUI(m) {
+      abm.log("(ConfigEditorProvider) handleMessageFromUI", m);
+      switch (m.type) {
         case 'change':
-          applyConfigChange(document, e.data); // Update the document text using the given data.
+          applyConfigChange(document, m.data); // Update the document line based on the data.
           break;
 
         case 'multi-change':
           const edit = new vscode.WorkspaceEdit();
-          e.changes.forEach(d => {
+          m.changes.forEach(d => {
             applyConfigChange(document, d.data, edit);
           });
           ws.applyEdit(edit);
           break;
 
         case 'hello':
-          vw.showInformationMessage("Hello from the webview!");
+          vw.showInformationMessage("Hello received by the Editor webview!");
           break;
       }
     }

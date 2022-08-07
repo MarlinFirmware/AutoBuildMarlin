@@ -12,8 +12,17 @@
 'use strict';
 
 const vscode = require("vscode"),
+      marlin = require("./marlin"),
+      //schema = require("./js/schema"),
          abm = require('./abm'),
           vw = vscode.window;
+
+const verbose = false; // Lots of debug output
+function log(message, data) {
+  if (!verbose) return;
+  const msg = `[info] ${message}`;
+  if (data !== undefined) console.dir([msg, data ]); else console.log(msg);
+}
 
 class InfoPanelProvider {
 
@@ -26,13 +35,13 @@ class InfoPanelProvider {
   }
 
   // Called when the info pane is revealed.
-  async resolveWebviewView(wvv, wvContext, _token) {
-    //console.log("InfoPanelProvider.resolveWebviewView"); console.dir(wvv);
+  async resolveWebviewView(panel, wvContext, _token) {
+    //console.log("InfoPanelProvider.resolveWebviewView"); console.dir(panel);
 
-    this._view = wvv; // Take ownership of the webview view.
+    this._view = panel; // Take ownership of the info view panel
 
     // Set up the webview with options and basic html.
-    const wv = wvv.webview;
+    const wv = panel.webview;
     wv.options = {
       enableScripts: true,
       localResourceRoots: [ this.context.extensionUri ]
@@ -40,31 +49,48 @@ class InfoPanelProvider {
     wv.html = this.getWebViewHtml(wv);
 
     // Handle show/hide events.
-    wvv.onDidChangeVisibility(() => {
-      console.log(`InfoPanelProvider.onDidChangeVisibility: ${wvv.visible}`);
+    panel.onDidChangeVisibility(() => {
+      console.log(`InfoPanelProvider.onDidChangeVisibility: ${panel.visible}`);
     });
 
     // Let go of the webview view when it is closed.
-    wvv.onDidDispose(() => {
+    panel.onDidDispose(() => {
       //console.log("InfoPanelProvider.onDidDispose:");
       this._view = undefined;
     });
 
-    // Receive message from the webview.
-    function handleMessageFromUI(e) {
-      //console.log('InfoPanelProvider::handleMessageFromUI'); console.dir(e);
-      switch (e.type) {
+    // Handle messages from the webview.
+    function handleMessageFromUI(m) {
+      //console.log('InfoPanelProvider::handleMessageFromUI'); console.dir(m);
+      switch (m.type) {
+        case 'configs':
+          console.dir(m.configs);
+          break;
+        case 'fetch':
+          var config_list = marlin.getConfigurationList(); // Fetch configurations from GitHub to display here
+          console.dir(config_list);
+          wv.postMessage({ type: 'configs', configs: config_list });
+          break;
         case 'hello':
-          vw.showInformationMessage('Hello from the webview!');
+          vw.showInformationMessage('Hello received from the Info webview!');
           break;
       }
     }
-    wv.onDidReceiveMessage(handleMessageFromUI);
+
+    wv.onDidReceiveMessage(handleMessageFromUI, undefined, this.context.subscriptions);
 
     // Tell the webview to display something.
     function updateWebview() {
-      wv.postMessage({ type: 'say', text: "hello" }); // infoview.js:handleMessageToUI
+      console.log('info.js : updateWebview');
+      //wv.postMessage({ type: 'say', text: "hello" }); // infoview.js:handleMessageToUI
+      wv.postMessage({ type: 'hello' });
+      wv.postMessage({ type: 'fetch' });
+
+      var config_list = marlin.getConfigurationList(); // Fetch configurations from GitHub to display here
+      console.dir(config_list);
+      wv.postMessage({ type: 'configs', configs: config_list });
     }
+
     updateWebview();
   }
 
@@ -82,6 +108,7 @@ class InfoPanelProvider {
     // Local path to script and css for the webview
     const nonce = abm.getNonce(), // Use a nonce to whitelist which scripts can be run
       jqueryUri = this.jsUri(webview, 'jquery-3.6.0.min.js'),
+      vscodeUri = this.jsUri(webview, 'vsview.js'),
       scriptUri = this.jsUri(webview, 'infoview.js'),
          cssUri = this.resourceUri(webview, 'css', 'infoview.css');
 
@@ -92,11 +119,14 @@ class InfoPanelProvider {
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}'; ">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="${cssUri}" rel="stylesheet" />
+  <script nonce="${nonce}" src="${vscodeUri}"></script>
   <script nonce="${nonce}" src="${jqueryUri}"></script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
   <title>Marlin Info</title>
 </head>
 <body id="abm-info">
+<div class="alert">Parsing Configurations<br/>Please Wait</div>
+<div id="abm-configs"></div>
 </body>
 </html>`;
   }

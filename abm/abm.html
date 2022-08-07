@@ -9,6 +9,7 @@
 />
 <title>Auto Build Marlin — Home</title>
 <link nonce="${nonce}" href="https://fonts.googleapis.com/css?family=Fira+Mono&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css" />
+<script src="${ js_path('vsview.js') }"></script>
 <script nonce="${nonce}">
 //<![CDATA[
 
@@ -104,12 +105,21 @@
     });
   }
 
+  function update_config_list(list) {
+    var $s = $('select#get-config');
+    $s.empty();
+    // For all items in the list, append an option to the select box.
+    for (var i = 0; i < list.length; i++) {
+      $s.append('<option value="' + list[i] + '">' + list[i] + '</option>');
+    }
+  }
+
   // Send a message to the controller (abm.js:handleMessageFromUI)
   function msg(m) {
     if (m.command == 'tool') abm_tool(m.tool); // Show the tool before alerting the controller
     if (m.command == 'pane') abm_pane(m.pane); // Show the pane before alerting the controller
     //if (m.command == 'boards') abm_boards(m.data, m.selected); // Rebuild the board selectors and select the active one
-    vscode.postMessage(m);
+    _msg(m);
   }
 
 // ]]>
@@ -129,6 +139,7 @@
   <div id="abm-top">
     <button type="button" onclick="msg({ command:'monitor' })"><img src="${ img_path('btn-monitor.svg') }" /> Monitor</button>
     <button type="button" onclick="msg({ command:'refresh' })"><img src="${ img_path('btn-refresh.svg') }" /> Refresh</button>
+    <select id="get-config"></select>
   </div>
   <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Auto Build <span id="abm-vers">${abm_version}</span></span></h1>
   <div id="error"></div>

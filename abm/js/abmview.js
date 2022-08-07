@@ -6,6 +6,7 @@
  * Manage the WebView UI using messaging with abm.js
  * Built on jQuery for easier DOM manipulation.
  *
+ * This can also call scripts loaded by abm.js from abm.html
  */
 
 $(function(){
@@ -21,11 +22,6 @@ var ABM = (function(){
 
   // Return an anonymous object for assignment to ABM
   return {
-
-    // public data members
-    // ...
-
-    // public methods
 
     init() {
       self = this; // a 'this' for use when 'this' is something else
@@ -62,7 +58,7 @@ var ABM = (function(){
       //
       // Add a handler for webview.postMessage
       //
-      window.addEventListener('message', this.handleMessageToUI);
+      window.addEventListener('message', (e) => { self.handleMessageToUI(e.data); });
 
       // Activate the "Build" tool
       msg({ command:'tool', tool:'build' }); // abm.js:handleMessageFromUI
@@ -72,11 +68,14 @@ var ABM = (function(){
 
     },
 
-    //
-    // Calls to abm.postMessage or pv.postMessage from abm.html arrive here:
-    //
-    handleMessageToUI(event) {
-      const m = event.data; // JSON sent by the extension
+    /**
+     * Calls to abm.postMessage or (abm.pv.postMessage) from abm.html arrive here.
+     *
+     * Instead of having the web view call abm or schema to get data for the view,
+     * a request is made from somewhere in the program and data is pushed to the
+     * view, so this view can just display the data given.
+     */
+    handleMessageToUI(m) {
       //console.log("ABM View got message:"); console.dir(m);
       switch (m.command) {
 
@@ -85,6 +84,8 @@ var ABM = (function(){
         case 'pane': abm_pane(m.pane); break;
 
         case 'boards': abm_boards(m.data, m.selected); break;
+
+        case 'clist': update_config_list(m.list); break;
 
         case 'define':
           // Update a single define element in the UI

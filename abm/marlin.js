@@ -5,7 +5,41 @@
 
 const path = require('path'),
         fs = require('fs'),
-        os = require('os');
+        os = require('os'),
+        https = require('https');
+
+// Configuration for GitHub API to fetch Configurations
+const wconfig = {
+  type:  'github',
+  host:  'https://api.github.com',
+  owner: 'MarlinFirmware',
+  repo:  'Configurations',
+  ref:   'bugfix-2.1.x',
+  path:  'config/examples'
+};
+
+function github_command(conf, command, path) {
+  var req = conf.host+'/repos/'+conf.owner+'/'+conf.repo+'/'+command;
+  if (path) req += '/' + path;
+  return req;
+}
+
+function config_path(item) {
+  var path = '', ref = '';
+  switch(wconfig.type) {
+    case 'github':
+      path = github_command(wconfig, 'contents', wconfig.path);
+      if (wconfig.ref !== undefined) ref = '?ref=' + wconfig.ref;
+      break;
+    case 'remote':
+      path = wconfig.host + '/' + wconfig.path;
+      break;
+    case 'local':
+      path = wconfig.path;
+      break;
+  }
+  return path + '/' + item + ref;
+}
 
 const vscode = require('vscode'), ws = vscode.workspace,
       workspaceRoot = (ws && ws.workspaceFolders && ws.workspaceFolders.length) ? ws.workspaceFolders[0].uri.fsPath : '';
@@ -13,6 +47,79 @@ const vscode = require('vscode'), ws = vscode.workspace,
 var temp = {}, bugme = false;
 
 function init(b) { bugme = b; }
+
+//
+// Get a list of Configurations Folders using the GitHub API
+//
+function getConfigurationList(branch="bugfix-2.1.x") {
+  //return;
+  const url = config_path('config/examples');
+
+  //console.clear();
+  console.log(`Fetching ${url}`);
+
+  var config_list = [];
+
+  // TODO: Get the branch that matches the current Marlin version
+  // TODO: Highlight the configurations that match well with the current one
+  //       and would be best to use for the upgrade process.
+  // const fetch = vscode.Uri.file(url);
+  // async function getConfigListing() {
+  //   const response = await fetch();
+  //   console.dir(response);
+  //   // ...
+  //   return response;
+  // }
+  // return getConfigListing();
+
+  // Use https to fetch the list of configurations from GitHub
+  var req = https.request(url, function(res) {
+    var data = '';
+    res.on('data', function(chunk) {
+      data += chunk;
+      console.log("chunk:", chunk);
+    }).on('end', function() {
+      var configs = JSON.parse(data);
+      config_list = [];
+      for (var i = 0; i < configs.length; i++) {
+        if (configs[i].type === 'dir') {
+          config_list.push(configs[i].name);
+        }
+      }
+      remote_config_folders = config_list;
+      console.log("Final List:", config_list);
+      vscode.postMessage({ command:'clist', list:config_list });
+    });
+  });
+
+  return config_list;
+}
+
+//
+// Get a list of Configurations Folders using the GitHub API
+//
+function fetchConfiguration(path) {
+  // If path is empty, ise the default path
+  path = (path === undefined) ? 'default' : `examples/${path}`;
+
+  // Fetch all config files at the given path from GitHub/MarlinFirmware/Configurations
+  var url = "https://api.github.com/repos/MarlinFirmware/Configurations/contents/config/" + path;
+  var req = https.request(url, function(res) {
+    var data = '';
+    res.on('data', function(chunk) {
+      data += chunk;
+    }).on('end', function() {
+      var configs = JSON.parse(data);
+      var config_list = [];
+      for (var i = 0; i < configs.length; i++) {
+        if (configs[i].type === 'file') {
+          config_list.push(configs[i].name);
+        }
+      }
+      return config_list;
+    });
+  });
+}
 
 function reboot() {
 
@@ -451,6 +558,7 @@ module.exports = {
 
   files, init, reboot, validate, refreshAll,
 
+  getConfigurationList, fetchConfiguration,
   watchConfigurations, watchAndValidate,
 
   configEnabled,
