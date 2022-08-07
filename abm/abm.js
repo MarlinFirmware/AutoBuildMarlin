@@ -203,7 +203,7 @@ function onBuildFolderChanged(e, fname, env) {
 
 // Post a message to the view controller abmview.js:handleMessage
 function postMessage(msg) {
-  log("Posting:", msg);
+  log("postMessage:", msg);
   pv.postMessage(msg);
 }
 
@@ -710,11 +710,11 @@ function webViewContent() {
 }
 
 //
-// Handle a command sent from the ABM WebView.
-// Commands are sent using the msg() function defined in abm.html.
+// Handle a command sent from the ABM WebView via vscode.postMessage(m).
+// Commands are sent using the _msg() function.
 //
-function handleMessage(m) {
-  //console.log('handleMessage', m);
+function handleMessageFromUI(m) {
+  //console.log('handleMessageFromUI', m);
   switch (m.command) {
 
     case 'openfolder':        // Show a file dialog to choose a folder for the workspace
@@ -862,7 +862,7 @@ function run_command(action) {
     );
 
     // Handle messages from the webview
-    pv.onDidReceiveMessage(handleMessage, undefined, cs);
+    pv.onDidReceiveMessage(handleMessageFromUI, undefined, cs);
 
     // Create an IPC file for messages from Terminal
     createIPCFile();
