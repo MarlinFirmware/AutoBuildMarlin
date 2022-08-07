@@ -391,11 +391,15 @@ div.subpanes { margin-top: 0; }
   background: #FFF3;
   }
 
-div.subtabs { margin-bottom: 0; }
+div.subtabs {
+  float: left;
+  width: 16em;
+  }
 div.subtabs button {
-  border-radius: 0.25em 0.25em 0 0;
+  border-radius: 0 0.25em 0.25em 0;
   margin: 0 2px 0 0;
   color: #EEE;
+  width: 100%;
   }
 div.subtabs button.active {
   background: #3BB175;
