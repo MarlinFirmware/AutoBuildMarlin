@@ -1,5 +1,194 @@
+<!--
+  X_HOME_DIR Y_HOME_DIR Z_HOME_DIR
+  HOMING_FEEDRATE_XY HOMING_FEEDRATE_Z
+
+  X_BED_SIZE Y_BED_SIZE
+
+  X_MIN_POS Y_MIN_POS Z_MIN_POS
+  X_MAX_POS Y_MAX_POS Z_MAX_POS
+
+  MIN_SOFTWARE_ENDSTOPS
+    MIN_SOFTWARE_ENDSTOP_X
+    MIN_SOFTWARE_ENDSTOP_Y
+    MIN_SOFTWARE_ENDSTOP_Z
+
+  MAX_SOFTWARE_ENDSTOPS
+    MAX_SOFTWARE_ENDSTOP_X
+    MAX_SOFTWARE_ENDSTOP_Y
+    MAX_SOFTWARE_ENDSTOP_Z
+
+  BED_CENTER_AT_0_0
+
+  MANUAL_X_HOME_POS MANUAL_Y_HOME_POS MANUAL_Z_HOME_POS
+
+  Z_SAFE_HOMING (probe not required)
+    Z_SAFE_HOMING_X_POINT
+    Z_SAFE_HOMING_Y_POINT
+-->
 <div class="geometry">
   <h2>Geometry Panel</h2>
-  <div class="panel-error">Geometry Panel Under Construction</div>
-  <form id="geometry-form"></form>
+  <div class="geom-diagram">
+    <table>
+      <tr class="geom-top"><td id="V-Y_MAX_POS" colspan="3">123</td></tr>
+      <tr>
+        <td class="geom-left" id="V-X_MIN_POS">123</td>
+        <td class="geom-ctr"><canvas id="bed-canvas" /></td>
+        <td class="geom-right" id="V-X_MAX_POS">123</td>
+      </tr>
+      <tr class="geom-foot"><td id="V-Y_MIN_POS" colspan="3">123</td></tr>
+    </table>
+  </div>
+  <div class="geom-form">
+    <form id="geometry-form">
+      <label>Bed Size X: <input type="text" size="4" name="X_BED_SIZE" value="200" /></label>
+      <label>Y: <input type="text" size="4" name="Y_BED_SIZE" value="200" /></label><br/>
+      <label>Min Pos X: <input type="text" size="4" name="X_MIN_POS" value="-10" /></label>
+      <label>Y: <input type="text" size="4" name="Y_MIN_POS" value="-10" /></label>
+      <label>Z: <input type="text" size="4" name="Z_MIN_POS" value="0" /></label><br/>
+      <label>Max Pos X: <input type="text" size="4" name="X_MAX_POS" value="210" /></label>
+      <label>Y: <input type="text" size="4" name="Y_MAX_POS" value="210" /></label>
+      <label>Z: <input type="text" size="4" name="Z_MAX_POS" value="250" /></label><br/>
+      <label>Manual * Home Pos X: <input type="text" size="4" name="MANUAL_X_HOME_POS" placeholder="---" /></label>
+      <label>Y: <input type="text" size="4" name="MANUAL_Y_HOME_POS" placeholder="---" /></label>
+      <label>Z: <input type="text" size="4" name="MANUAL_Z_HOME_POS" placeholder="---" /></label><br/>
+      <label>Home Dir X: <input type="checkbox" name="X_HOME_DIR" value="1" /></label>
+      <label>Y: <input type="checkbox" name="Y_HOME_DIR" value="1" /></label>
+      <label>Z: <input type="checkbox" name="Z_HOME_DIR" value="1" /></label><br/>
+      <label>Min Software Endstop X: <input type="checkbox" name="MIN_SOFTWARE_ENDSTOP_X" value="1" /></label>
+      <label>Y: <input type="checkbox" name="MIN_SOFTWARE_ENDSTOP_Y" value="1" /></label>
+      <label>Z: <input type="checkbox" name="MIN_SOFTWARE_ENDSTOP_Z" value="1" /></label><br/>
+      <label>Max Software Endstop X: <input type="checkbox" name="MAX_SOFTWARE_ENDSTOP_X" value="1" /></label>
+      <label>Y: <input type="checkbox" name="MAX_SOFTWARE_ENDSTOP_Y" value="1" /></label>
+      <label>Z: <input type="checkbox" name="MAX_SOFTWARE_ENDSTOP_Z" value="1" /></label><br/>
+      <label>Z Safe Homing: <input type="checkbox" name="Z_SAFE_HOMING" value="1" /></label>
+      <label>X: <input type="text" size="4" name="Z_SAFE_HOMING_X_POINT" /></label>
+      <label>Y: <input type="text" size="4" name="Z_SAFE_HOMING_Y_POINT" /></label><br/>
+      <label>BED_CENTER_AT_0_0: <input type="checkbox" name="BED_CENTER_AT_0_0" value="1" /></label>
+    </form>
+  </div>
+  <div class="clear">&nbsp;</div>
 </div>
+
+<!-- Use the form fields above to draw the 3D printer bed geometry in the canvas
+     in a pretty way whenever one of the fields is updated, after a pause. -->
+<script type="text/javascript">
+  $(document).ready(function() {
+    var form = $('#geometry-form');
+    var canvas = $('#bed-canvas')[0];
+    var ctx = canvas.getContext('2d');
+    var last_update = 0;
+    var update_delay = 500; // milliseconds
+    var update = function() {
+      var now = Date.now();
+      if (now - last_update > update_delay) {
+        last_update = now;
+        var bed_size = {
+          x: parseFloat(form.find('input[name="X_BED_SIZE"]').val()),
+          y: parseFloat(form.find('input[name="Y_BED_SIZE"]').val())
+        };
+        var bounds = {
+          x: {
+            min: parseFloat(form.find('input[name="X_MIN_POS"]').val()),
+            max: parseFloat(form.find('input[name="X_MAX_POS"]').val())
+          },
+          y: {
+            min: parseFloat(form.find('input[name="Y_MIN_POS"]').val()),
+            max: parseFloat(form.find('input[name="Y_MAX_POS"]').val())
+          },
+          z: {
+            min: parseFloat(form.find('input[name="Z_MIN_POS"]').val()),
+            max: parseFloat(form.find('input[name="Z_MAX_POS"]').val())
+          }
+        };
+        // If the fields are set then use them, otherwise use the min pos from above
+        var home_override = {
+          x: form.find('input[name="MANUAL_X_HOME_POS"]').val(),
+          y: form.find('input[name="MANUAL_Y_HOME_POS"]').val(),
+          z: form.find('input[name="MANUAL_Z_HOME_POS"]').val()
+        };
+        var home = {
+          x: home_override.x != '' ? parseFloat(home_override.x) : bounds.x.min,
+          y: home_override.y != '' ? parseFloat(home_override.y) : bounds.y.min,
+          z: home_override.z != '' ? parseFloat(home_override.z) : bounds.z.min
+        };
+        var home_dir = {
+          x: form.find('input[name="X_HOME_DIR"]').is(':checked'),
+          y: form.find('input[name="Y_HOME_DIR"]').is(':checked'),
+          z: form.find('input[name="Z_HOME_DIR"]').is(':checked')
+        };
+        var min_software_endstop = {
+          x: form.find('input[name="MIN_SOFTWARE_ENDSTOP_X"]').is(':checked'),
+          y: form.find('input[name="MIN_SOFTWARE_ENDSTOP_Y"]').is(':checked'),
+          z: form.find('input[name="MIN_SOFTWARE_ENDSTOP_Z"]').is(':checked')
+        };
+        var max_software_endstop = {
+          x: form.find('input[name="MAX_SOFTWARE_ENDSTOP_X"]').is(':checked'),
+          y: form.find('input[name="MAX_SOFTWARE_ENDSTOP_Y"]').is(':checked'),
+          z: form.find('input[name="MAX_SOFTWARE_ENDSTOP_Z"]').is(':checked'),
+        };
+        var z_safe_homing = {
+          enable: form.find('input[name="Z_SAFE_HOMING"]').is(':checked'),
+          x: parseFloat(form.find('input[name="Z_SAFE_HOMING_X_POINT"]').val()),
+          y: parseFloat(form.find('input[name="Z_SAFE_HOMING_Y_POINT"]').val())
+        };
+        var bed_center_at_0_0 = form.find('input[name="BED_CENTER_AT_0_0"]').is(':checked');
+        var bed_center = {
+          x: bed_center_at_0_0 ? 0 : bed_size.x / 2,
+          y: bed_center_at_0_0 ? 0 : bed_size.y / 2
+        };
+
+        //
+        // - Make the canvas size aspect ratio match the bed geometry aspect ratio
+        // - Draw the 3D printer bed geometry in the canvas
+        //   - When drawing apply coordinates in proprtion to the canvas size
+        //
+        var bwidth = bounds.x.max - bounds.x.min,
+            bheight = bounds.y.max - bounds.y.min,
+            aspect_ratio = bwidth / bheight,
+            bwide = aspect_ratio > 1,
+            btall = aspect_ratio < 1;
+        // The canvas max width is 300 pixels
+        // Resize the width for the aspect ratio, but no more than 300 pixels wide.
+        canvas.width = bwide ? 300 : 300 * aspect_ratio;
+        canvas.height = btall ? 300 : 300 / aspect_ratio;
+
+        // Coordinates will be in proportion to the canvas size
+        var xfactor = canvas.width / bwidth,
+            yfactor = canvas.height / bheight;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // min cound be non-zero, so offset for that
+        var xoffs = -bounds.x.min, yoffs = -bounds.y.min;
+
+        // Draw the proportional bed area within the canvas (which already has its own CSS outline)
+        // The coordinates are in proportion to the canvas width divided by the bounds width
+        var x1 = xoffs * xfactor, x2 = (xoffs + bed_size.x) * xfactor,
+            y1 = yoffs * yfactor, y2 = (yoffs + bed_size.y) * yfactor;
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineTo(x1, y2);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Draw a cross at the center of the bed, lighter stroke
+        ctx.strokeStyle = 'lightgray';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(xoffs + bed_center.x * xfactor - 5, yoffs + bed_center.y * yfactor);
+        ctx.lineTo(xoffs + bed_center.x * xfactor + 5, yoffs + bed_center.y * yfactor);
+        ctx.moveTo(xoffs + bed_center.x * xfactor, yoffs + bed_center.y * yfactor - 5);
+        ctx.lineTo(xoffs + bed_center.x * xfactor, yoffs + bed_center.y * yfactor + 5);
+        ctx.stroke();
+      }
+    };
+    // Fire update() whenever one of the form fields changes
+    form.find('input').change(update);
+    update();
+  });
+</script>

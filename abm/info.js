@@ -18,10 +18,10 @@ const vscode = require("vscode"),
           vw = vscode.window;
 
 const verbose = false; // Lots of debug output
-function log(message, data) {
+function log(s, d) {
   if (!verbose) return;
-  const msg = `[info] ${message}`;
-  if (data !== undefined) console.dir([msg, data ]); else console.log(msg);
+  const msg = `[info] ${s}`;
+  if (d !== undefined) console.dir([msg, d]); else console.log(msg);
 }
 
 class InfoPanelProvider {

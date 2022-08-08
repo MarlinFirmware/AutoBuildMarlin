@@ -22,8 +22,10 @@ function set_context(name, value) {
 }
 
 const bugme = false; // Lots of debug output
-function log(s, d=null) {
-  if (bugme) { console.log(`[ABM] ${s}`); if (d) console.dir(d); }
+function log(s, d) {
+  if (!bugme) return;
+  const msg = `[abm] ${s}`;
+  if (d !== undefined) console.dir([msg, d]); else console.log(msg);
 }
 
 function init(c) {
@@ -687,6 +689,9 @@ function getNonce() {
 function webViewContent() {
   var panes = {};
 
+  // Load Summary pane
+  panes.summary = load_pane('summ');
+
   // Load Board pane
   panes.board = load_pane('board');
 
@@ -694,7 +699,8 @@ function webViewContent() {
   panes.geometry = load_pane('geom');
 
   // Load LCD pane
-  panes.lcd = load_pane('lcd');
+  const opt = '<option value="1">Test 123</option>';
+  panes.lcd = load_pane('lcd', { lcd_options: opt, check_label: "Check me!" });
 
   // Load SD pane
   panes.sd = load_pane('sd');
@@ -807,6 +813,7 @@ function run_command(action) {
   if (panel) {
     panel.reveal(vscode.ViewColumn.One);
     runSelectedAction();
+    //vw.showInformationMessage('ABM Action: ' + (action ? action : ''));
   }
   else {
 
@@ -875,6 +882,8 @@ function run_command(action) {
 
     // Create an IPC file for messages from Terminal
     createIPCFile();
+
+    //vw.showInformationMessage('ABM View Ready: ' + (action ? action : ''));
   }
   set_context('visible', true);
 }
