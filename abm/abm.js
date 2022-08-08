@@ -680,6 +680,9 @@ function getNonce() {
 function webViewContent() {
   var panes = {};
 
+  // Load Summary pane
+  panes.summary = load_pane('summ');
+
   // Load Board pane
   panes.board = load_pane('board');
 
@@ -687,7 +690,8 @@ function webViewContent() {
   panes.geometry = load_pane('geom');
 
   // Load LCD pane
-  panes.lcd = load_pane('lcd');
+  const opt = '<option value="1">Test 123</option>';
+  panes.lcd = load_pane('lcd', { lcd_options: opt, check_label: "Check me!" });
 
   // Load SD pane
   panes.sd = load_pane('sd');
