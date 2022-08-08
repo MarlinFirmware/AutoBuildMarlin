@@ -32,6 +32,7 @@
       $t = $('.subtabs button').first();
       name = $t.attr('ref');
     }
+    msg({ command:'conf', tab:name });
     $('.subtabs button').removeClass();
     $t.addClass('active');
     $('.abm-tool .subpanes>div').hide();
@@ -146,9 +147,10 @@
 <div id="abm-config" class="abm-tool">
   <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Configuration Tool</span></h1>
   <div class="subtabs">
-    <button ref="board">Board</button> <button ref="geometry">Geometry</button> <button ref="lcd">LCD</button> <button ref="sd">SD</button> <button ref="more">More...</button>
+    <button ref="summary">Summary</button> <button ref="board">Board</button> <button ref="geometry">Geometry</button> <button ref="lcd">LCD</button> <button ref="sd">SD</button> <button ref="more">More...</button>
   </div>
   <div class="subpanes">
+    ${panes.summary}
     ${panes.board}
     ${panes.geometry}
     ${panes.lcd}

@@ -1,5 +1,63 @@
+<!--
+  X_HOME_DIR Y_HOME_DIR Z_HOME_DIR
+  HOMING_FEEDRATE_XY HOMING_FEEDRATE_Z
+
+  X_BED_SIZE Y_BED_SIZE
+
+  X_MIN_POS Y_MIN_POS Z_MIN_POS
+  X_MAX_POS Y_MAX_POS Z_MAX_POS
+
+  MIN_SOFTWARE_ENDSTOPS
+    MIN_SOFTWARE_ENDSTOP_X
+    MIN_SOFTWARE_ENDSTOP_Y
+    MIN_SOFTWARE_ENDSTOP_Z
+
+  MAX_SOFTWARE_ENDSTOPS
+    MAX_SOFTWARE_ENDSTOP_X
+    MAX_SOFTWARE_ENDSTOP_Y
+    MAX_SOFTWARE_ENDSTOP_Z
+
+  BED_CENTER_AT_0_0
+
+  MANUAL_X_HOME_POS MANUAL_Y_HOME_POS MANUAL_Z_HOME_POS
+
+  Z_SAFE_HOMING (probe not required)
+    Z_SAFE_HOMING_X_POINT
+    Z_SAFE_HOMING_Y_POINT
+-->
 <div class="geometry">
   <h2>Geometry Panel</h2>
-  <div class="panel-error">Geometry Panel Under Construction</div>
-  <form id="geometry-form"></form>
+  <form id="geometry-form">
+  <div class="geom-top"><span id="V-Y_MAX_POS"></span></div>
+  <div class="geom-left"><span id="V-X_MIN_POS"></span></div>
+  <div class="geom-ctr"><canvas id="bed-canvas" /></div>
+  <div class="geom-right"><span id="V-X_MAX_POS"></span></div>
+  <div class="geom-foot"><span id="V-Y_MIN_POS"></span></div>
+  <div class="geom-form">
+    <label>Bed Size X: <input type="text" size="4" name="X_BED_SIZE" /></label>
+    <label>Y: <input type="text" size="4" name="Y_BED_SIZE" /></label><br/>
+    <label>Min Pos X: <input type="text" size="4" name="X_MIN_POS" /></label>
+    <label>Y: <input type="text" size="4" name="Y_MIN_POS" /></label>
+    <label>Z: <input type="text" size="4" name="Z_MIN_POS" /></label><br/>
+    <label>Max Pos X: <input type="text" size="4" name="X_MAX_POS" /></label>
+    <label>Y: <input type="text" size="4" name="Y_MAX_POS" /></label>
+    <label>Z: <input type="text" size="4" name="Z_MAX_POS" /></label><br/>
+    <label>Manual * Home Pos X: <input type="text" size="4" name="MANUAL_X_HOME_POS" /></label>
+    <label>Y: <input type="text" size="4" name="MANUAL_Y_HOME_POS" /></label>
+    <label>Z: <input type="text" size="4" name="MANUAL_Z_HOME_POS" /></label><br/>
+    <label>Home Dir X: <input type="checkbox" name="X_HOME_DIR" value="1" /></label>
+    <label>Y: <input type="checkbox" name="Y_HOME_DIR" value="1" /></label>
+    <label>Z: <input type="checkbox" name="Z_HOME_DIR" value="1" /></label><br/>
+    <label>Min Software Endstop X: <input type="checkbox" name="MIN_SOFTWARE_ENDSTOP_X" value="1" /></label>
+    <label>Y: <input type="checkbox" name="MIN_SOFTWARE_ENDSTOP_Y" value="1" /></label>
+    <label>Z: <input type="checkbox" name="MIN_SOFTWARE_ENDSTOP_Z" value="1" /></label><br/>
+    <label>Max Software Endstop X: <input type="checkbox" name="MAX_SOFTWARE_ENDSTOP_X" value="1" /></label>
+    <label>Y: <input type="checkbox" name="MAX_SOFTWARE_ENDSTOP_Y" value="1" /></label>
+    <label>Z: <input type="checkbox" name="MAX_SOFTWARE_ENDSTOP_Z" value="1" /></label><br/>
+    <label>Z Safe Homing: <input type="checkbox" name="Z_SAFE_HOMING" value="1" /></label>
+    <label>X: <input type="text" size="4" name="Z_SAFE_HOMING_X_POINT" /></label>
+    <label>Y: <input type="text" size="4" name="Z_SAFE_HOMING_Y_POINT" /></label><br/>
+    <label>BED_CENTER_AT_0_0: <input type="checkbox" name="BED_CENTER_AT_0_0" value="1" /></label>
+  </div>
+  </form>
 </div>

@@ -39,6 +39,7 @@ var ABM = (function(){
       // Configurator Buttons show / refresh associated subpanes
       //
       $('.subtabs button').click((e) => {
+        // Before showing the pane, tell it to refresh its fields
         abm_pane($(e.target).attr('ref'));
       });
 
@@ -198,4 +199,29 @@ var ABM = (function(){
 ABM.init();
 msg({ command: 'ui-ready' });
 
+});
+
+/**
+ * selectField.addOptions takes an array or keyed object
+ */
+$.fn.extend({
+  addOptions(arrObj) {
+    return this.each(function() {
+      var sel = $(this);
+      var isArr = Object.prototype.toString.call(arrObj) == "[object Array]";
+      $.each(arrObj, function(k, v) {
+        sel.append( $('<option>',{value:isArr?v:k}).text(v) );
+      });
+    });
+  },
+  noSelect() {
+    return this
+            .attr('unselectable', 'on')
+            .css('user-select', 'none')
+            .on('selectstart', false);
+  },
+  unblock(on) {
+    on ? this.removeClass('blocked') : this.addClass('blocked');
+    return this;
+  }
 });
