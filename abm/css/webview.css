@@ -66,10 +66,10 @@ body.vscode-high-contrast {
 
 .clear { clear: both; }
 
+html { margin: 0; padding: 0; }
 body {
   --abm-progress-offset: 0px;
-  margin: 0;
-  padding: 0;
+  margin: 0; padding: 0;
   background: var(--abm-background);
   color: var(--abm-text-color-data);
   }
@@ -387,3 +387,5 @@ div.subtabs button.active {
 a.reveal { font-size: small; }
 
 form#showy { display: block; position: relative; float: right; }
+form#showy label { display: block; padding: 2px 0; }
+form#showy input[type="checkbox"] { position: relative; top: 0.2em; }

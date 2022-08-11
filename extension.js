@@ -8,6 +8,7 @@
 
 const vscode = require('vscode'),
          abm = require('./abm/abm'),
+       prefs = require('./abm/prefs'),
           vc = vscode.commands;
 
 exports.activate = (context) => {
@@ -28,7 +29,7 @@ exports.activate = (context) => {
   abm.watchAndValidate();             // Watch files and folders for changes to update the status
   abm.set_context('active', true);    // Tell VSCode the status to update the UI
 
-  if (abm.pref_show_on_startup()) setTimeout(abm.run_command, 1000);
+  if (prefs.show_on_startup()) setTimeout(abm.run_command, 1000);
 };
 
 exports.deactivate = () => { abm.set_context('active', false); };

@@ -12,6 +12,9 @@
 <script nonce="${nonce}">
 //<![CDATA[
 
+  // Template parameters are evaluated in the context of abm.js.
+  // But this script is evaluated in the context of webview.js.
+
   const vscode = acquireVsCodeApi();
 
   function abm_tool(tool) {
@@ -61,7 +64,11 @@
   </div>
   <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Auto Build</span></h1>
   <div id="abm-main">
-    <form id="showy"><label><input type="checkbox" value="1" name="show_on_startup" ${ pref_show_on_startup() ? 'checked="checked"' : '' }/>Show on Startup</label><br/><label><input type="checkbox" value="0" name="silent_build" ${ pref_silent_build() ? 'checked="checked"' : '' }/>Silent Build</label></form>
+    <form id="showy">
+      <label><input type="checkbox" value="1" name="show_on_startup" ${ check(prefs.show_on_startup()) }/>Show on Startup</label>
+      <label><input type="checkbox" value="0" name="silent_build" ${ check(prefs.silent_build()) }/>Silent Build</label>
+      <label><input type="checkbox" value="1" name="auto_reveal" ${ check(prefs.auto_reveal()) }/>Auto Reveal Build</label>
+    </form>
     <div id="error"></div>
     <table id="info">
       <tr><th>Firmware:</th>      <td><div>Marlin <span id="info-vers"></span></div><div id="info-date" class="abm-caption"></div></td></tr>

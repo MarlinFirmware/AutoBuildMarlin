@@ -4,6 +4,7 @@
  */
 
 const marlin = require('./marlin'),
+       prefs = require('./prefs'),
         path = require('path'),
           fs = require('fs'),
           os = require('os');
@@ -33,24 +34,6 @@ function init(c) {
   pane_path = path.join(c.extensionPath, 'abm', 'pane');
   set_context('inited', true);
 }
-
-//
-// ABM Settings
-//
-function settings()              { return ws.getConfiguration('auto-build'); }
-function pref_reuse_terminal()   { return settings().get('reuseTerminal', true); }
-function pref_show_on_startup()  { return settings().get('showOnStartup', false); }
-function pref_silent_build()     { return settings().get('silentBuild', false); }
-function default_env()           { return settings().get('defaultEnv.name', ''); }
-function default_env_update()    { return settings().get('defaultEnv.update', true); }
-
-function set_setting(name, val) {
-  var glob = settings().inspect(name).workspaceValue == undefined;
-  settings().update(name, val, glob);
-}
-function set_show_on_startup(sh) { set_setting('showOnStartup', sh); }
-function set_silent_build(sb) { set_setting('silentBuild', sb); }
-function set_default_env(e) { set_setting('defaultEnv.name', e); }
 
 /**
  * The simplest layout concept is to take the entire config
@@ -86,15 +69,15 @@ function envBuildPath(env, item) {
 /**
  * Find an existing build folder. If 'debug' exists, prefer it.
  */
-function existingBuildPath(env, file) {
+function existingBuildPath(env, item) {
   var bp = envBuildPath(env, 'debug');
-  if (file !== undefined) bp = path.join(bp, file);
+  if (item !== undefined) bp = path.join(bp, item);
   if (fs.existsSync(bp)) return bp;
-  return envBuildPath(env, file);
+  return envBuildPath(env, item);
 }
 
-function existingBuildPathOrNull(env) {
-  var bp = existingBuildPath(env);
+function existingBuildPathOrNull(env, item) {
+  var bp = existingBuildPath(env, item);
   return fs.existsSync(bp) ? bp : null;
 }
 
@@ -106,7 +89,7 @@ function existingBuildPathOrNull(env) {
 
 var timeouts = [];
 function onConfigFileChanged(e, fname) {
-  if (bugme) console.log('File changed:', e, fname);
+  log(`File changed (${fname}):`, e);
   if (timeouts[fname] !== undefined) clearTimeout(timeouts[fname]);
   timeouts[fname] = setTimeout(() => {
     timeouts[fname] = undefined;
@@ -138,7 +121,7 @@ function currentBuildEnv() {
 //
 function unwatchBuildFolder() {
   if (build.watcher) {
-    if (bugme) console.log(`Stop Watching Build: ${currentBuildEnv()}.`);
+    log(`Stop Watching Build: ${currentBuildEnv()}.`);
     build.watcher.close();
     build.watcher = null;
   }
@@ -157,12 +140,12 @@ function watchBuildFolder(env) {
     const bp = existingBuildPathOrNull(env);
     if (bp) {
       build.watcher = fs.watch(bp, {}, (e,f) => { onBuildFolderChanged(e,f,env); });
-      if (bugme) console.log("Watching Build...");
+      log("Watching Build...");
     }
     else {
       // Build folder doesn't exist (yet)
       // Keep looking for it for several seconds
-      if (bugme) console.log("No build folder yet. Trying in 2s...");
+      log("No build folder yet. Trying in 2s...");
       setTimeout(()=>{ watchBuildFolder(env); }, 2000);
     }
   }
@@ -175,7 +158,7 @@ function cancelBuildRefresh() {
 }
 
 function buildIsFinished(reason) {
-  if (bugme) console.log(`buildIsFinished (${reason}): ${currentBuildEnv()}`);
+  log(`buildIsFinished (${reason}): ${currentBuildEnv()}`);
 
   // Updating now so kill timers
   cancelBuildRefresh();
@@ -184,6 +167,9 @@ function buildIsFinished(reason) {
   // If build.env is set it will also update the UI.
   build.active = false;
   unwatchBuildFolder();
+
+  // If the build should be revealed, do it now.
+  if (prefs.auto_reveal()) reveal_env_build(build.env);
 
   // Clear the environment
   build.env = null;
@@ -199,19 +185,19 @@ function onBuildFolderChanged(e, fname, env) {
   if (/(.+\.(bin|hex|exe|srec)|program|MarlinSimulator)$/i.test(fname)) {
     // If the BIN or HEX file changed, assume the build is done now
     refresh_to.push(setTimeout(()=>{ unwatchBuildFolder(); }, 500));
-    if (bugme) console.log(`onBuildFolderChanged (firmware binary): ${env}`);
+    log(`onBuildFolderChanged (firmware binary): ${env}`);
   }
   else {
     // Set timeouts that assume lots of changes are underway
     refresh_to.push(setTimeout(()=>{ refreshBuildStatus(env); }, 500));
     // Assume nothing will pause for more than 15 seconds
     refresh_to.push(setTimeout(()=>{ unwatchBuildFolder(); }, 15000));
-    if (bugme) console.log(`onBuildFolderChanged: ${env}`);
+    log(`onBuildFolderChanged: ${env}`);
   }
 }
 
 function postMessage(msg) {
-  if (bugme) console.log("Posting:", msg);
+  log("Posting:", msg);
   pv.postMessage(msg);
 }
 
@@ -236,12 +222,12 @@ function allFilesAreLoaded() {
   if (mb !== undefined) {
 
     //const sensors = extractTempSensors();
-    //if (bugme) console.log("Sensors :", sensors);
+    //log("Sensors :", sensors);
 
     const version_info = marlin.extractVersionInfo();
-    if (bugme) console.log("Version Info :", version_info);
+    log("Version Info :", version_info);
     board_info = marlin.extractBoardInfo(mb);
-    if (bugme) console.log(`Board Info for ${mb} :`, board_info);
+    log(`Board Info for ${mb} :`, board_info);
     set_context('has_debug', !!board_info.has_debug);
     if (board_info.error) {
       set_context('err.parse', true);
@@ -249,11 +235,11 @@ function allFilesAreLoaded() {
       return; // abort the whole deal
     }
     const machine_info = marlin.getMachineSettings();
-    if (bugme) console.log("Machine Info :", machine_info);
+    log("Machine Info :", machine_info);
     const extruder_info = marlin.getExtruderSettings();
-    if (bugme) console.log("Extruder Info :", extruder_info);
+    log("Extruder Info :", extruder_info);
     const pindef_info = marlin.getPinDefinitionInfo(mb);
-    if (bugme) console.log("Pin Defs Info :", pindef_info);
+    log("Pin Defs Info :", pindef_info);
 
     // If no CUSTOM_MACHINE_NAME was set, get it from the pins file
     if (!machine_info.name) {
@@ -294,10 +280,8 @@ function allFilesAreLoaded() {
   runSelectedAction();
 }
 
-function refreshOldData() { allFilesAreLoaded(); }
-
 function readFileError(err, msg) {
-  if (bugme) console.log("fs.readFile err: ", err);
+  log("fs.readFile err: ", err);
   postMessage({ command:'error', error:msg, data:err });
 }
 
@@ -382,8 +366,7 @@ function getBuildStatus(env) {
 // - Send the envs data to the UI for display.
 //
 function refreshBuildStatus(env) {
-  if (bugme) console.log(`Refreshing Build: ${currentBuildEnv()}`);
-  if (bugme) console.log(board_info)
+  log(`Refreshing Build: ${currentBuildEnv()}`, board_info);
   board_info.has_clean = false;
   board_info.envs.forEach((v) => {
     if (!env || v.name == env) {
@@ -410,11 +393,11 @@ var ipc_watcher;
 function createIPCFile() {
   fs.writeFile(ipc_file, 'ipc', (err) => {
     if (!err) {
-      if (bugme) console.log('IPC file created.');
+      log('IPC file created.');
       ipc_watcher = fs.watch(ipc_file, {}, () => { onIPCFileChange(); });
     }
     else
-      if (bugme) console.log('IPC file existed?');
+      log('IPC file existed?');
   });
 }
 
@@ -422,12 +405,10 @@ function destroyIPCFile() {
   ipc_watcher.close();
   ipc_watcher = null;
   fs.unlink(ipc_file, (err) => {
-    if (bugme) {
-      if (err)
-        console.log("IPC Delete Error:", err);
-      else
-        console.log("IPC file deleted.", err);
-    }
+    if (err)
+      log("IPC Delete Error:", err);
+    else
+      log("IPC file deleted.");
   });
 }
 
@@ -442,7 +423,7 @@ var terminal, NEXT_TERM_ID = 1;
 // Reuse or create a new Terminal for a command
 //
 function terminal_for_command(ttl, noping) {
-  const reuse_terminal = pref_reuse_terminal();
+  const reuse_terminal = prefs.reuse_terminal();
   if (!terminal || !reuse_terminal || noping) {
     var title;
     if (reuse_terminal || noping)
@@ -469,7 +450,7 @@ function terminal_for_command(ttl, noping) {
     });
   }
   else
-    if (bugme) console.log("Terminal PID is " + terminal.processId);
+    log("Terminal PID is " + terminal.processId);
 
   terminal.show(true);
 }
@@ -504,7 +485,7 @@ function terminal_command(ttl, cmdline, noping) {
 //
 // Use a native shell command to open the build folder
 //
-function reveal_build(env) {
+function reveal_env_build(env) {
   const stat = getBuildStatus(env);
   if (!stat || !stat.completed || !stat.filename) return;
 
@@ -546,7 +527,7 @@ function pio_command(opname, env, nosave) {
     return;
   }
 
-  if (default_env_update()) set_default_env(env);
+  if (prefs.default_env_update()) prefs.set_default_env(env);
 
   let args;
   switch (opname) {
@@ -563,7 +544,7 @@ function pio_command(opname, env, nosave) {
   }
   if (!nosave) vc.executeCommand('workbench.action.files.saveAll');
 
-  if (pref_silent_build()) args += " --silent"
+  if (prefs.silent_build()) args += " --silent"
   terminal_command(opname, `platformio ${args} -e ${env}`);
 
   // Show the build as 'busy'
@@ -601,7 +582,7 @@ function postTool(t) {
 // Post a value to the UI
 function postValue(tag, val) {
   var message = { command:'info', tag:tag, val:val };
-  if (bugme) console.log("Send to UI", message);
+  log("Send to UI", message);
   postMessage(message);
 }
 
@@ -618,6 +599,7 @@ function subpath_uri(sub, filename) {
 function img_path(filename) { return subpath_uri('img', filename); }
 function js_path(filename) { return subpath_uri('js', filename); }
 function css_path(filename) { return subpath_uri('css', filename); }
+function check(b) { return b ? 'checked="checked"' : ''; }
 
 function load_home() {
   return fs.readFileSync(path.join(abm_path, 'abm.html'), {encoding:'utf8'});
@@ -693,11 +675,15 @@ function handleMessage(m) {
       return;
 
     case 'show_on_startup':   // Show on Startup checkbox
-      set_show_on_startup(m.value);
+      prefs.set_show_on_startup(m.value);
       return;
 
     case 'silent_build':      // Silent Build checkbox
-      set_silent_build(m.value);
+      prefs.set_silent_build(m.value);
+      return;
+
+    case 'auto_reveal':       // Auto Reveal checkbox
+      prefs.set_auto_reveal(m.value);
       return;
 
     case 'pio':               // Build, Upload, Clean...
@@ -706,7 +692,7 @@ function handleMessage(m) {
       return;
 
     case 'reveal':            // Reveal the built BIN or HEX file
-      reveal_build(m.env);
+      reveal_env_build(m.env);
       return;
   }
 }
@@ -782,8 +768,9 @@ function run_command(action) {
     panel.onDidChangeViewState(
       () => {
         if (panel.active) {
-          postMessage({ command:'start', start:pref_show_on_startup() });
-          postMessage({ command:'silent', silent:pref_silent_build() });
+          postMessage({ command: 'check', name:'show_on_startup',  state:prefs.show_on_startup() });
+          postMessage({ command: 'check', name:'silent_build', state:prefs.silent_build() });
+          postMessage({ command: 'check', name:'auto_reveal', state:prefs.auto_reveal() });
         }
       },
       null, cs
@@ -812,8 +799,8 @@ function runSelectedAction() {
       let env;
       if (board_info.envs.length == 1) { // only 1 board is available
         env = board_info.envs[0].name;
-      } else if (board_info.envs.length > 1 && board_info.envs.includes(default_env())) { // use default env
-        env = default_env();
+      } else if (board_info.envs.length > 1 && board_info.envs.includes(prefs.default_env())) { // use default env
+        env = prefs.default_env();
       } else if (act == 'clean') {
         let cleanme, cnt = 0;
         board_info.envs.forEach((v) => { if (v.exists) { cleanme = v.name; cnt++; } });
@@ -831,4 +818,4 @@ function runSelectedAction() {
   }
 }
 
-module.exports = { init, set_context, run_command, validate, watchAndValidate, pref_show_on_startup, sponsor };
+module.exports = { init, set_context, run_command, validate, watchAndValidate, sponsor, getNonce };

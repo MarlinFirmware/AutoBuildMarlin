@@ -97,11 +97,9 @@ var ABM = (function(){
           $err.addClass('warning').html(m.warning).show('fast');
           break;
 
-        case 'start':
-          $('#showy input[name="show_on_startup"]').prop('checked', m.start);
-          break;
-        case 'silent':
-          $('#showy input[name="silent_build"]').prop('checked', m.silent);
+        // Set a checkbox state
+        case 'check':
+          $(`#showy input[name="${m.name}"]`).prop('checked', m.state);
           break;
 
         case 'envs':
