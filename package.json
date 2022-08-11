@@ -6,7 +6,7 @@
   "publisher": "marlinfirmware",
   "icon": "icon.png",
   "sponsor": {
-    "url": "https://github.com/sponsors/thinkyhead"
+    "url": "https://github.com/sponsors/MarlinFirmware"
   },
   "badges": [
     {
@@ -34,7 +34,7 @@
     "ARM"
   ],
   "engines": {
-    "vscode": "^1.34.0"
+    "vscode": "^1.50.0"
   },
   "repository": {
     "type": "git",
@@ -42,6 +42,9 @@
   },
   "homepage": "https://github.com/MarlinFirmware/AutoBuildMarlin/blob/master/README.md",
   "markdown": "github",
+  "extensionKind": [
+    "ui"
+  ],
   "categories": [
     "Other"
   ],
@@ -68,14 +71,14 @@
           "default": true,
           "description": "Reuse the same Terminal for all commands."
         },
-        "auto-build.showOnStartup": {
+        "auto-build.showOnStart": {
           "type": "boolean",
-          "default": false,
-          "description": "Open the Auto Build Marlin panel on startup."
+          "default": true,
+          "markdownDescription": "Open the **Auto Build Marlin** panel on startup."
         },
         "auto-build.silentBuild": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Suppress build messages, only showing warnings and errors."
         },
         "auto-build.defaultEnv.name": {
@@ -92,43 +95,45 @@
     "views": {
       "autoBuildVC": [
         {
-          "id": "autoBuildView",
-          "name": "Build…"
+          "id": "abm.welcomeView",
+          "name": "Build…",
+          "visibility": "visible"
         },
         {
-          "id": "marlinView",
-          "name": "Marlin Info"
+          "id": "abm.infoView",
+          "name": "Marlin Info",
+          "visibility": "collapsed"
         }
       ]
     },
     "viewsWelcome": [
       {
-        "view": "autoBuildView",
+        "view": "abm.welcomeView",
         "contents": "%view.workbench.abm.inactive%",
         "when": "!abm.inited"
       },
       {
-        "view": "autoBuildView",
+        "view": "abm.welcomeView",
         "contents": "%view.workbench.abm.intro%",
         "when": "abm.inited && !abm.err.locate"
       },
       {
-        "view": "autoBuildView",
+        "view": "abm.welcomeView",
         "contents": "%view.workbench.abm.err.empty%",
         "when": "abm.inited && workbenchState == empty"
       },
       {
-        "view": "autoBuildView",
+        "view": "abm.welcomeView",
         "contents": "%view.workbench.abm.err.folder%",
         "when": "abm.err.locate && workbenchState == folder"
       },
       {
-        "view": "autoBuildView",
+        "view": "abm.welcomeView",
         "contents": "%view.workbench.abm.err.workspace%",
         "when": "abm.err.locate && workbenchState == workspace"
       },
       {
-        "view": "autoBuildView",
+        "view": "abm.welcomeView",
         "contents": "%view.workbench.abm.err.parse%",
         "when": "abm.err.parse"
       }
@@ -185,27 +190,27 @@
         {
           "command": "abm.build",
           "group": "navigation@1",
-          "when": "abm.active && view == autoBuildView"
+          "when": "abm.active && view == abm.welcomeView"
         },
         {
           "command": "abm.upload",
           "group": "navigation@2",
-          "when": "abm.active && view == autoBuildView"
+          "when": "abm.active && view == abm.welcomeView"
         },
         {
           "command": "abm.traceback",
           "group": "navigation@3",
-          "when": "abm.active && abm.has_debug && view == autoBuildView"
+          "when": "abm.active && abm.has_debug && view == abm.welcomeView"
         },
         {
           "command": "abm.clean",
           "group": "navigation@4",
-          "when": "abm.active && abm.can_clean && view == autoBuildView"
+          "when": "abm.active && abm.cleanable && view == abm.welcomeView"
         },
         {
           "command": "abm.config",
           "group": "navigation@5",
-          "when": "abm.active && view == autoBuildView || view == marlinView"
+          "when": "abm.active && (view == abm.welcomeView || view == abm.infoView)"
         }
       ],
       "commandPalette": [
@@ -223,11 +228,11 @@
         },
         {
           "command": "abm.clean",
-          "when": "abm.active && abm.can_clean"
+          "when": "abm.active && abm.cleanable"
         },
         {
           "command": "abm.config",
-          "when": "abm.active || view == marlinView"
+          "when": "abm.active"
         }
       ]
     }

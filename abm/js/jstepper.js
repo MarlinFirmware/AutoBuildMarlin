@@ -168,7 +168,8 @@
 
         active: function(a) {
           if (typeof a === un) return active;
-          (active = a) ? $marq.removeClass('inactive') : $marq.addClass('inactive');
+          active = a;
+          $marq.toggleClass('inactive', !a);
           this.updateNumber();
           return this;
         },

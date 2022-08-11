@@ -11,9 +11,18 @@ function init() {
   // Extend String, Number, and Date with extras
   //
   String.prototype.lpad = function(len, chr) {
-    if (chr === undefined) { chr = '&nbsp;'; }
+    if (!len) return this;
+    if (chr === undefined) chr = ' ';
     var s = this+'', need = len - s.length;
-    if (need > 0) { s = new Array(need+1).join(chr) + s; }
+    if (need > 0) s = new Array(need+1).join(chr) + s;
+    return s;
+  };
+
+  String.prototype.rpad = function(len, chr) {
+    if (!len) return this;
+    if (chr === undefined) chr = ' ';
+    var s = this+'', need = len - s.length;
+    if (need > 0) s += new Array(need+1).join(chr);
     return s;
   };
 

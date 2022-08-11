@@ -1,38 +1,36 @@
 /**
  * Auto Build Marlin
- *
- * abm.js
- *
- * Build Tool methods. Config Tool can be separate.
- *
+ * abm/abm.js - Build Tool methods.
  */
-
-const bugme = false; // Lots of debug output
 
 const marlin = require('./marlin'),
         path = require('path'),
           fs = require('fs'),
           os = require('os');
 
-var context, vscode, vc, ws, vw, abm_path, pane_path, project_path, pv,
-    temp = {}; // For general data without declaring
+const vscode = require('vscode'),
+          vc = vscode.commands,
+          ws = vscode.workspace,
+          vw = vscode.window;
+
+var context, pv, abm_path, pane_path;
 
 // Update based on "when" in package.json
 function set_context(name, value) {
   vc.executeCommand('setContext', 'abm.' + name, value);
 }
 
-function init(c, v) {
-  if (bugme) console.log('<=== AUTO BUILD MARLIN ===>');
+const bugme = false; // Lots of debug output
+function log(s, d=null) {
+  if (bugme) { console.log(s); if (d) console.dir(d); }
+}
+
+function init(c) {
+  log('<=== AUTO BUILD MARLIN ===>');
+  marlin.init(bugme);
   context = c;
-  vscode = v;
-  vc = v.commands;
-  ws = v.workspace;
-  vw = v.window;
   abm_path = path.join(c.extensionPath, 'abm');
   pane_path = path.join(c.extensionPath, 'abm', 'pane');
-  project_path = (ws && ws.workspaceFolders && ws.workspaceFolders.length) ? ws.workspaceFolders[0].uri.fsPath : '';
-  marlin.init(vscode, bugme);
   set_context('inited', true);
 }
 
@@ -78,9 +76,10 @@ function set_default_env(e) { set_setting('defaultEnv.name', e); }
  * or the panel is switched then the changes are applied to the configs.
  */
 
-function envBuildPath(env, file) {
-  var bp = path.join(project_path, '.pio', 'build', env);
-  if (file !== undefined) bp = path.join(bp, file);
+// Return the path to the given item within the build folder.
+function envBuildPath(env, item) {
+  var bp = path.join(marlin.workspaceRoot, '.pio', 'build', env);
+  if (item !== undefined) bp = path.join(bp, item);
   return bp;
 }
 
@@ -197,7 +196,7 @@ function onIPCFileChange() {
 function onBuildFolderChanged(e, fname, env) {
   cancelBuildRefresh();
 
-  if (fname.match(/(.+\.(bin|hex|exe|srec)|program|MarlinSimulator)$/i)) {
+  if (/(.+\.(bin|hex|exe|srec)|program|MarlinSimulator)$/i.test(fname)) {
     // If the BIN or HEX file changed, assume the build is done now
     refresh_to.push(setTimeout(()=>{ unwatchBuildFolder(); }, 500));
     if (bugme) console.log(`onBuildFolderChanged (firmware binary): ${env}`);
@@ -371,7 +370,8 @@ function lastBuild(env) {
 }
 
 function getBuildStatus(env) {
-  for (let i = 0; i < board_info.envs.length; i++)
+  const len = board_info.envs.length;
+  for (let i = 0; i < len; i++)
     if (board_info.envs[i].name == env)
       return board_info.envs[i];
   return null;
@@ -396,10 +396,8 @@ function refreshBuildStatus(env) {
       if (b.exists) board_info.has_clean = true;
     }
   });
-  let m = { command:'envs', val:board_info.envs };
-  if (bugme) console.log("Posting:", m);
-  postMessage(m);
-  set_context('can_clean', board_info.has_clean);
+  postMessage({ command:'envs', val:board_info.envs });
+  set_context('cleanable', board_info.has_clean);
 }
 
 //
@@ -476,6 +474,10 @@ function terminal_for_command(ttl, noping) {
   terminal.show(true);
 }
 
+function terminal_exit_command(term) {
+  command_with_ping(term, ['win32', 'darwin'].includes(process.platform) ? 'exit' : 'exit 0');
+}
+
 //
 // Send a command and ping back when it completes
 //
@@ -503,23 +505,21 @@ function terminal_command(ttl, cmdline, noping) {
 // Use a native shell command to open the build folder
 //
 function reveal_build(env) {
-  const aterm = vw.createTerminal({ name:'reveal', env:process.env });
-  const stat = getBuildStatus(env),
-        fname = stat.filename,
-        escpath = existingBuildPath(env).replace('"', '\\"')
+  const stat = getBuildStatus(env);
+  if (!stat || !stat.completed || !stat.filename) return;
+
+  const aterm = vw.createTerminal({ name: 'reveal', env:process.env }),
+      escpath = existingBuildPath(env).replace('"', '\\"');
+
+  var cmd;
+  switch (process.platform) {
+    case 'win32': cmd = `Explorer /select,${stat.filename}`; break;
+    case 'darwin': cmd = `open -R ${stat.filename}`; break;
+    default: cmd = '`which xdg-open open other-open | grep -v found | head -n1` .';
+  }
   command_with_ping(aterm, `cd "${escpath}"`);
-  if (process.platform == 'win32') {
-    command_with_ping(aterm, `Explorer /select,${fname}`);
-    command_with_ping(aterm, 'exit');
-  }
-  else if (process.platform == 'darwin') {
-    command_with_ping(aterm, `open -R ${fname}`);
-    command_with_ping(aterm, 'exit');
-  }
-  else
-    command_with_ping(aterm
-      , '`which xdg-open open other-open | grep -v found | head -n1` . ; exit 0'
-    );
+  command_with_ping(aterm, cmd);
+  terminal_exit_command(aterm);
 }
 
 //
@@ -527,15 +527,13 @@ function reveal_build(env) {
 //
 function run_built_exe(env) {
   const stat = getBuildStatus(env);
-  if (stat && stat.completed && stat.filename) {
-    const exe = existingBuildPath(env, stat.filename),
-          aterm = vw.createTerminal({ name:'run', env:process.env });
-    if (process.platform == 'win32')
-      command_with_ping(aterm, 'START /B ' + exe);
-    else
-      command_with_ping(aterm, exe);
-    command_with_ping(aterm, 'exit');
-  }
+  if (!stat || !stat.completed || !stat.filename) return;
+
+  const aterm = vw.createTerminal({ name:'run', env:process.env }),
+          exe = existingBuildPath(env, stat.filename);
+
+  command_with_ping(aterm, (process.platform == 'win32' ? 'START /B ' : '') + exe);
+  terminal_exit_command(aterm);
 }
 
 //
@@ -608,15 +606,14 @@ function postValue(tag, val) {
 }
 
 //
-//  HTML Templates with interpreted Javascript
+// HTML Templates with interpreted Javascript
 //
 
 // Get WebView-safe local file URIs
 function subpath_uri(sub, filename) {
-  var uri = abm_path;
-  if (sub !== '') uri = path.join(uri, sub);
-  if (filename !== undefined) uri = path.join(uri, filename);
-  return pv.asWebviewUri(vscode.Uri.file(uri));
+  var fullpath = (sub !== undefined) ? path.join(abm_path, sub) : abm_path;
+  if (filename !== undefined) fullpath = path.join(fullpath, filename);
+  return pv.asWebviewUri(vscode.Uri.file(fullpath));
 }
 function img_path(filename) { return subpath_uri('img', filename); }
 function js_path(filename) { return subpath_uri('js', filename); }
@@ -640,7 +637,6 @@ function getNonce() {
 
 // Contents of the Web View
 function webViewContent() {
-
   var panes = {};
 
   // Load Geometry pane
@@ -652,7 +648,7 @@ function webViewContent() {
   // Load SD pane
   panes.sd = load_pane('sd');
 
-  // Load WebView content
+  // Load WebView content using evaluated template
   const home_html = load_home();
   const nonce = getNonce();
   merged_html = eval(`\`${home_html}\``);
@@ -660,58 +656,56 @@ function webViewContent() {
 }
 
 //
-// Handle a command sent from the Web View
-// Commands are sent using the msg() function
-// defined in abm.html.
+// Handle a command sent from the ABM WebView.
+// Commands are sent using the msg() function defined in abm.html.
 //
-function handleWebViewMessage(m) {
+function handleMessage(m) {
+  //console.log('handleMessage', m);
   switch (m.command) {
 
-    case 'open':
+    case 'openfolder':        // Show a file dialog to choose a folder for the workspace
       vc.executeCommand('vscode.openFolder');
       break;
 
-    case 'tool':
-      // On tool selection, re-populate the selected view
+    case 'tool':              // On tool selection, re-populate the selected view
       //vw.showInformationMessage('Tool: ' + m.tool);
       break;
 
-    case 'conf':
-      // On config section selection, re-populate the selected view
+    case 'conf':              // On config section selection, re-populate the selected view
       //vw.showInformationMessage('Config Tab: ' + m.tab);
       break;
 
-    case 'warning':
-      postWarning(m.warning); // Warning is echoed back to the view
+    case 'warning':           // Show a warning message
+      postWarning(m.warning);
       break;
 
-    case 'error':
-      postError(m.error);    // Error is just echoed back to the view but could also be handled here
+    case 'error':             // Error is just echoed back to the view but could also be handled here
+      postError(m.error);
       break;
 
-    case 'ui-ready':         // View ready
-    case 'refresh':          // Refresh button
-      refreshNewData();      // Reload configs and refresh the view
+    case 'ui-ready':          // View ready
+    case 'refresh':           // Refresh button
+      refreshNewData();       // Reload configs and refresh the view
       return;
 
-    case 'monitor':          // Monitor button
+    case 'monitor':           // Monitor button
       vc.executeCommand('platformio-ide.serialMonitor');
       return;
 
-    case 'show_on_startup':  // Show on Startup checkbox
+    case 'show_on_startup':   // Show on Startup checkbox
       set_show_on_startup(m.value);
       return;
 
-    case 'silent_build':     // Silent Build checkbox
+    case 'silent_build':      // Silent Build checkbox
       set_silent_build(m.value);
       return;
 
-    case 'pio':              // Build, Upload, Clean...
+    case 'pio':               // Build, Upload, Clean...
       //vw.showInformationMessage('Starting ' + nicer[m.cmd].toTitleCase() + ' for ' + m.env);
       pio_command(m.cmd, m.env);
       return;
 
-    case 'reveal':           // Build, Upload, Clean...
+    case 'reveal':            // Reveal the built BIN or HEX file
       reveal_build(m.env);
       return;
   }
@@ -721,7 +715,7 @@ function handleWebViewMessage(m) {
 // Open the author's sponsorship page
 //
 function sponsor() {
-  vscode.env.openExternal(vscode.Uri.parse('https://github.com/sponsors/thinkyhead'));
+  vscode.env.openExternal(vscode.Uri.parse('https://github.com/sponsors/MarlinFirmware'));
 }
 
 //
@@ -796,7 +790,7 @@ function run_command(action) {
     );
 
     // Handle messages from the webview
-    pv.onDidReceiveMessage(handleWebViewMessage, undefined, cs);
+    pv.onDidReceiveMessage(handleMessage, undefined, cs);
 
     // Create an IPC file for messages from Terminal
     createIPCFile();

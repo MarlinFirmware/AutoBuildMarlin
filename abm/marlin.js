@@ -1,24 +1,18 @@
 /**
  * Auto Build Marlin
- *
- * marlin.js
- *
- * Functions used to parse, read, and write Marlin config files
+ * abm/marlin.js - Functions to parse, read, and write Marlin configs.
  */
 
 const path = require('path'),
         fs = require('fs'),
         os = require('os');
 
-var vscode, ws, vw, project_path, temp = {}, bugme = false;
+const vscode = require('vscode'), ws = vscode.workspace,
+      workspaceRoot = (ws && ws.workspaceFolders && ws.workspaceFolders.length) ? ws.workspaceFolders[0].uri.fsPath : '';
 
-function init(v, b) {
-  bugme = b;
-  vscode = v;
-  //vc = v.commands;
-  ws = v.workspace;
-  project_path = (ws && ws.workspaceFolders && ws.workspaceFolders.length) ? ws.workspaceFolders[0].uri.fsPath : '';
-}
+var temp = {}, bugme = false;
+
+function init(b) { bugme = b; }
 
 function reboot() {
 
@@ -138,14 +132,17 @@ function configAnyValue(optname) {
   if (configAdvEnabled(optname)) return configAdvValue(optname);
 }
 
+function pathFromArray(parts) {
+  return path.join(workspaceRoot, 'Marlin', parts.join(path.sep));
+}
+
 //
 // Get the path to a Marlin file
 //
 function fullPathForFileDesc(f) {
   if (!f.fullpath) {
-    let p = '';
-    f.path.forEach((v) => { p = path.join(p, v); });
-    f.fullpath = path.join(project_path, 'Marlin', p, f.name);
+    var p = f.path; p.push(f.name);
+    f.fullpath = pathFromArray(p);
   }
   return f.fullpath;
 }
@@ -173,7 +170,7 @@ function watchConfigurations(handler) {
 // Check for valid Marlin files
 //
 function validate() {
-  if (project_path == '') return { ok: false, error: 'Error: No folder is open.' };
+  if (workspaceRoot == '') return { ok: false, error: 'Error: No folder is open.' };
   for (const k in files) {      // Iterate keys
     const err = fileCheck(k);
     if (err)
@@ -184,8 +181,8 @@ function validate() {
 
 function watchAndValidate(handler) {
   unwatchConfigurations();
-  if (project_path == '') return;
-  const marlin_path = path.join(project_path, 'Marlin');
+  if (workspaceRoot == '') return;
+  const marlin_path = path.join(workspaceRoot, 'Marlin');
   if (fs.existsSync(marlin_path))
     watchers = [ fs.watch(marlin_path, {}, handler) ];
 }
@@ -312,8 +309,8 @@ function extractBoardInfo(mb) {
         || (r[1] == 'uni' && !is_uni && !is_lin) ) continue;
       let debugenv = r[2].match(/^.+_debug$/i);
       let note = '';
-      if (r[2].match(/STM32F....E/)) note = '(512K)';
-      else if (r[2].match(/STM32F....C/)) note = '(256K)';
+      if (/STM32F....E/.test(r[2])) note = '(512K)';
+      else if (/STM32F....C/.test(r[2])) note = '(256K)';
       out.envs.push({ name: r[2], note: note, debug: debugenv, native: r[1] != 'env' });
       if (debugenv) out.has_debug = true;
     }
@@ -457,6 +454,8 @@ function getPinDefinitionInfo(mb) {
 }
 
 module.exports = {
+  workspaceRoot, pathFromArray,
+
   files, init, reboot, validate, refreshAll,
 
   watchConfigurations, watchAndValidate,

@@ -1,9 +1,8 @@
 /* webview.css */
 /* Styles for Auto Build Marlin Home - and eventually Configurator */
 
-html#abm { --marlin-svg: url(marlin.svg); }
-
 * {
+  --marlin-svg: url(marlin-b.svg);
   --abm-header-height: 50px;
   --abm-toolbar-width: 70px;
   --abm-social-width: 40px;
@@ -12,6 +11,7 @@ html#abm { --marlin-svg: url(marlin.svg); }
   }
 
 body.vscode-dark {
+  --marlin-svg: url(marlin-w.svg);
   --abm-background: #282C34;
   --abm-toolbar-bg: #333636;
   --abm-color-border: #CCC;
@@ -46,6 +46,7 @@ body.vscode-light {
   }
 
 body.vscode-high-contrast {
+  --marlin-svg: url(marlin-w.svg);
   --abm-background: #282C34;
   --abm-toolbar-bg: #333636;
   --abm-color-border: #666;

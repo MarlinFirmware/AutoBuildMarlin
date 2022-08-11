@@ -1,7 +1,7 @@
 /**
  * Auto Build Marlin
  *
- * webview.js
+ * abm/js/webview.js
  *
  * Manage the WebView UI using messaging with abm.js
  * Built on jQuery for easier DOM manipulation.
