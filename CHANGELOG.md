@@ -2,6 +2,11 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.44
+
+- Code formatter for pins and general code
+- Add categories to settings keys
+
 ## 2.1.43
 
 - Show Panel on Startup by default

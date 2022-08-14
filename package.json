@@ -2,7 +2,7 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.1.43",
+  "version": "2.1.44",
   "publisher": "marlinfirmware",
   "icon": "icon.png",
   "sponsor": {
@@ -46,6 +46,7 @@
     "ui"
   ],
   "categories": [
+    "Formatters",
     "Other"
   ],
   "activationEvents": [
@@ -188,6 +189,11 @@
           "light": "resources/K48x48_light.svg",
           "dark": "resources/K48x48_dark.svg"
         }
+      },
+      {
+        "category": "Auto Build Marlin",
+        "command": "abm.codeformat",
+        "title": "Format Marlin Code"
       }
     ],
     "menus": {
@@ -238,6 +244,10 @@
         {
           "command": "abm.config",
           "when": "abm.active"
+        },
+        {
+          "command": "abm.codeformat",
+          "when": "abm.active && editorLangId =~ /c(pp)?/"
         }
       ]
     }
