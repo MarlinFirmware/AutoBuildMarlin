@@ -825,4 +825,30 @@ function runSelectedAction() {
   }
 }
 
-module.exports = { init, set_context, run_command, validate, watchAndValidate, sponsor, getNonce };
+// Look for a script in buildroot/share/PlatformIO and run it.
+function runPython(script, needs, args) {
+  const script_file = path.join(marlin.workspaceRoot, 'buildroot', 'share', 'PlatformIO', 'scripts', script);
+  if (!fs.existsSync(script_file)) {
+    vw.showInformationMessage(`No ${script} found.`);
+    return;
+  }
+  if (needs) {
+    const need_file = path.join(marlin.workspaceRoot, needs);
+    if (!fs.existsSync(need_file)) {
+      vw.showInformationMessage(`No ${needs} found.`);
+      return;
+    }
+  }
+
+  const aterm = vw.createTerminal({ name: 'ABM Runner', env:process.env }),
+      escpath = script_file.replace('"', '\\"');
+
+  var command = `python "${escpath}"`;
+  if (args) command += ' ' + args;
+  command_with_ping(aterm, command);
+  terminal_exit_command(aterm);
+}
+
+function run_schema_py(type) { runPython('schema.py', '', type); }
+
+module.exports = { init, set_context, run_command, validate, watchAndValidate, sponsor, getNonce, run_schema_py };

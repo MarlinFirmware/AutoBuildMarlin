@@ -194,6 +194,21 @@
         "category": "Auto Build Marlin",
         "command": "abm.codeformat",
         "title": "Format Marlin Code"
+      },
+      {
+        "category": "Auto Build Marlin",
+        "command": "abm.export.json",
+        "title": "Export schema.json"
+      },
+      {
+        "category": "Auto Build Marlin",
+        "command": "abm.export.yml",
+        "title": "Export schema.yml"
+      },
+      {
+        "category": "Auto Build Marlin",
+        "command": "abm.apply.ini",
+        "title": "Apply config.ini"
       }
     ],
     "menus": {
