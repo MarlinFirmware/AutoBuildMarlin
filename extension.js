@@ -25,7 +25,8 @@ exports.activate = (context) => {
     vc.registerCommand('abm.show',        () => { abm.run_command();            }),
     vc.registerCommand('abm.sponsor',     () => { abm.sponsor();                }),
     vc.registerCommand('abm.codeformat',  () => { format.codeformat();          }),
-    vc.registerCommand('abm.export.json', () => { abm.run_schema_py('json');    }));
+    vc.registerCommand('abm.export.json', () => { abm.run_schema_py('json');    }),
+    vc.registerCommand('abm.apply.ini',   () => { abm.run_configuration_py();   }));
 
   // Formatter to do an extra level of indentation for Marlin C++.
   cs.push(format.PPFormatProvider.register(context));

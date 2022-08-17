@@ -850,5 +850,6 @@ function runPython(script, needs, args) {
 }
 
 function run_schema_py(type) { runPython('schema.py', '', type); }
+function run_configuration_py() { runPython('configuration.py', path.join('Marlin', 'config.ini')); }
 
-module.exports = { init, set_context, run_command, validate, watchAndValidate, sponsor, getNonce, run_schema_py };
+module.exports = { init, set_context, run_command, validate, watchAndValidate, sponsor, getNonce, run_configuration_py, run_schema_py };

@@ -261,6 +261,10 @@
           "when": "abm.active"
         },
         {
+          "command": "abm.apply.ini",
+          "when": "abm.active"
+        },
+        {
           "command": "abm.codeformat",
           "when": "abm.active && editorLangId =~ /c(pp)?/"
         }
