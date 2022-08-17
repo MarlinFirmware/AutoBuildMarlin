@@ -265,7 +265,9 @@ function allFilesAreLoaded() {
     postValue('board', mb.replace('BOARD_', '').replace(/_/g, ' '));
     postValue('board-desc', board_info.description);
 
-    postValue('pins', board_info.pins_file);
+    const pf = board_info.pins_file;
+    const pinsPath = path.join('Marlin', 'src', 'pins', pf);
+    postValue('pins', pf, pinsPath);
     if (pindef_info.board_name) postValue('pins-desc', pindef_info.board_name);
 
     postValue('archs', board_info.archs);
@@ -580,8 +582,9 @@ function postTool(t) {
 }
 
 // Post a value to the UI
-function postValue(tag, val) {
+function postValue(tag, val, uri) {
   var message = { command:'info', tag:tag, val:val };
+  if (uri) message.uri = uri;
   log("Send to UI", message);
   postMessage(message);
 }
@@ -647,6 +650,10 @@ function handleMessage(m) {
 
     case 'openfolder':        // Show a file dialog to choose a folder for the workspace
       vc.executeCommand('vscode.openFolder');
+      break;
+
+    case 'openfile':          // Open a file in the editor
+      vw.showTextDocument(vscode.Uri.file(path.join(marlin.workspaceRoot, m.uri)));
       break;
 
     case 'tool':              // On tool selection, re-populate the selected view

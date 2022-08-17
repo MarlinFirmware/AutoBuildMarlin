@@ -52,7 +52,7 @@ var ABM = (function(){
       //
       // Add a handler for webview.postMessage
       //
-      window.addEventListener('message', this.messageEventListener);
+      window.addEventListener('message', this.handleMessage);
 
       // Activate the "Build" tool
       msg({ command:'tool', tool:'build' });
@@ -65,8 +65,9 @@ var ABM = (function(){
     //
     // Calls to postMessage arrive here:
     //
-    messageEventListener(event) {
+    handleMessage(event) {
       const m = event.data; // JSON sent by the extension
+      //console.log("ABM View got message:"); console.dir(m);
       switch (m.command) {
 
         case 'tool': abm_tool(m.tool); break;
@@ -79,9 +80,23 @@ var ABM = (function(){
 
         // postValue()
         case 'info':
-          const $item = $('#info-' + m.tag);
-          if (m.val) $item.text(m.val); else $item.hide();
-          if (0) console.log(`Setting ${m.tag} to ${m.val}`);
+          var $dest = $('#info-' + m.tag).text('');
+          if (!m.val)
+            $dest.hide();
+          else {
+            if (m.uri) {
+              const $a = $('<a>').attr('href', '#').text(m.val);
+              $a.click((e) => {
+                e.preventDefault();
+                vscode.postMessage({ command: 'openfile', uri:m.uri });
+              });
+              $dest.append($a);
+            }
+            else
+              $dest.text(m.val);
+            $dest.show();
+          }
+          //console.log(`Setting ${m.tag} to ${m.val}`);
           break;
 
         case 'text':

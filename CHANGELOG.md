@@ -2,6 +2,15 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.43
+
+- Show Panel on Startup by default
+- Click the Pins file path to open the file
+- Auto Reveal Build checkbox, setting
+- Light and Dark Marlin SVG for dark/light theme
+- Update Sponsor link
+- Update jQuery to version 3.6.0
+
 ## 2.1.42
 
 - Only init extension for a Marlin folder
