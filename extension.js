@@ -10,6 +10,7 @@ const vscode = require('vscode'),
          abm = require('./abm/abm'),
        prefs = require('./abm/prefs'),
       format = require('./abm/format'),
+        info = require('./abm/info'),
           vc = vscode.commands;
 
 exports.activate = (context) => {
@@ -27,6 +28,9 @@ exports.activate = (context) => {
     vc.registerCommand('abm.codeformat',  () => { format.codeformat();          }),
     vc.registerCommand('abm.export.json', () => { abm.run_schema_py('json');    }),
     vc.registerCommand('abm.apply.ini',   () => { abm.run_configuration_py();   }));
+
+  // Register a webview provider for the Info panel
+  cs.push(info.InfoPanelProvider.register(context));
 
   // Formatter to do an extra level of indentation for Marlin C++.
   cs.push(format.PPFormatProvider.register(context));

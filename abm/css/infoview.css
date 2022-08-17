@@ -1,0 +1,89 @@
+/**
+ * Auto Build Marlin
+ * abm/css/infoview.css
+ * Styles for Info sidebar panel
+ */
+
+/* #hello-button { display: none; } */
+
+* {
+  --marlin-svg: url(marlin-b.svg);
+  --abm-info-color: var(--vscode-editor-color);
+  --abm-item-label-width: 24em;
+  --abm-field-max-width: calc(100% - var(--abm-item-label-width) - 2em);
+  }
+
+body.vscode-light {
+  --abm-svg-color: #00000020;
+  --abm-info-bg: #F5F5FDC0;
+  --abm-info-bc: #CCCCCCC0;
+  --abm-line-hover-bg: #FFFFFFE0;
+  --abm-info-color: #000;
+  --abm-info-color-comment: #3C2200;
+  --abm-info-legend-color: #000;
+  --abm-info-legend-bg: #FFFA;
+  }
+
+body.vscode-dark {
+  --marlin-svg: url(marlin-w.svg);
+  --abm-svg-color: #FFFFFF20;
+  --abm-line-hover-bg: #00000020;
+  --abm-info-bg: #00002220;
+  --abm-info-bc: #FFFFFF40;
+  --abm-info-color: #FFF;
+  --abm-info-color-comment: #827461;
+  --abm-info-legend-color: #FFF;
+  --abm-info-legend-bg: #0008;
+  }
+
+body.vscode-high-contrast {
+  --marlin-svg: url(marlin-w.svg);
+  --abm-svg-color: #FFFFFF20;
+  --abm-line-hover-bg: #00000030;
+  --abm-info-bg: #282C34AA;
+  --abm-info-bc: #CCCCCCC0;
+  --abm-info-color: #FFF;
+  --abm-info-color-comment: #827461;
+  --abm-info-legend-color: #FF0;
+  --abm-info-legend-bg: #009;
+  }
+body.vscode-high-contrast-light {
+  --abm-info-legend-color: #009;
+  --abm-info-legend-bg: #FF0;
+  }
+
+.clear { clear: both !important; }
+.hide, .nope { display: none !important; }
+.show { display: block !important; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--marlin-svg) transparent no-repeat fixed center;
+  background-size: 80%;
+  }
+h1, h2, h3, h4, h5, h6 {
+  text-align: center;
+  }
+
+/* Prevent text selection on all the elements */
+* {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  }
+pre {
+  -webkit-touch-callout: text;
+  -webkit-user-select: text;
+  -khtml-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  }
+
+/* Media variants for wider and small screens */
+@media screen and (min-width: 800px) {
+  }

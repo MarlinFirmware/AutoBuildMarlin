@@ -2,7 +2,7 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.1.44",
+  "version": "2.1.45",
   "publisher": "marlinfirmware",
   "icon": "icon.png",
   "sponsor": {
@@ -106,9 +106,9 @@
           "visibility": "visible"
         },
         {
+          "type": "webview",
           "id": "abm.infoView",
-          "name": "Marlin Info",
-          "visibility": "collapsed"
+          "name": "Marlin Info"
         }
       ]
     },

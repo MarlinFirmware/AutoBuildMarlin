@@ -2,6 +2,12 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.45
+
+- Command to Apply `config.ini` to configurations.
+- Command to Export `config.ini`, `schema.json`, `schema.yml`
+- Info Panel added (for future use)
+
 ## 2.1.44
 
 - Code formatter for pins and general code
