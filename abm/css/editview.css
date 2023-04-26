@@ -1,0 +1,325 @@
+/**
+ * Auto Build Marlin
+ * abm/css/editview.css
+ * Styles for Configuration Editor
+ */
+
+ #hello-button { display: none; }
+
+* {
+  --marlin-svg: url(marlin-b.svg);
+  --abm-edit-color: var(--vscode-editor-color);
+  --abm-edit-filter-color: var(--vscode-breadcrumb-foreground);
+  --abm-edit-filter-bg: var(--vscode-breadcrumb-background);
+  --abm-item-label-width: 24em;
+  --abm-field-max-width: calc(100% - var(--abm-item-label-width) - 2em);
+  }
+
+body.vscode-light {
+  --abm-edit-bg: #F5F5FDC0;
+  --abm-edit-bc: #CCCCCCC0;
+  --abm-line-hover-bg: #FFFFFFE0;
+  --abm-edit-color: #000;
+  --abm-edit-color-comment: #3C2200;
+  --abm-descript-color: #a90505;
+  --abm-edit-legend-color: #000;
+  --abm-edit-legend-bg: #FFFA;
+  --abm-edit-filter-bg: #000C;
+  }
+
+body.vscode-dark {
+  --marlin-svg: url(marlin-w.svg);
+  --abm-line-hover-bg: #00000020;
+  --abm-edit-bg: #00002220;
+  --abm-edit-bc: #FFFFFF40;
+  --abm-edit-color: #FFF;
+  --abm-edit-color-comment: #827461;
+  --abm-descript-color: #FFC;
+  --abm-edit-legend-color: #FFF;
+  --abm-edit-legend-bg: #0008;
+  --abm-edit-filter-bg: #FFFC;
+  }
+
+body.vscode-high-contrast {
+  --marlin-svg: url(marlin-w.svg);
+  --abm-line-hover-bg: #00000030;
+  --abm-edit-bg: #282C34AA;
+  --abm-edit-bc: #CCCCCCC0;
+  --abm-edit-color: #FFF;
+  --abm-edit-color-comment: #827461;
+  --abm-descript-color: #55ff00;
+  --abm-edit-legend-color: #FF0;
+  --abm-edit-legend-bg: #009;
+  --abm-edit-filter-bg: rgba(37, 128, 185, 0.8);
+  }
+body.vscode-high-contrast-light {
+  --abm-edit-legend-color: #009;
+  --abm-edit-legend-bg: #FF0;
+  }
+
+.clear { clear: both !important; }
+.hide, .nope { display: none !important; }
+.show { display: block !important; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--marlin-svg) transparent no-repeat fixed center;
+  background-size: 55%;
+  }
+
+#grid { display: none; background-color: #002; }
+#grid.grid { display: block; position: absolute; top: 0; left: 0; z-index: 200; }
+
+a { text-decoration: none; color: #478EFF; }
+a:hover, a:active { color: #579EFF; }
+
+h1 {
+  padding: 10px;
+  margin: 0 0 4px;
+  }
+
+/* A filter form that doesn't scroll with the page */
+#filter-form {
+  display: block;
+  position: fixed;
+  width: calc(100% - 6px);
+  left: 2px;
+  padding: 0.4em 0;
+  color: var(--abm-edit-filter-color);
+  background: var(--abm-edit-filter-bg);
+  opacity: 0.98;
+  box-shadow: 0 0 38px -11px #000;
+  border: 1px solid var(--abm-edit-filter-color);
+  z-index: 100;
+  text-align: center;
+  }
+#filter-form input[type = "checkbox"] { margin-left: 2em; }
+#filter { margin-left: 0.25em; padding: 2px 0.5em; border-radius: 1em; }
+#filter-count {
+  float: right;
+  width: 200px;
+  padding: 4px 1em;
+  margin-left: -208px;
+  text-align: right;
+  font-size: smaller;
+  color: var(--abm-edit-filter-color);
+  }
+
+/* Comments are unobtrusive but readable */
+div.comment {
+  width: 0;
+  margin: 0 0 0.5em calc(var(--abm-item-label-width) + 1em);
+  }
+div.comment.descript {
+  margin-top: 0.5em;
+  margin-left: 1em;
+  /* color: var(--abm-descript-color); */
+}
+div.comment.switch {
+  margin-top: 0.5em;
+  margin-left: 0.4em;
+  display: inline-block;
+  }
+div.comment span {
+  white-space: pre;
+  font-family: andale mono, monaco, monospace;
+  font-size: small;
+  /* color: var(--abm-edit-color-comment); */
+  }
+.hide-comments div.comment { display: none; }
+
+/* The config form contains all options in a cascade. */
+#config-form {
+  padding-top: 1.25em; /* Pad the top so the contents won't be obscured by the filter form */
+  /* background: transparent; */
+  }
+#config-form label.opt {
+  width: var(--abm-item-label-width);
+  padding: 4px;
+  display: inline-block;
+  vertical-align: top;
+  }
+/* Indent levels for conditional settings */
+#config-form label.opt     { --abm-label-indent: 0; }
+#config-form .d1 label.opt { --abm-label-indent: 2em; }
+#config-form .d2 label.opt { --abm-label-indent: 4em; }
+#config-form .d3 label.opt { --abm-label-indent: 6em; }
+#config-form .d4 label.opt { --abm-label-indent: 8em; }
+#config-form .d5 label.opt { --abm-label-indent: 10em; }
+#config-form .d6 label.opt { --abm-label-indent: 12em; }
+#config-form label.opt { margin-left: var(--abm-label-indent); margin-right: calc(0px - var(--abm-label-indent)); }
+
+#config-form input[type="text"] {
+  /* Make the text input fill up the rest of the horizontal space */
+  width: var(--abm-field-max-width);
+  }
+#config-form select { max-width: var(--abm-field-max-width); }
+#config-form input { display: inline-block; }
+
+/* Smaller inputs for known types */
+#config-form input[type="text"].char { max-width: 2em; }
+#config-form input[type="text"].int,
+#config-form input[type="text"].float,
+#config-form input[type="text"].pin { max-width: 4em; }
+#config-form input[type="text"].enum { max-width: 10em; }
+#config-form input[type="text"].int-arr  { max-width: 12em; }
+#config-form input[type="text"].float-arr { max-width: 18em; }
+
+.dirty label { font-style: italic; font-weight: bold; }
+
+span.state {
+  display: inline-block;
+  position: relative;
+  top: -4px;
+  font-weight: bold;
+  }
+span.state.low { color: red; margin-right: 2px; }
+span.state.high { color: green; margin-left: 2px; }
+
+input[type="checkbox"] {
+  position: relative;
+  top: 2px;
+  }
+
+.collapsed .section-inner { display: none; }
+
+#config-form fieldset {
+  padding-inline-start: 0;
+  padding-inline-end: 0;
+  color: var(--abm-edit-color);
+  background-color: var(--abm-edit-bg);
+  margin-top: 2em;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--abm-edit-bc);
+  border-radius: 0.5em;
+  }
+#config-form fieldset * { opacity: 1; }
+#config-form legend {
+  font-size: 1.2em;
+  font-weight: bold;
+  padding: 0.25em;
+  border: 2px solid threedface;
+  color: var(--abm-edit-legend-color);
+  background-color: var(--abm-edit-legend-bg);
+  }
+#config-form legend:after { content: " ▽"; }
+#config-form .collapsed legend:after { content: " ▷"; }
+
+#config-form .line { padding: 4px 0; position: relative; }
+#config-form .line:hover { background-color: var(--abm-line-hover-bg); }
+#config-form .line.disabled { opacity: 0.5; }
+
+/* Create even/odd stripes for the config form */
+#config-form .line:not(.hide):nth-child(even) {
+  /* background: #0004; */
+  }
+
+#zero-box {
+  display: none;
+  position: absolute; top: 40%;
+  width: 60%; margin: 0 calc(20% - 1em); padding: 1em;
+  border: 1px solid; border-radius: 1em;
+  text-align: center;
+  font-size: large;
+  }
+
+  /* Prevent text selection on all the elements */
+* {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  }
+pre {
+  -webkit-touch-callout: text;
+  -webkit-user-select: text;
+  -khtml-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  }
+
+/*
+   An updated flex-based layout
+    https://css-tricks.com/snippets/css/a-guide-to-flexbox/
+*/
+
+/* Start with some row/col styles */
+.row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 100%;
+  }
+
+/* Make all column styles the same by default */
+.col, .col1, .col2, .col3, .col4 {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 100%;
+  flex: 1;
+  }
+/*
+  Custom checkbox that looks like a slider
+*/
+html {
+  --slider-width: 35px;
+  --slider-height: 20px;
+  --slider-knob-size: 16px;
+  --slider-knob-offs: calc((var(--slider-height) - var(--slider-knob-size)) / 2);
+  --slider-knob-tran: calc((var(--slider-knob-size) - var(--slider-knob-offs) + 1px));
+}
+label.bool {
+  margin-top: 4px;
+  display: inline-block;
+  height: var(--slider-height);
+  position: relative;
+  width: var(--slider-width);
+  }
+#config-form label.bool input { display: none; }
+.slider {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background-color: #ccc;
+  cursor: pointer;
+  transition: .2s;
+}
+.slider:before {
+  position: absolute;
+  height: var(--slider-knob-size);
+  width: var(--slider-knob-size);
+  bottom: var(--slider-knob-offs);
+  left: var(--slider-knob-offs);
+  background-color: #fff;
+  transition: .2s;
+  content: "";
+  }
+input:checked + .slider { background-color: #66bb6a; }
+input:checked + .slider:before { transform: translateX(var(--slider-knob-tran)); }
+.slider.round { border-radius: calc(var(--slider-height) / 2); }
+.slider.round:before { border-radius: 50%; }
+
+/*
+  Media variants for wider and small screens
+*/
+@media screen and (min-width: 800px) {
+  * {
+    --abm-item-label-width: 27em;
+    }
+  .col2 { flex: 2; }
+  .col3 { flex: 3; }
+  .col4 { flex: 4; }
+  body { padding: 0 10px; }
+  }
+/* When space allows, show sidebar navigation */
+@media screen and (min-width: 1200px) {
+  * {
+    --abm-item-label-width: 30em;
+    }
+  #section-nav { display: block; }
+  body { padding: 0 10px; }
+  }

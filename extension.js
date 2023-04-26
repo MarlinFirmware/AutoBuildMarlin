@@ -11,11 +11,12 @@ const vscode = require('vscode'),
        prefs = require('./abm/prefs'),
       format = require('./abm/format'),
         info = require('./abm/info'),
-          vc = vscode.commands;
+      editor = require('./abm/editor');
 
 exports.activate = (context) => {
 
-  const cs = context.subscriptions;
+  const vc = vscode.commands,
+        cs = context.subscriptions;
 
   cs.push(
     vc.registerCommand('abm.build',       () => { abm.run_command('build');     }),
@@ -34,6 +35,9 @@ exports.activate = (context) => {
 
   // Formatter to do an extra level of indentation for Marlin C++.
   cs.push(format.PPFormatProvider.register(context));
+
+  // Register a custom editor provider for Configuration files
+  cs.push(editor.ConfigEditorProvider.register(context));
 
   abm.init(context);                  // Init the abm module before use
   abm.validate();                     // Validate the workspace for ABM

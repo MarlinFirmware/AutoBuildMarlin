@@ -1,24 +1,41 @@
 # Auto Build Marlin
 
-"Auto Build Marlin" provides a one-button interface to build and upload Marlin Firmware to your selected `MOTHERBOARD`, removing the need to edit your `platformio.ini` file or scroll through a long list of Marlin environments.
+"Auto Build Marlin" provides a simplified interface to configure, build, and upload Marlin Firmware.
 
-## Get PlatformIO
+The **Auto Build** tool automatically detects the correct environments for your `MOTHERBOARD` and provides an interface to build them. No more editing `platformio.ini` or scanning a long list of environments in the PlatformIO IDE. Just press the **Build** button and go!
 
-When installing "Auto Build Marlin" you'll also be prompted to install the [PlatformIO extension](http://marlinfw.org/docs/basics/install_platformio_vscode.html). This is required for "Auto Build Marlin" to function.
+The **Configuration Editor** provides an enhanced interface to locate and edit configuration options, making it easier to locate the options you need and to discover the features you didn't know you needed. ***This is only an alpha preview at this time and will probably have some issues. Use "Reopen Editor With… > Text Editor" to use the standard text editor.*** Stay tuned for more enhancements to this excellent new feature.
+
+## PlatformIO Required
+
+When installing "Auto Build Marlin" you'll also be prompted to install the [PlatformIO extension](http://marlinfw.org/docs/basics/install_platformio_vscode.html). PlatformIO handles all the details of the build and is required for "Auto Build Marlin" to function.
 
 ## Usage
 
-- Open up the downloaded *Marlin Firmware* project folder (***NOT the "Marlin" folder within***) in *Visual Studio Code*. (You may also use the **Import Project…** option from the "PlaformIO Home" page.)
+- Start *Visual Studio Code* and open a project folder with *Marlin Firmware* version 2.0 or later. Be careful to open the folder containing `platformio.ini` and not the "`Marlin`" folder within it. (You may also use the **Import Project…** option from the "PlaformIO Home" page.)
 
-- With Marlin open, the "File Explorer" should be firmly rooted in your Marlin Firmware folder:
+- The "File Explorer" should point to your Marlin Firmware folder like so:
 
   ![](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/Activity_bar.png)
 
-- Click the **Auto Build Marlin** icon ![AutoBuild Icon](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/AB_icon.png) in the Activities Bar (on the left side of *Visual Studio Code* window) to bring up the **Auto Build Marlin** options bar.
+### Configuration Editor
+
+- Open the file `Configuration.h` or `Configuration_adv.h` to use the Configuration Editor. Instead of a very long text file you'll see a very long form divided up into sections.
+
+  - Use the "Filter" field to locate options by name.
+  - Click the "Show Comments" checkbox to show or hide comments.
+  - Click the title of a section to hide/show that section.
+  - Hold down `alt`/`option` and click on any title to hide/show all sections.
+
+- Configuration files are annotated to provide some hints to configuration tools. Edit the configuration file text to add your own `@section` markers, provide allowed values for options, or improve documentation. Please submit your improvements and suggestions for improving the configuration experience.
+
+### Auto Build
+
+- Click the **Auto Build Marlin** icon ![AutoBuild Icon](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/AB_icon.png) in the Activity Bar (on the far side of the *Visual Studio Code* window) to activate the **Auto Build Marlin** sidebar panel.
 
   ![ABM Menu](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/AB_menu.png)
 
-- Click any of the tool icons to open the Auto Build panel. If there's only one target environment for your board the selected action will be started. Otherwise you will have to specify the environment.
+- Use the **Show ABM Panel** button (or click on any of the buttons in the toolbar) to open the Auto Build Marlin panel. If more than one target environment exists for your board you'll have to choose the specific environment to use before the build.
 
   Icon|Action
   ----|------
@@ -31,3 +48,7 @@ When installing "Auto Build Marlin" you'll also be prompted to install the [Plat
 - The **Auto Build Marlin** panel displays information about your selected motherboard and basic machine parameters. Each board comes with one or more build environments that are used to generate the final Marlin binary. Choose the environment that best matches your MCU, bootloader, etc.
 
   ![Environments](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/abm-envs.png)
+
+## Internals
+
+The Auto Build Marlin extension for VSCode contributes a welcome panel, registered commands, a web view panel, a custom editor, and (soon) a tree view. It is built in Javascript so we don't have to learn TypeScript.

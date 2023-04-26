@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.46
+
+- Custom editor for configuration files (Alpha Preview)
+
 ## 2.1.45
 
 - Command to Apply `config.ini` to configurations.

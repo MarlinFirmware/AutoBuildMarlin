@@ -2,7 +2,8 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.1.45",
+  "version": "2.1.46",
+  "preview": true,
   "publisher": "marlinfirmware",
   "icon": "icon.png",
   "sponsor": {
@@ -10,17 +11,17 @@
   },
   "badges": [
     {
-      "url": "https://vsmarketplacebadge.apphb.com/version-short/marlinfirmware.auto-build.svg",
+      "url": "https://vsmarketplacebadges.dev/version-short/marlinfirmware.auto-build.png",
       "href": "https://marketplace.visualstudio.com/items?itemName=marlinfirmware.auto-build",
       "description": "VS Marketplace"
     },
     {
-      "url": "https://vsmarketplacebadge.apphb.com/installs-short/marlinfirmware.auto-build.svg",
+      "url": "https://vsmarketplacebadges.dev/installs-short/marlinfirmware.auto-build.png",
       "href": "https://marketplace.visualstudio.com/items?itemName=marlinfirmware.auto-build",
       "description": "installs"
     },
     {
-      "url": "https://img.shields.io/github/issues/MarlinFirmware/AutoBuildMarlin.svg",
+      "url": "https://img.shields.io/github/issues/MarlinFirmware/AutoBuildMarlin.png",
       "href": "https://github.com/MarlinFirmware/AutoBuildMarlin/issues",
       "description": "GitHub issues"
     }
@@ -34,7 +35,7 @@
     "ARM"
   ],
   "engines": {
-    "vscode": "^1.50.0"
+    "vscode": "^1.63.0"
   },
   "repository": {
     "type": "git",
@@ -54,6 +55,21 @@
   ],
   "main": "./extension",
   "contributes": {
+    "customEditors": [
+      {
+        "viewType": "abm.configEditor",
+        "displayName": "Config Editor",
+        "selector": [
+          {
+            "filenamePattern": "**/Marlin/Configuration.h"
+          },
+          {
+            "filenamePattern": "**/Marlin/Configuration_adv.h"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -285,6 +301,6 @@
     "id": "aeed6cc8-3e27-4932-8212-161d73cdee2d",
     "publisherId": "cc3dab9c-e91d-467b-9b8e-b3d262181451",
     "publisherDisplayName": "Marlin Firmware",
-    "isPreReleaseVersion": false
+    "isPreReleaseVersion": true
   }
 }
