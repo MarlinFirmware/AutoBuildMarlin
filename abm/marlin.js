@@ -211,6 +211,38 @@ function extractTempSensors() {
 }
 
 //
+// Get the full list of boards from boards.h
+// Return an array containing dicts. Each entry is one board family.
+// Each board family contains a list of boards with: a (meaningless) ID number, name, and description.
+//
+// The data out format is:
+// [index] = { family: 'Arch Section', boards: [ {  id: 'board_id', name: 'Board Name', desc: 'This is a board' }, ... ] }
+//
+var boards_list;
+function extractBoardsList() {
+  var r, out = [], ind = -1;
+
+  // Go through all lines in files.boards.text and find
+  // - //\n// Blah Blah Blah\n//\n
+  // - #define BOARD_NAME 1234 // Blah Blah Blah
+  //
+  const findAll = new RegExp(/^\/\/\n\/\/\s*(.+)\n\/\/\n|^\s*#define\s+(\w+)\s+(\d+)(\s*\/\/\s*(.+))?$/gm);
+  while (r = findAll.exec(files.boards.text)) {
+    if (r[1]) {
+      // Found a new board group
+      out[++ind] = { family: r[1], boards: [] };
+    }
+    else {
+      // Found a board. Add it to the current group.
+      out[ind].boards.push({ id: r[3], name: r[2], desc: r[5] });
+    }
+  }
+
+  boards_list = out;
+  return boards_list;
+}
+
+//
 // - Get pins file, archs, and envs for a board from pins.h.
 // - If the board isn't found, look for a rename alert.
 // - Get the status of environment builds.
@@ -424,6 +456,6 @@ module.exports = {
   configEnabled,
   configValue, confValue, _confValue,
 
-  extractVersionInfo, extractTempSensors, extractBoardInfo,
+  extractVersionInfo, extractTempSensors, extractBoardsList, extractBoardInfo,
   getMachineSettings, getExtruderSettings, getPinDefinitionInfo
 };

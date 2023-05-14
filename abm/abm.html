@@ -40,10 +40,75 @@
     $t.parents('.abm-tool').find('.subpanes>.' + name).show();
   }
 
+  // Receive data about boards in a nested array, with
+  // MCU category as the outer array and board name as the inner array.
+  function abm_boards(data, sel="") {
+    const $s1 = $('#board-family'), $s2 = $('#bid');
+    $s1.empty(); $s2.empty();
+
+    let s2_boards = [];
+
+    // Create a selector with the family names as options.
+    // Set an attribute on the option to point to the list of boards.
+    // When the family selector $s1 changes, update the board selector $s2.
+    for (let i = 0; i < data.length; i++) {
+      var family = data[i].family,
+          boards = data[i].boards,
+          $opt = $('<option value="' + i + '">' + family + '</option>');
+
+      // If we find a matching board, select the option and break the loop
+      for (let j = 0; j < boards.length; j++) {
+        if (boards[j].name.toLowerCase() == sel.toLowerCase()) {
+          //console.log("Board match " + boards[j].name + " == " + sel);
+          $opt.attr('selected', 'selected');
+          s2_boards = boards;
+          break;
+        }
+      }
+
+      $opt[0].boards = boards;
+      $s1.append($opt);
+    }
+
+    function populate_s2(boards, sel) {
+      $s2.empty();
+      var sel_cmp = sel.toLowerCase();
+      for (var i = 0; i < boards.length; i++) {
+        var board = boards[i],
+            id = board.id,
+            name = board.name.replace(/^BOARD_/,''),
+            desc = board.desc,
+            esc_desc = desc.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+            $opt = $('<option value="' + name + '" title="' + esc_desc + '">' + name + ' : ' + esc_desc + '</option>');
+        if (board.name.toLowerCase() == sel_cmp)
+          $opt.attr('selected', 'selected');
+        $s2.append($opt);
+      }
+    }
+
+    // If s2_boards has items add them as options to $s2
+    populate_s2(s2_boards, sel);
+
+    // If the family selector changes...
+    $s1.change(function() {
+      // Get a list of boards from the <option> tag's "boards" property
+      var boards = $s1.find('option:selected')[0].boards;
+      // Repopulate the board selector with the new list of boards.
+      populate_s2(boards, sel);
+    });
+
+    // For the other one, send the new board name in a message
+    // and the new name will be applied to Configuration.h (eventually)
+    $s2.change(function() {
+      msg({ command:'board', name:$(this).val() });
+    });
+  }
+
   // Send a message to the controller (abm.js:handleMessageFromUI)
   function msg(m) {
     if (m.command == 'tool') abm_tool(m.tool); // Show the tool before alerting the controller
     if (m.command == 'pane') abm_pane(m.pane); // Show the pane before alerting the controller
+    //if (m.command == 'boards') abm_boards(m.data, m.selected); // Rebuild the board selectors and select the active one
     vscode.postMessage(m);
   }
 
@@ -104,9 +169,10 @@
 <div id="abm-config" class="abm-tool">
   <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Configuration Tool</span></h1>
   <div class="subtabs">
-    <button ref="geometry">Geometry</button> <button ref="lcd">LCD</button> <button ref="sd">SD</button> <button ref="more">More...</button>
+    <button ref="board">Board</button> <button ref="geometry">Geometry</button> <button ref="lcd">LCD</button> <button ref="sd">SD</button> <button ref="more">More...</button>
   </div>
   <div class="subpanes">
+    ${panes.board}
     ${panes.geometry}
     ${panes.lcd}
     ${panes.sd}

@@ -207,6 +207,18 @@ function postMessage(msg) {
   pv.postMessage(msg);
 }
 
+var boards_list = [], mb_selected = '';
+function refreshBoardsList(sel) {
+  // Remember the last selected board
+  if (sel !== undefined) mb_selected = sel;
+  // Extract the boards list
+  boards_list = marlin.extractBoardsList();
+  log("Boards List :", boards_list);
+  // Update the boards selector form
+  if (boards_list) postBoards(boards_list, mb_selected);
+}
+
+
 // Local reference to parsed board info
 var board_info;
 
@@ -305,6 +317,9 @@ function allFilesAreLoaded() {
   postValue('archs', board_info.archs);
 
   set_context('has_debug', !!board_info.has_debug);
+
+  // Extract the boards list and update the boards selector form
+  refreshBoardsList(mb);
 
   // Fill in the build status in the UI
   refreshBuildStatus();
@@ -624,6 +639,11 @@ function postTool(t) {
   postMessage({ command:'tool', tool:t });
 }
 
+// Send Boards data to the view to init the board selector
+function postBoards(data, sel) {
+  postMessage({ command:'boards', data:data, selected:sel });
+}
+
 // Post a value to the UI
 function postValue(tag, val, uri) {
   var message = { command:'info', tag:tag, val:val };
@@ -666,6 +686,9 @@ function getNonce() {
 // Contents of the Web View
 function webViewContent() {
   var panes = {};
+
+  // Load Board pane
+  panes.board = load_pane('board');
 
   // Load Geometry pane
   panes.geometry = load_pane('geom');
@@ -723,6 +746,10 @@ function handleMessageFromUI(m) {
       refreshNewData();       // Reload configs and refresh the view
       return;
 
+    case 'refresh-boards':    // Refresh Boards button
+      refreshBoardsList();    // Resend boards data to the view
+      return;
+
     case 'monitor':           // Monitor button
       vc.executeCommand('platformio-ide.serialMonitor');
       return;
@@ -746,6 +773,11 @@ function handleMessageFromUI(m) {
 
     case 'reveal':            // Reveal the built BIN or HEX file
       reveal_env_build(m.env);
+      return;
+
+    // Board Selector
+    case 'board':            // Change the 'MOTHERBOARD' value in Configuration.h
+      //marlin.set_config_value('MOTHERBOARD', m.board);
       return;
   }
 }

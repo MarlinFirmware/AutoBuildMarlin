@@ -1,0 +1,61 @@
+<div class="board">
+  <h2>Board Selector</h2>
+  <form id="board-form">
+    <div>
+      <input type="text" id="live-filter" />
+    </div>
+    <div>
+      <select name="family" id="board-family" size="30"></select>
+      <select name="bid" id="bid" size="30"></select>
+    </div>
+  </form>
+</div>
+<script>
+//<![CDATA[
+  $(() => {
+    // Prevent submitting the form because it breaks the view
+    $('#board-form').submit(function(e) { e.preventDefault(); });
+    // Initialize the filter field to find matching boards in the <option> data
+    // and present those that match in a drop-down list for up/down key selection.
+    // The 'boards' property on each option has keys { name, desc }
+    $('#live-filter').on('keyup', (e) => {
+      //console.log("Change event", e);
+      // Show all options in the selectors first
+      $('#board-family option').show();
+      $('#bid option').show();
+
+      // Get the filter text
+      var filter = $(e.target).val().trim().toLowerCase();
+      if (filter == '') return;
+
+      // Look for boards matching the filter
+      $('#board-family option').each(function(i,e) {
+        //console.log("Checking items within", e);
+        // If there is no matching board in the list, hide the current option
+        const boards = e.boards;
+        if (boards === undefined) return;
+        let found = false;
+        for (let i = 0; i < boards.length; i++) {
+          //console.log("Comparing", filter, "to", boards[i].name.toLowerCase())
+          if (boards[i].name.toLowerCase().indexOf(filter) >= 0) {
+            found = true;
+            //break;
+          }
+        }
+        if (!found) {
+          //console.log("Didn't find", filter, "with", $(e).val())
+          $(e).hide();
+        }
+      });
+      // Also filter the items in 'bid'...
+      $('#bid option').each(function(i,e) {
+        // Get the value attribute of the option tag
+        var board_name = $(e).val();
+        //console.log("Comparing", filter, "to", board_name)
+        if (board_name.toLowerCase().indexOf(filter) == -1) $(e).hide();
+      });
+    });
+
+  });
+// ]]>
+</script>
