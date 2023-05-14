@@ -407,3 +407,12 @@ a.reveal { font-size: small; color: var(--abm-text-color-link); }
 form#showy { display: block; position: relative; float: right; }
 form#showy label { display: block; padding: 2px 0; }
 form#showy input[type="checkbox"] { position: relative; top: 0.2em; }
+
+/* Board selectors: (1) Family, (2) Board */
+
+#board-form select {
+  width: calc(40% - 3px);
+}
+#board-form select+select {
+  width: calc(60% - 3px);
+}
