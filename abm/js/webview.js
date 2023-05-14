@@ -74,6 +74,8 @@ var ABM = (function(){
 
         case 'pane': abm_pane(m.pane); break;
 
+        case 'boards': abm_boards(m.data); break;
+
         case 'define':
           // Update a single define element in the UI
           break;

@@ -387,3 +387,5 @@ a.reveal { font-size: small; }
 form#showy { display: block; position: relative; float: right; }
 form#showy label { display: block; padding: 2px 0; }
 form#showy input[type="checkbox"] { position: relative; top: 0.2em; }
+
+#board-form select { width: 48%; margin-right: 1%; }
