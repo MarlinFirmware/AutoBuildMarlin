@@ -293,7 +293,7 @@ function extractBoardInfo(mb) {
     out.pins_file = inc_line.replace(/.*#include\s+"([^"]*)".*/, '$1');
 
     out.archs = inc_line.replace(/.+\/\/\s*((\w+,?\s*)+)\s*(env|mac|win|lin|uni):.+/, '$1');
-    out.archs_arr = out.archs.replace(',',' ').replace(/\s+/,' ').split(' ');
+    out.archs_arr = out.archs.replace(',',' ').replace(/\s+/,' ').trim().split(' ');
 
     out.envs = [];
     var efind = new RegExp('(env|mac|win|lin|uni):(\\w+)', 'g');
@@ -314,16 +314,26 @@ function extractBoardInfo(mb) {
       out.envs.push({ name: r[2], note: note, debug: debugenv, native: r[1] != 'env' });
       if (debugenv) out.has_debug = true;
     }
+
+    // Get the description from the boards.h file
+    var cfind = new RegExp(`#define\\s+${mb}\\s+\\d+\\s*//(.+)`, 'gm');
+    r = cfind.exec(files.boards.text);
+    out.description = r ? r[1].trim() : '';
   }
   else {
     const bfind = new RegExp(`#error\\s+"(${mb} has been renamed \\w+)`, 'g');
-    out.error = (r = bfind.exec(files.pins.text)) ? r[1] : `Unknown MOTHERBOARD ${mb}`;
+    if ((r = bfind.exec(files.pins.text))) {
+      out.error = r[1];
+    }
+    else if (!mb.startsWith('BOARD_')) {
+      out.error = "MOTHERBOARD name missing 'BOARD_'";
+      out.short = "Missing 'BOARD_'?";
+    }
+    else {
+      out.error = `Unknown MOTHERBOARD ${mb}`;
+      out.short = `Unknown MOTHERBOARD`;
+    }
   }
-
-  // Get the description from the boards.h file
-  var cfind = new RegExp(`#define\\s+${mb}\\s+\\d+\\s*//(.+)`, 'gm');
-  r = cfind.exec(files.boards.text);
-  out.description = r ? r[1].trim() : '';
 
   board_info = out;
   return board_info;

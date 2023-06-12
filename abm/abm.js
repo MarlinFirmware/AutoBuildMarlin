@@ -217,68 +217,94 @@ function allFilesAreLoaded() {
   // Send text for display in the view
   //postMessage({ command:'text', text:marlin.files.boards.text });
 
+  marlin.watchConfigurations(onConfigFileChanged);
+
   const mb = marlin.configValue('MOTHERBOARD');
 
-  if (mb !== undefined) {
-
-    //const sensors = extractTempSensors();
-    //log("Sensors :", sensors);
-
-    const version_info = marlin.extractVersionInfo();
-    log("Version Info :", version_info);
+  if (mb) {
     board_info = marlin.extractBoardInfo(mb);
     log(`Board Info for ${mb} :`, board_info);
-    set_context('has_debug', !!board_info.has_debug);
-    if (board_info.error) {
-      set_context('err.parse', true);
-      postError(board_info.error);
-      return; // abort the whole deal
-    }
-    const machine_info = marlin.getMachineSettings();
-    log("Machine Info :", machine_info);
-    const extruder_info = marlin.getExtruderSettings();
-    log("Extruder Info :", extruder_info);
-    const pindef_info = marlin.getPinDefinitionInfo(mb);
-    log("Pin Defs Info :", pindef_info);
 
-    // If no CUSTOM_MACHINE_NAME was set, get it from the pins file
-    if (!machine_info.name) {
-      let def = marlin.confValue('pindef', 'DEFAULT_MACHINE_NAME');
-      if (!def || def == 'BOARD_INFO_NAME')
-        def = pindef_info.board_name;
-      machine_info.name = def ? def.dequote() : '3D Printer';
-    }
-
-    // Post values to the UI filling them in by ID
-    postValue('auth', version_info.auth);
-    postValue('vers', version_info.vers);
-
-    const d = new Date(version_info.date);
-    postValue('date', d.toLocaleDateString([], { weekday:'long', year:'numeric', month:'short', day:'numeric' }));
-
-    postValue('extruders', extruder_info.extruders);
-    postValue('extruder-desc', extruder_info.description);
-
-    postValue('machine', machine_info.name);
-    postValue('machine-desc', machine_info.description);
-
-    postValue('board', mb.replace('BOARD_', '').replace(/_/g, ' '));
-    postValue('board-desc', board_info.description);
-
-    const pf = board_info.pins_file;
-    const pinsPath = path.join('Marlin', 'src', 'pins', pf);
-    postValue('pins', pf, pinsPath);
-    if (pindef_info.board_name) postValue('pins-desc', pindef_info.board_name);
-
-    postValue('archs', board_info.archs);
-
-    // Fill in the build status in the UI
-    refreshBuildStatus();
+    if (board_info.short)
+      mbn = board_info.short;
+    else
+      mbn = mb.replace('BOARD_', '').replace(/_/g, ' ');
+  }
+  else {
+    mbn = "No MOTHERBOARD";
+    board_info = { error: mbn };
   }
 
-  //marlin.refreshDefineList();
+  if (board_info.error) {
+    set_context('err.parse', true);
+    postError(board_info.error);
+    postValue('auth', '');
+    postValue('vers', '');
+    postValue('date', '');
+    postValue('extruders', '');
+    postValue('extruder-desc', '');
+    postValue('machine', '');
+    postValue('machine-desc', '');
+    postValue('board', mbn);
+    postValue('board-desc', '');
+    postValue('pins', '', '');
+    postValue('pins-desc', '');
+    postValue('archs', ['']);
+    set_context('has_debug', false);
+    board_info.envs = [];
+    refreshBuildStatus();
+    return;
+  }
 
-  marlin.watchConfigurations(onConfigFileChanged);
+  postMessage({ command:'noerror' });
+  const version_info = marlin.extractVersionInfo();
+  log("Version Info :", version_info);
+  const machine_info = marlin.getMachineSettings();
+  log("Machine Info :", machine_info);
+  const extruder_info = marlin.getExtruderSettings();
+  log("Extruder Info :", extruder_info);
+  const pindef_info = marlin.getPinDefinitionInfo(mb);
+  log("Pin Defs Info :", pindef_info);
+  //const sensors = marlin.extractTempSensors();
+  //log("Sensors :", sensors);
+
+  // If no CUSTOM_MACHINE_NAME was set, get it from the pins file
+  if (!machine_info.name) {
+    let def = marlin.confValue('pindef', 'DEFAULT_MACHINE_NAME');
+    if (!def || def == 'BOARD_INFO_NAME')
+      def = pindef_info.board_name;
+    machine_info.name = def ? def.dequote() : '3D Printer';
+  }
+
+  // Post values to the UI filling them in by ID
+  postValue('auth', version_info.auth);
+  postValue('vers', version_info.vers);
+
+  const d = new Date(version_info.date);
+  postValue('date', d.toLocaleDateString([], { weekday:'long', year:'numeric', month:'short', day:'numeric' }));
+
+  postValue('extruders', extruder_info.extruders);
+  postValue('extruder-desc', extruder_info.description);
+
+  postValue('machine', machine_info.name);
+  postValue('machine-desc', machine_info.description);
+
+  postValue('board', mbn);
+  postValue('board-desc', board_info.description);
+
+  const pf = board_info.pins_file;
+  const pinsPath = path.join('Marlin', 'src', 'pins', pf);
+  postValue('pins', pf, pinsPath);
+  if (pindef_info.board_name) postValue('pins-desc', pindef_info.board_name);
+
+  postValue('archs', board_info.archs);
+
+  set_context('has_debug', !!board_info.has_debug);
+
+  // Fill in the build status in the UI
+  refreshBuildStatus();
+
+  //marlin.refreshDefineList();
   runSelectedAction();
 }
 

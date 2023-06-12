@@ -63,13 +63,13 @@
     <button type="button" onclick="msg({ command:'refresh' })"><img src="${ img_path('btn-refresh.svg') }" /> Refresh</button>
   </div>
   <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Auto Build</span></h1>
+  <div id="error"></div>
   <div id="abm-main">
     <form id="showy">
       <label><input type="checkbox" value="1" name="show_on_startup" ${ check(prefs.show_on_startup()) }/>Show on Startup</label>
       <label><input type="checkbox" value="0" name="silent_build" ${ check(prefs.silent_build()) }/>Silent Build</label>
       <label><input type="checkbox" value="1" name="auto_reveal" ${ check(prefs.auto_reveal()) }/>Auto Reveal Build</label>
     </form>
-    <div id="error"></div>
     <table id="info">
       <tr><th>Firmware:</th>      <td><div>Marlin <span id="info-vers"></span></div><div id="info-date" class="abm-caption"></div></td></tr>
       <tr><th>Config By:</th>     <td><span id="info-auth"></span></td></tr>
