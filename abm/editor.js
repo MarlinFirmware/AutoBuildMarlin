@@ -168,7 +168,7 @@ class ConfigEditorProvider {
     webviews[name] = wv;
 
     /**
-     * @brief Tell my webview to rebuild the Configuration.
+     * @brief Tell my webview to rebuild itself with new config data.
      * @description Send the updated data to this instance's webview so it can rebuild the form.
      */
     function initWebview() {

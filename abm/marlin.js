@@ -98,8 +98,9 @@ function refreshDefineList() {
   //console.log("Define list:", define_list);
 }
 
-// TODO: Use previously parsed config data for speed
+// TODO: Use previously parsed config data for speed and accuracy
 
+// Get whether a setting is enabled (defined) in a blob of text
 function _confEnabled(text, optname) {
   const find = new RegExp(`^\\s*#define\\s+${optname}\\b`, 'gm'),
         r = find.exec(text);
@@ -107,6 +108,7 @@ function _confEnabled(text, optname) {
   return (r !== null); // Any match means it's uncommented
 }
 
+// Get whether a setting is enabled (defined) in one or both config files
 function confEnabled(fileid, optname) { return _confEnabled(files[fileid].text, optname); }
 function configEnabled(optname)       { return confEnabled('config',     optname); }
 function configAdvEnabled(optname)    { return confEnabled('config_adv', optname); }
@@ -114,7 +116,7 @@ function configAnyEnabled(optname) {
   return configEnabled(optname) ? true : configAdvEnabled(optname);
 }
 
-// Get a single config value
+// Get a single config value by scraping the given text
 function _confValue(text, optname) {
   var val = '';
   const find = new RegExp(`^\\s*#define\\s+${optname}\\s+(.+)`, 'gm'),
@@ -123,7 +125,7 @@ function _confValue(text, optname) {
   return val;
 }
 
-// Get a single config value
+// Get the value of a single config option, searching one or both config files
 function confValue(fileid, optname) { return _confValue(files[fileid].text, optname); }
 function configValue(optname)       { return confValue('config',     optname); }
 function configAdvValue(optname)    { return confValue('config_adv', optname); }
@@ -132,12 +134,15 @@ function configAnyValue(optname) {
   if (configAdvEnabled(optname)) return configAdvValue(optname);
 }
 
+//
+// Return a path object for Marlin/parts[0]/parts[1]/...
+//
 function pathFromArray(parts) {
   return path.join(workspaceRoot, 'Marlin', parts.join(path.sep));
 }
 
 //
-// Get the path to a Marlin file
+// Get the full path to the Marlin file for a given file description
 //
 function fullPathForFileDesc(f) {
   if (!f.fullpath) {
@@ -279,6 +284,8 @@ function extractTempSensors() {
 // - If the board isn't found, look for a rename alert.
 // - Get the status of environment builds.
 //
+// Return hashed array { mb, pins_file, archs, archs_arr, envs, (has_debug), (error) }
+//
 var board_info;
 function extractBoardInfo(mb) {
   var r, out = { has_debug: false }, sb = mb.replace('BOARD_', '');
@@ -341,6 +348,7 @@ function extractBoardInfo(mb) {
 
 //
 // Get the type of geometry and stuff like that
+// Return hashed array { name, style, dimensions, description, heated_bed, (bed_sensor) }
 //
 var machine_info;
 function getMachineSettings() {
@@ -377,6 +385,7 @@ function getMachineSettings() {
 
 //
 // Get the number of EXTRUDERS and related options
+// Return hashed array { extruders, diam, (sensors[]), (sensor_err), type, fancy, description }
 //
 var extruder_info;
 function getExtruderSettings() {
@@ -446,14 +455,16 @@ function getExtruderSettings() {
 }
 
 //
-// Get information from the board's pins file(s)
+// Re-fetch information from the board's pins file(s)
+// and re-load the pins file contents into files['pindef'].text
+// Return hashed array with { name, path, mb }
 //
 var pindef_info;
 function getPinDefinitionInfo(mb) {
   if (!files.pindef || files.pindef.mb != mb) {
     const pbits = `src/pins/${board_info.pins_file}`.split('/');
     files.pindef = { name: pbits.pop(), path: pbits, mb: mb };
-    processMarlinFile('pindef');
+    processMarlinFile('pindef'); // Since temp.filesToLoad == 0 just read the file
   }
 
   pindef_info = {
