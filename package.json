@@ -2,8 +2,8 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.1.46",
-  "preview": true,
+  "version": "2.1.47",
+  "preview": false,
   "publisher": "marlinfirmware",
   "icon": "icon.png",
   "sponsor": {
@@ -67,7 +67,7 @@
             "filenamePattern": "**/Marlin/Configuration_adv.h"
           }
         ],
-        "priority": "default"
+        "priority": "option"
       }
     ],
     "viewsContainers": {
@@ -301,6 +301,6 @@
     "id": "aeed6cc8-3e27-4932-8212-161d73cdee2d",
     "publisherId": "cc3dab9c-e91d-467b-9b8e-b3d262181451",
     "publisherDisplayName": "Marlin Firmware",
-    "isPreReleaseVersion": true
+    "isPreReleaseVersion": false
   }
 }
