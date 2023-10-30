@@ -63,7 +63,7 @@ var ABM = (function(){
     },
 
     //
-    // Calls to postMessage arrive here:
+    // Calls to postMessage from abm.html arrive here:
     //
     handleMessage(event) {
       const m = event.data; // JSON sent by the extension

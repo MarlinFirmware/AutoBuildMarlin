@@ -851,7 +851,9 @@ function runSelectedAction() {
   }
 }
 
-// Look for a script in buildroot/share/PlatformIO and run it.
+// Look for a script in buildroot/share/PlatformIO/scripts and run it.
+// Exit if 'script' is not found or optional 'needs' are not met.
+// Optional 'args' are added to the python command.
 function runPython(script, needs, args) {
   const script_file = path.join(marlin.workspaceRoot, 'buildroot', 'share', 'PlatformIO', 'scripts', script);
   if (!fs.existsSync(script_file)) {

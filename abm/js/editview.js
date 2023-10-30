@@ -3,10 +3,11 @@
  * abm/js/editview.js
  *
  * This script runs when...
- *  - The file is first opened in an editor window/tab.
+ *  - A Configuration.h or Configuration_adv.h file is first opened in an editor window/tab.
  *  - The tab is revealed after being hidden.
  *
- * The webview already contains the base HTML, so we:
+ * The webview in the new tab already contains the base HTML, so we:
+ *  - Add a listener to handle 'message' events sent by the view's controller.
  *  - Set up the empty webview with event handlers on the header form fields.
  *  - Convert the file text to a data structure for editing, store in edit session.
  *  - Do the initial form build based on the data structure.

@@ -39,8 +39,8 @@
   }
 
   function msg(m) {
-    if (m.command == 'tool') abm_tool(m.tool);
-    if (m.command == 'pane') abm_pane(m.pane);
+    if (m.command == 'tool') abm_tool(m.tool); // Show the tool before alerting the controller
+    if (m.command == 'pane') abm_pane(m.pane); // Show the pane before alerting the controller
     vscode.postMessage(m);
   }
 

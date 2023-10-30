@@ -264,12 +264,12 @@ function extractVersionInfo() {
 var temp_sensor_desc;
 function extractTempSensors() {
 
-  //pv.postMessage({ command:'text', text:marlin.files.config.text });
+  //pv.postMessage({ command:'text', text:files.config.text });
 
   // Get all the thermistors and save them into an object
   const findAll = new RegExp('^\\s*\\*\\s*Temperature sensors .+$([\\s\\S]+\\*\\/)', 'gm'),
         findEach = new RegExp('^\\s*\\*\\s*(-?\\d+)\\s*:\\s*(.+)$', 'gm'),
-        r = findAll.exec(marlin.files.config.text);
+        r = findAll.exec(files.config.text);
 
   var out = {};
   let s;
