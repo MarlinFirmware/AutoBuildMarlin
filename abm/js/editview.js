@@ -129,7 +129,7 @@ $(function () {
   const vscode = acquireVsCodeApi();
 
   // Ignore the next update message.
-  var ignore_update = false
+  var ignore_update = false;
 
   // Collect changes and post the collection
   var multi_update = false, changes = [];

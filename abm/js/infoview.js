@@ -37,20 +37,21 @@ $(function () {
   }
 
   /**
-   * @brief Handle messages sent from the provider to the webview
-   * @description Handle 'message' events broadcast to the window.
+   * @brief Handle messages sent from the provider with iview.postMessage(msg)
+   * @description Handle 'message' events sent directly to the view.
    * @param {object} message - The message object.
    */
+  var ignore_update = false;  // Ignore the next update message.
   function handleMessage(message) {
     log("handleMessage", message);
     switch (message.type) {
       // Update the whole form in response to an external change.
-      case 'update':
-        if (ignore_update)
+      case 'info':
+        if (ignore_update) {
           ignore_update = false;
-        else
-          buildConfigFormWithData(message.schema);
-          //buildConfigFormWithText(message.text);
+          return;
+        }
+        //drawInfo(message.data);
         break;
 
       // Display an error message

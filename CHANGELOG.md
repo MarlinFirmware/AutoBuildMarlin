@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.48
+
+- Fix and extend configuration file parsing
+
 ## 2.1.47
 
 - Make the Custom Editor (alpha) hidden by default
