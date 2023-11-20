@@ -2,6 +2,16 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.49
+
+- Recognize Chitu firmware with .cbd extension
+- Fix schema options set on following settings
+- Standardize JSON options cleanup method
+- Remove old config parsing borrowed from Configurator 1.0
+- Add Formatters information to the README
+- Fix formatter debug logging
+- Display author and version for a bad config
+
 ## 2.1.48
 
 - Fix and extend configuration file parsing

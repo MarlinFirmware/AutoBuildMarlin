@@ -25,8 +25,10 @@ function _codeformat(text) {
   const len = lines.length;
   for (var i = 0; i < len; i++) {
     var line = lines[i];
+    // Outdent for #else, #elif, #endif
     if (line.match(/^\s*#\s*(else|elif|endif)/) && indent) indent--;
     result.push(Array(indent + 1).join('  ') + line);
+    // Indent following #if, #else, #elif
     if (line.match(/^\s*#\s*(if|else|elif)/)) indent++;
   }
   return result.join('\n');
@@ -38,7 +40,7 @@ function _codeformat(text) {
 function _pinsformat(intext) {
   const verbose = false;
   function log(line, msg) {
-    if (verbose) console.log(`[${line}] ${msg}`);
+    if (verbose) console.log(`ABM [${line}] ${msg}`);
   }
 
   const mpatt = [ '-?\\d+', 'P[A-I]\\d+', 'P\\d_\\d+' ],
@@ -99,7 +101,7 @@ function _pinsformat(intext) {
         //
         // #define MY_PIN [pin]
         //
-        log(`[${line}] pin`);
+        log(line, 'pin');
         const pinnum = r[4].charAt(0) == 'P' ? r[4] : r[4].lpad(patt.pad);
         line = r[1] + ' ' + r[3];
         line = line.rpad(col_value_lj) + pinnum;
@@ -109,7 +111,7 @@ function _pinsformat(intext) {
         //
         // #define MY_PIN -1
         //
-        log(`[${line}] pin -1`);
+        log(line, 'pin -1');
         line = r[1] + ' ' + r[3];
         line = line.rpad(col_value_lj) + '-1';
         if (r[5]) line = line.rpad(col_comment) + r[5];
@@ -118,13 +120,13 @@ function _pinsformat(intext) {
         //
         // #define SKIP_ME
         //
-        log(`[${line}] skip`);
+        log(line, 'skip');
       }
       else if ((r = aliasPatt.exec(line)) !== null) {
         //
         // #define ALIAS OTHER
         //
-      log(`[${line}] alias`);
+      log(line, 'alias');
         line = r[1] + ' ' + r[3];
         line += r[4].lpad(col_value_rj + 1 - line.length);
         if (r[5]) line = line.rpad(col_comment) + r[5];
@@ -133,7 +135,7 @@ function _pinsformat(intext) {
         //
         // #define SWITCH
         //
-        log(`[${line}] switch`);
+        log(line, 'switch');
         line = r[1] + ' ' + r[3];
         if (r[4]) line = line.rpad(col_comment) + r[4];
         check_comment_next = true;
@@ -142,7 +144,7 @@ function _pinsformat(intext) {
         //
         // #define ...
         //
-        log(`[${line}] def`);
+        log(line, 'def');
         line = r[1] + ' ' + r[3] + ' ';
         line += r[4].lpad(col_value_rj + 1 - line.length);
         if (r[5]) line = line.rpad(col_comment - 1) + ' ' + r[5];
@@ -151,7 +153,7 @@ function _pinsformat(intext) {
         //
         // #undef ...
         //
-        log(`[${line}] undef`);
+        log(line, 'undef');
         line = r[1] + ' ' + r[3];
         if (r[4]) line = line.rpad(col_comment) + r[4];
       }
@@ -159,7 +161,7 @@ function _pinsformat(intext) {
         //
         // #if ...
         //
-        log(`[${line}] cond`);
+        log(line, 'cond');
         line = r[1].rpad(col_comment) + r[5];
         check_comment_next = true;
       }

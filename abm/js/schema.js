@@ -46,6 +46,13 @@ class ConfigSchema {
     return instance;
   }
 
+  // Clean up options so they can be JSON parsed.
+  static cleanOptions(opts) {
+    if (opts.match(/\[\s*\d\s*:\s*[\'"]/))
+      opts = opts.replace('[', '{').replace(']', '}');
+    return opts;
+  }
+
   debug() { console.dir(this.data); }
   debug_sections() { console.log(Object.keys(this.data)); }
 
@@ -597,8 +604,8 @@ class ConfigSchema {
             regp = new RegExp(`(##\\s*${funcarg}\\s*##|##\\s*${funcarg}\\b|\\b${funcarg}\\s*##)`, 'g');
       var newmap = '';
       for (let n of maparr) newmap += functpl.replace(regp, n);
-      console.log("mapInfo", { maparr, fun, funcinfo, funcarg, functpl, newmap });
       cond = cond.replace(res[0], newmap);
+      //console.log("mapInfo", { maparr, fun, funcinfo, funcarg, functpl, newmap });
     }
 
     // Convert Marlin macros into JavaScript function calls:
@@ -753,7 +760,7 @@ class ConfigSchema {
         comment_buff = [],    // A temporary buffer for comments
         prev_comment = '',    // Copy before reset for an EOL comment
         options_json = '',    // A buffer for the most recent options JSON found
-        eol_options = false,  // The options came from end of line, so only apply once
+        oneshot_opt = false,  // The options came from end of line, so only apply once
         join_line = false,    // A flag that the line should be joined with the previous one
         line = '',            // A line buffer to handle \ continuation
         last_added_ref,       // Reference to the last added item
@@ -824,12 +831,10 @@ class ConfigSchema {
           const d = c.slice(1).trim(),
               cbr = d.startsWith('{') ? c.lastIndexOf('}') : d.startsWith('[') ? c.lastIndexOf(']') : 0;
           if (cbr) {
-            options_json = c.slice(1, cbr + 1).trim();
+            options_json = d.slice(0, cbr).trim();
             const cmt = c.slice(cbr + 1).trim();
             if (cmt != '') comment_buff.push(cmt);
           }
-          else
-            opt = c.slice(1).trim();
         }
         else if (c.startsWith('@section'))    // Start a new section
           section = c.slice(8).trim();
@@ -883,7 +888,7 @@ class ConfigSchema {
           const sens = tline.match(/^(-?\d+)\s*:\s*(.+)$/);
           if (sens) {
             //log(`Sensor: ${sens[1]} = ${sens[2]}`, line_number);
-            const s2 = sens[2].replace(/'/g, "\\'");
+            const s2 = sens[2].replace(/(['"])/g, "\\$1");
             options_json += `'${sens[1]}':'${sens[1]} - ${s2}', `;
           }
         }
@@ -909,7 +914,7 @@ class ConfigSchema {
         if (cpos1 != -1 && (cpos1 < cpos2 || cpos2 == -1)) {
           cpos = cpos1;
           state = Parse.BLOCK_COMMENT;
-          eol_options = false;
+          oneshot_opt = false;
           log("Begin block comment", line_number);
         }
         else if (cpos2 != -1 && (cpos2 < cpos1 || cpos1 == -1)) {
@@ -939,7 +944,7 @@ class ConfigSchema {
           }
           else {
             // Expire end-of-line options after first use
-            if (cline.startsWith(':')) eol_options = true;
+            if (cline.startsWith(':')) oneshot_opt = true;
           }
 
           // Buffer a non-empty comment start
@@ -1148,8 +1153,8 @@ class ConfigSchema {
 
           // Some items depend on axes being enabled
           const axis = is_axis_item(define_name),
-            eindex = is_eaxis_item(define_name),
-            hindex = is_heater_item(define_name);
+              eindex = is_eaxis_item(define_name),
+              hindex = is_heater_item(define_name);
 
           function extend_requires(cond) {
             if (define_info.requires !== undefined)
@@ -1188,9 +1193,32 @@ class ConfigSchema {
           if (define_name == "MOTHERBOARD" && boards != '') {
             define_info.options = boards;
           }
-          else if (options_json != '') {
-            define_info.options = options_json;
-            if (eol_options) options_json = '';
+          else if (options_json != '') { // Options, thermistors, boards, etc.
+            const optstr = ConfigSchema.cleanOptions(options_json);
+            let opts;
+            try {
+              eval(`opts = ${optstr}`);
+            }
+            catch (e) {
+              console.error(`Error evaluating: ${optstr}`);
+              opts = [];
+            }
+
+            let isopt = false;
+            if (opts.includes !== undefined)
+              isopt = opts.includes(val);   // Array, probably
+            else
+              isopt = val in opts;          // Dictionary, probably
+
+            if (isopt)
+              define_info.options = options_json; // Ok to use options
+            else
+              oneshot_opt = true;           // Done with any previous options
+
+            if (oneshot_opt) {
+              oneshot_opt = false;
+              options_json = '';
+            }
           }
 
           // Create section dict if it doesn't exist yet
@@ -1269,11 +1297,17 @@ class ConfigSchema {
  */
 class MultiSchema {
   constructor(schemas) {
-    this.schemas = schemas;
+    fromSchemas(schemas);
   }
 
-  getData() {
-    const data = {};
+  fromSchemas(schemas) {
+    this.schemas = schemas;
+    refresh();
+  }
+
+  // Return all schemas merged together in the instantiated order
+  refresh() {
+    let data = {};
     for (const schema of this.schemas) {
       for (const [sect, opts] of Object.entries(schema.data)) {
         if (!(sect in data)) data[sect] = {};
@@ -1285,8 +1319,10 @@ class MultiSchema {
         }
       }
     }
-    return data;
+    this.combo = ConfigSchema.fromData(data);
   }
+
+  schema() { return this.combo; }
 }
 
 try {

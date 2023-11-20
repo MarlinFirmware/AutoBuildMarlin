@@ -20,14 +20,14 @@ When installing "Auto Build Marlin" you'll also be prompted to install the [Plat
 
 ### Configuration Editor
 
-- Open the file `Configuration.h` or `Configuration_adv.h` to use the Configuration Editor. Instead of a very long text file you'll see a very long form divided up into sections.
+- Open the file `Configuration.h` or `Configuration_adv.h` to use the Configuration Editor. You may need to right-click on the window tab and choose "Reopen Editor with…" to activate the Config Editor. The Config Editor replaces the text view with a form divided up into sections.
 
   - Use the "Filter" field to locate options by name.
   - Click the "Show Comments" checkbox to show or hide comments.
   - Click the title of a section to hide/show that section.
   - Hold down `alt`/`option` and click on any title to hide/show all sections.
 
-- Configuration files are annotated to provide some hints to configuration tools. Edit the configuration file text to add your own `@section` markers, provide allowed values for options, or improve documentation. Please submit your improvements and suggestions for improving the configuration experience.
+- Configuration files are annotated to provide some hints to configuration tools. Edit the configuration file text to add your own `@section` markers, provide allowed values for options, or improve documentation. Please submit your improvements and suggestions to improve the configuration experience.
 
 ### Auto Build
 
@@ -48,6 +48,11 @@ When installing "Auto Build Marlin" you'll also be prompted to install the [Plat
 - The **Auto Build Marlin** panel displays information about your selected motherboard and basic machine parameters. Each board comes with one or more build environments that are used to generate the final Marlin binary. Choose the environment that best matches your MCU, bootloader, etc.
 
   ![Environments](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/abm-envs.png)
+
+### Formatters
+
+- Open the Command Palette and choose "Format Marlin Code." The file will be formatted according to Marlin standards.
+- NOTE: The context menu item "Format Document With…" -> "Auto Build Marlin" doesn't work so ignore that menu command for now.
 
 ## Internals
 

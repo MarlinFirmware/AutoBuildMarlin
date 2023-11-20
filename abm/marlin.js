@@ -29,76 +29,7 @@ var files = {
   version:    { name: 'Version.h',           path: ['src', 'inc']  }
 };
 
-//
-// Parse configs to get information about all defines
-// such as where it occurs, what its parent defines are,
-// and so on. Also try to figure out what kind of data is
-// expected based on the set value.
-//
-// Also examine preceding and end-of-line comments to get
-// the "help text" and a list of values, if supplied.
-//
-// This data can then be used to generate one or more form
-// fields that trigger update messages, and to update the
-// appropriate lines with in the config files in the correct
-// value(s) format. Defines that have children will hide
-// those children when disabled.
-//
-
-var define_list,    // arrays with all define names
-    define_occur,   // lines where defines occur in each file
-    define_section; // the section of each define
-
-function updateDefineList(cindex, txt) {
-  var section = 'hidden',
-      ignore = ['CONFIGURATION_H', 'CONFIGURATION_H_VERSION', 'CONFIGURATION_ADV_H', 'CONFIGURATION_ADV_H_VERSION', 'CONFIG_EXAMPLES_DIR'],
-      define_more = {},
-      occ_list = {},
-      findDef = new RegExp('^\\s*(//\\s*)?(.*(@section)|#define)\\s+(\\w+).*$', 'gm');
-  // scan for sections and defines
-  var r;
-  while((r = findDef.exec(txt)) !== null) {
-    var name = r[4];
-    if (r[3] == '@section') {
-      section = name;
-      //console.log("Section: " + name);
-    }
-    else if (!ignore.includes(name)) {                            // skip some defines
-      //console.log("Define: " + name);
-      var lineNum = txt.lineCount(r.index),                       // the line number
-          inst = { cindex:cindex, lineNum:lineNum, line:r[0] },   // config, line, section/define
-          in_sect = (name in define_more);                        // already found (locally)?
-
-      if (!in_sect) occ_list[name] = [ inst ];                    // no, first item in section
-
-      if (!in_sect && !(name in define_section)) {                // first time in section, ever
-        define_more[name] = section;                              // new first-time define
-      }
-      else {
-        occ_list[name].push(inst);                                // it's another occurrence
-      }
-    }
-  }
-  define_list[cindex] = Object.keys(define_more);
-  //console.log("Define List " + cindex + ": ", define_list[cindex]);
-  define_occur[cindex] = occ_list;
-  //console.log("Define Occ " + cindex + ": ", occ_list);
-  define_section = Object.assign({}, define_section, define_more);
-  if (bugme) console.log("Define Section ", define_section);
-}
-
-// Reload all defines over again
-function refreshDefineList() {
-  define_list = [[],[]];
-  define_occur = [{},{}];
-  define_section = {};
-  updateDefineList(0, files.config.text);
-  updateDefineList(1, files.config_adv.text);
-  // Display data as an interactive tree
-  //console.log("Define list:", define_list);
-}
-
-// TODO: Use previously parsed config data for speed and accuracy
+// TODO: Use config data from Schema object
 
 // Get whether a setting is enabled (defined) in a blob of text
 function _confEnabled(text, optname) {
@@ -328,9 +259,16 @@ function extractBoardInfo(mb) {
     out.description = r ? r[1].trim() : '';
   }
   else {
-    const bfind = new RegExp(`#error\\s+"(${mb} has been renamed \\w+)`, 'g');
-    if ((r = bfind.exec(files.pins.text))) {
+    const ofind = new RegExp(`#error\\s+"(${mb} is no longer [^.]+)`, 'g'),
+          bfind = new RegExp(`#error\\s+"(${mb} (has been renamed|is now) [^.]+)`, 'g');
+    if ((r = ofind.exec(files.pins.text))) {
       out.error = r[1];
+      out.short = `Unsupported MOTHERBOARD`;
+    }
+    else if ((r = bfind.exec(files.pins.text))) {
+      // TODO: Show a "Fix" button to update an old board name.
+      out.error = r[1];
+      out.fix = `fixboard("${mb}")`;
     }
     else if (!mb.startsWith('BOARD_')) {
       out.error = "MOTHERBOARD name missing 'BOARD_'";
@@ -480,7 +418,6 @@ module.exports = {
   files, init, reboot, validate, refreshAll,
 
   watchConfigurations, watchAndValidate,
-  refreshDefineList,
 
   configEnabled,
   configValue, confValue, _confValue,

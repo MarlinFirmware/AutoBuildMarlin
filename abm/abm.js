@@ -219,6 +219,13 @@ function allFilesAreLoaded() {
 
   marlin.watchConfigurations(onConfigFileChanged);
 
+  const version_info = marlin.extractVersionInfo();
+  log("Version Info :", version_info);
+
+  // Post values to the UI filling them in by ID
+  postValue('auth', version_info.auth);
+  postValue('vers', version_info.vers);
+
   const mb = marlin.configValue('MOTHERBOARD');
 
   if (mb) {
@@ -238,8 +245,6 @@ function allFilesAreLoaded() {
   if (board_info.error) {
     set_context('err.parse', true);
     postError(board_info.error);
-    postValue('auth', '');
-    postValue('vers', '');
     postValue('date', '');
     postValue('extruders', '');
     postValue('extruder-desc', '');
@@ -257,8 +262,6 @@ function allFilesAreLoaded() {
   }
 
   postMessage({ command:'noerror' });
-  const version_info = marlin.extractVersionInfo();
-  log("Version Info :", version_info);
   const machine_info = marlin.getMachineSettings();
   log("Machine Info :", machine_info);
   const extruder_info = marlin.getExtruderSettings();
@@ -275,10 +278,6 @@ function allFilesAreLoaded() {
       def = pindef_info.board_name;
     machine_info.name = def ? def.dequote() : '3D Printer';
   }
-
-  // Post values to the UI filling them in by ID
-  postValue('auth', version_info.auth);
-  postValue('vers', version_info.vers);
 
   const d = new Date(version_info.date);
   postValue('date', d.toLocaleDateString([], { weekday:'long', year:'numeric', month:'short', day:'numeric' }));
@@ -304,13 +303,13 @@ function allFilesAreLoaded() {
   // Fill in the build status in the UI
   refreshBuildStatus();
 
-  //marlin.refreshDefineList();
+  //marlin.refreshDefineList(); // TODO: Use the schema object as the one true config data source
   runSelectedAction();
 }
 
 function readFileError(err, msg) {
   log("fs.readFile err: ", err);
-  postMessage({ command:'error', error:msg, data:err });
+  postError(msg, err);
 }
 
 //
@@ -360,7 +359,7 @@ function lastBuild(env) {
     // Find a 'program', .exe, .bin, or .hex file in the folder
     const dirlist = fs.readdirSync(bp);
     const bins = dirlist.filter((n) => {
-      return n.match(/(.+\.(bin|hex|exe|srec)|program|MarlinSimulator)$/i);
+      return n.match(/(.+\.(bin|hex|exe|srec|cbd)|program|MarlinSimulator)$/i);
     });
 
     var tp = bp;

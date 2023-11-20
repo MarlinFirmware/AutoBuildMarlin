@@ -297,7 +297,7 @@ class ConfigEditorProvider {
       if (inplace) ws.applyEdit(edit);
     }
 
-    // Receive message from the webview.
+    // Receive message from the webview via vscode.postMessage.
     function handleMessage(e) {
       //console.log("(ConfigEditorProvider) handleMessage", e);
       switch (e.type) {
