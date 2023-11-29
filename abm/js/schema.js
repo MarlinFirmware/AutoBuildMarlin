@@ -96,12 +96,15 @@ class ConfigSchema {
       "eeprom",
 
       "stepper drivers",
+      "multi stepper",
+      "idex",
       "extruder",
 
       "geometry",
       "homing",
       "?kinematics",
       "motion",
+      "motion control",
 
       "endstops",
       "?probe type",
@@ -110,9 +113,11 @@ class ConfigSchema {
       "leveling",
 
       "temperature",
+      "mpctemp",
       "bed temp",
       "fans",
 
+      "tool change",
       "advanced pause",
       "calibrate",
 
@@ -121,6 +126,7 @@ class ConfigSchema {
       "cnc",
 
       "?lcd",
+      "interface",
       "custom main menu",
       "custom config menu",
       "custom buttons",
@@ -131,17 +137,17 @@ class ConfigSchema {
       "delta",
       "scara",
       "tpara",
+      "polar",
 
       "filament width",
       "gcode",
 
       "host",
+
       "i2c encoders",
       "i2cbus",
-      "interface",
       "joystick",
       "lights",
-      "mpctemp",
       "multi-material",
       "nanodlp",
       "network",
@@ -224,12 +230,14 @@ class ConfigSchema {
       "lights": "💡",
       "machine": "🤖",
       "motion": "🏃",
+      "motion control": "🏃",
       "mpctemp": "🌡",
       "multi-material": "🍔",
-      "multi-stepper": "🛞",
+      "multi stepper": "🛞",
       "nanodlp": "🦤",
       "network": "🕸",
       "photo": "📷",
+      "polar": "🐧",
       "power": "⚡️",
       "probes": "🛰",
       "probing": "🛰",
@@ -254,6 +262,7 @@ class ConfigSchema {
       "tmc/status": "😎",
       "tmc/stealthchop": "😎",
       "tmc/tmc26x": "😎",
+      "tool change": "🔧",
       "tpara": "🦄",
       "units": "🇺🇳",
       "volumetrics": "🎚"
