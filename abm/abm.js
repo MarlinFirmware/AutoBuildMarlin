@@ -831,7 +831,7 @@ function runSelectedAction() {
       let env;
       if (board_info.envs.length == 1) { // only 1 board is available
         env = board_info.envs[0].name;
-      } else if (board_info.envs.length > 1 && board_info.envs.includes(prefs.default_env())) { // use default env
+      } else if (board_info.envs.length > 1 && board_info.envs.map(item => item.name).includes(prefs.default_env())) { // use default env
         env = prefs.default_env();
       } else if (act == 'clean') {
         let cleanme, cnt = 0;
