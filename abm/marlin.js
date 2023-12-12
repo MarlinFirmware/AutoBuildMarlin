@@ -292,8 +292,8 @@ function extractBoardInfo(mb) {
     out.mb = mb;
     out.pins_file = inc_line.replace(/.*#include\s+"([^"]*)".*/, '$1');
 
-    out.archs = inc_line.replace(/.+\/\/\s*((\w+,?\s*)+)\s*(env|mac|win|lin|uni):.+/, '$1');
-    out.archs_arr = out.archs.replace(',',' ').replace(/\s+/,' ').split(' ');
+    out.archs = inc_line.replace(/.+\/\/\s*((\w+,?\s*)+)\s*(env|mac|win|lin|uni):.+\b/, '$1');
+    out.archs_arr = out.archs.trim().replace(/\s*,\s*/g, ',').split(',');
 
     out.envs = [];
     var efind = new RegExp('(env|mac|win|lin|uni):(\\w+)', 'g');
