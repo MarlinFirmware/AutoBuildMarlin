@@ -112,6 +112,10 @@ function combinedSchema() {
         config2 = fs.readFileSync(con2, 'utf8'),
         configd = fs.readFileSync(cond, 'utf8');
 
+  // Strip down Configuration.h and Conditionals_LCD.h to just the
+  // preprocessor directives for faster parsing below.
+  // TODO: Allow a schema to be copied and/or extended.
+  //       Conditionals_LCD.h should still be stripped down.
   const sch1 = ConfigSchema.strippedConfig(config1),
         sch2 = ConfigSchema.strippedConfig(configd);
 
@@ -120,6 +124,12 @@ function combinedSchema() {
 
   const prefix_lines = sch1.lines + sch2.lines + 2;
 
+  //
+  // Create two schemas for use in editor interaction, since we need to know if a change
+  // was made in Configuration.h that affects Conditionals_adv.h directly or indirectly.
+  // s1 : Configuration.h schema
+  // s2 : Configuration_adv.h schema with Configuration.h + Conditionals_adv.h precursor
+  //
   const s1 = ConfigSchema.fromText(config1),
         s2 = ConfigSchema.fromText(adv_combo, -prefix_lines);
 
@@ -168,7 +178,7 @@ class ConfigEditorProvider {
     webviews[name] = wv;
 
     /**
-     * @brief Tell my webview to rebuild the Configuration.
+     * @brief Tell my webview to rebuild itself with new config data.
      * @description Send the updated data to this instance's webview so it can rebuild the form.
      */
     function initWebview() {
@@ -287,7 +297,7 @@ class ConfigEditorProvider {
       if (inplace) ws.applyEdit(edit);
     }
 
-    // Receive message from the webview.
+    // Receive message from the webview via vscode.postMessage.
     function handleMessage(e) {
       //console.log("(ConfigEditorProvider) handleMessage", e);
       switch (e.type) {

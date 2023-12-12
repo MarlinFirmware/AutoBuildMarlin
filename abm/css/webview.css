@@ -332,11 +332,9 @@ table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
 #debug-text { display: none; }
 
 #error {
-  width: 60%;
-  margin: 1em auto;
+  margin: 0;
   padding: 0.25em 0;
-  border: 2px solid #000;
-  border-radius: 0.25em;
+  border-bottom: 2px solid #000;
   text-align: center;
   font-size: 1.25em;
   color: #EF1;

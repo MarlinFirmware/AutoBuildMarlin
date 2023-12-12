@@ -3,10 +3,11 @@
  * abm/js/editview.js
  *
  * This script runs when...
- *  - The file is first opened in an editor window/tab.
+ *  - A Configuration.h or Configuration_adv.h file is first opened in an editor window/tab.
  *  - The tab is revealed after being hidden.
  *
- * The webview already contains the base HTML, so we:
+ * The webview in the new tab already contains the base HTML, so we:
+ *  - Add a listener to handle 'message' events sent by the view's controller.
  *  - Set up the empty webview with event handlers on the header form fields.
  *  - Convert the file text to a data structure for editing, store in edit session.
  *  - Do the initial form build based on the data structure.
@@ -128,7 +129,7 @@ $(function () {
   const vscode = acquireVsCodeApi();
 
   // Ignore the next update message.
-  var ignore_update = false
+  var ignore_update = false;
 
   // Collect changes and post the collection
   var multi_update = false, changes = [];
@@ -476,10 +477,10 @@ $(function () {
    * @param {item} data : An option to add to the form
    * @param {jquery} $inner : The element to append to
    */
+  const option_defaults = { type: '', value: '', options: '', depth: 0, dirty: false, evaled: true };
   function addOptionLine(data, $inner) {
     // Add defaults for missing fields
-    const defaults = { type: '', value: '', options: '', depth: 0, dirty: false, evaled: true },
-              item = { ...defaults, ...data };
+    const item = { ...option_defaults, ...data };
 
     // Get some option properties
     const name = item.name, ena = item.enabled, val = item.value,
@@ -525,16 +526,10 @@ $(function () {
       }
       else if (item.options) {
         // Fix loose JSON so it can be parsed
-        var opts = item.options;
-        if (/^[\{\[]((['"][^'"]*['"]|[^'"]+)\s*:)?\s*'/.test(opts))
-          opts = opts.replace(/\"/g, "\\\"").replace(/'/g, '"');
-        if (/^\[\s*("[^"]*"|[^"]+)\s*:/.test(opts))
-          opts = opts.replace(/^\[/, "{").replace(/\]$/, "}");
-        if (/^\{\s*(-?\d+)\s*:/.test(opts))
-          opts = opts.replace(/(-?\d+)\s*:/g, '"$1":');
+        var opts = ConfigSchema.cleanOptions(item.options);
 
-        const $select = $("<select>", { name }),
-          options = JSON.parse(opts);
+        const $select = $("<select>", { name });
+        let options; eval(`options = ${opts}`);
         if (options instanceof Array) {
           for (const opt of options) {
             // If the opt is a single char, not a number, then wrap in single ' quotes

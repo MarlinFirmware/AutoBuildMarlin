@@ -33,7 +33,7 @@ var ABM = (function(){
       //
       // Hide the Error message when clicked
       //
-      $('body').click(() => { $('#error').hide('fast'); });
+      $('body').click(() => { $err.hide(25); });
 
       //
       // Configurator Buttons show / refresh associated subpanes
@@ -63,7 +63,7 @@ var ABM = (function(){
     },
 
     //
-    // Calls to postMessage arrive here:
+    // Calls to abm.postMessage or pv.postMessage from abm.html arrive here:
     //
     handleMessage(event) {
       const m = event.data; // JSON sent by the extension
@@ -103,13 +103,15 @@ var ABM = (function(){
           $('#debug-text').show().children('pre').text(m.text);
           break;
 
+        case 'noerror': $err.hide(25); break;
+
         // postError()
         case 'error':
-          $err.removeClass('warning').html(m.error).show('fast');
+          $err.removeClass('warning').html(m.error).show(50);
           break;
         // postWarning()
         case 'warning':
-          $err.addClass('warning').html(m.warning).show('fast');
+          $err.addClass('warning').html(m.warning).show(50);
           break;
 
         // Set a checkbox state

@@ -28,16 +28,17 @@ exports.activate = (context) => {
     vc.registerCommand('abm.sponsor',     () => { abm.sponsor();                }),
     vc.registerCommand('abm.codeformat',  () => { format.codeformat();          }),
     vc.registerCommand('abm.export.json', () => { abm.run_schema_py('json');    }),
-    vc.registerCommand('abm.apply.ini',   () => { abm.run_configuration_py();   }));
+    vc.registerCommand('abm.apply.ini',   () => { abm.run_configuration_py();   }),
 
-  // Register a webview provider for the Info panel
-  cs.push(info.InfoPanelProvider.register(context));
+    // Register a webview provider for the Info panel
+    info.InfoPanelProvider.register(context),
 
-  // Formatter to do an extra level of indentation for Marlin C++.
-  cs.push(format.PPFormatProvider.register(context));
+    // Formatter to do an extra level of indentation for Marlin C++.
+    format.PPFormatProvider.register(context),
 
-  // Register a custom editor provider for Configuration files
-  cs.push(editor.ConfigEditorProvider.register(context));
+    // Register a custom editor provider for Configuration files
+    editor.ConfigEditorProvider.register(context)
+  );
 
   abm.init(context);                  // Init the abm module before use
   abm.validate();                     // Validate the workspace for ABM

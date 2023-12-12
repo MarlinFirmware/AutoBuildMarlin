@@ -29,77 +29,9 @@ var files = {
   version:    { name: 'Version.h',           path: ['src', 'inc']  }
 };
 
-//
-// Parse configs to get information about all defines
-// such as where it occurs, what its parent defines are,
-// and so on. Also try to figure out what kind of data is
-// expected based on the set value.
-//
-// Also examine preceding and end-of-line comments to get
-// the "help text" and a list of values, if supplied.
-//
-// This data can then be used to generate one or more form
-// fields that trigger update messages, and to update the
-// appropriate lines with in the config files in the correct
-// value(s) format. Defines that have children will hide
-// those children when disabled.
-//
+// TODO: Use config data from Schema object
 
-var define_list,    // arrays with all define names
-    define_occur,   // lines where defines occur in each file
-    define_section; // the section of each define
-
-function updateDefineList(cindex, txt) {
-  var section = 'hidden',
-      ignore = ['CONFIGURATION_H', 'CONFIGURATION_H_VERSION', 'CONFIGURATION_ADV_H', 'CONFIGURATION_ADV_H_VERSION', 'CONFIG_EXAMPLES_DIR'],
-      define_more = {},
-      occ_list = {},
-      findDef = new RegExp('^\\s*(//\\s*)?(.*(@section)|#define)\\s+(\\w+).*$', 'gm');
-  // scan for sections and defines
-  var r;
-  while((r = findDef.exec(txt)) !== null) {
-    var name = r[4];
-    if (r[3] == '@section') {
-      section = name;
-      //console.log("Section: " + name);
-    }
-    else if (!ignore.includes(name)) {                            // skip some defines
-      //console.log("Define: " + name);
-      var lineNum = txt.lineCount(r.index),                       // the line number
-          inst = { cindex:cindex, lineNum:lineNum, line:r[0] },   // config, line, section/define
-          in_sect = (name in define_more);                        // already found (locally)?
-
-      if (!in_sect) occ_list[name] = [ inst ];                    // no, first item in section
-
-      if (!in_sect && !(name in define_section)) {                // first time in section, ever
-        define_more[name] = section;                              // new first-time define
-      }
-      else {
-        occ_list[name].push(inst);                                // it's another occurrence
-      }
-    }
-  }
-  define_list[cindex] = Object.keys(define_more);
-  //console.log("Define List " + cindex + ": ", define_list[cindex]);
-  define_occur[cindex] = occ_list;
-  //console.log("Define Occ " + cindex + ": ", occ_list);
-  define_section = Object.assign({}, define_section, define_more);
-  if (bugme) console.log("Define Section ", define_section);
-}
-
-// Reload all defines over again
-function refreshDefineList() {
-  define_list = [[],[]];
-  define_occur = [{},{}];
-  define_section = {};
-  updateDefineList(0, files.config.text);
-  updateDefineList(1, files.config_adv.text);
-  // Display data as an interactive tree
-  //console.log("Define list:", define_list);
-}
-
-// TODO: Use previously parsed config data for speed
-
+// Get whether a setting is enabled (defined) in a blob of text
 function _confEnabled(text, optname) {
   const find = new RegExp(`^\\s*#define\\s+${optname}\\b`, 'gm'),
         r = find.exec(text);
@@ -107,6 +39,7 @@ function _confEnabled(text, optname) {
   return (r !== null); // Any match means it's uncommented
 }
 
+// Get whether a setting is enabled (defined) in one or both config files
 function confEnabled(fileid, optname) { return _confEnabled(files[fileid].text, optname); }
 function configEnabled(optname)       { return confEnabled('config',     optname); }
 function configAdvEnabled(optname)    { return confEnabled('config_adv', optname); }
@@ -114,7 +47,7 @@ function configAnyEnabled(optname) {
   return configEnabled(optname) ? true : configAdvEnabled(optname);
 }
 
-// Get a single config value
+// Get a single config value by scraping the given text
 function _confValue(text, optname) {
   var val = '';
   const find = new RegExp(`^\\s*#define\\s+${optname}\\s+(.+)`, 'gm'),
@@ -123,7 +56,7 @@ function _confValue(text, optname) {
   return val;
 }
 
-// Get a single config value
+// Get the value of a single config option, searching one or both config files
 function confValue(fileid, optname) { return _confValue(files[fileid].text, optname); }
 function configValue(optname)       { return confValue('config',     optname); }
 function configAdvValue(optname)    { return confValue('config_adv', optname); }
@@ -132,12 +65,15 @@ function configAnyValue(optname) {
   if (configAdvEnabled(optname)) return configAdvValue(optname);
 }
 
+//
+// Return a path object for Marlin/parts[0]/parts[1]/...
+//
 function pathFromArray(parts) {
   return path.join(workspaceRoot, 'Marlin', parts.join(path.sep));
 }
 
 //
-// Get the path to a Marlin file
+// Get the full path to the Marlin file for a given file description
 //
 function fullPathForFileDesc(f) {
   if (!f.fullpath) {
@@ -259,12 +195,12 @@ function extractVersionInfo() {
 var temp_sensor_desc;
 function extractTempSensors() {
 
-  //pv.postMessage({ command:'text', text:marlin.files.config.text });
+  //pv.postMessage({ command:'text', text:files.config.text });
 
   // Get all the thermistors and save them into an object
   const findAll = new RegExp('^\\s*\\*\\s*Temperature sensors .+$([\\s\\S]+\\*\\/)', 'gm'),
         findEach = new RegExp('^\\s*\\*\\s*(-?\\d+)\\s*:\\s*(.+)$', 'gm'),
-        r = findAll.exec(marlin.files.config.text);
+        r = findAll.exec(files.config.text);
 
   var out = {};
   let s;
@@ -279,6 +215,8 @@ function extractTempSensors() {
 // - If the board isn't found, look for a rename alert.
 // - Get the status of environment builds.
 //
+// Return hashed array { mb, pins_file, archs, archs_arr, envs, (has_debug), (error) }
+//
 var board_info;
 function extractBoardInfo(mb) {
   var r, out = { has_debug: false }, sb = mb.replace('BOARD_', '');
@@ -292,7 +230,7 @@ function extractBoardInfo(mb) {
     out.mb = mb;
     out.pins_file = inc_line.replace(/.*#include\s+"([^"]*)".*/, '$1');
 
-    out.archs = inc_line.replace(/.+\/\/\s*((\w+,?\s*)+)\s*(env|mac|win|lin|uni):.+\b/, '$1');
+    out.archs = inc_line.replace(/.+\/\/\s*((\w+,?\s*)+)\s*(env|mac|win|lin|uni):.+/, '$1');
     out.archs_arr = out.archs.trim().replace(/\s*,\s*/g, ',').split(',');
 
     out.envs = [];
@@ -314,16 +252,33 @@ function extractBoardInfo(mb) {
       out.envs.push({ name: r[2], note: note, debug: debugenv, native: r[1] != 'env' });
       if (debugenv) out.has_debug = true;
     }
+
+    // Get the description from the boards.h file
+    var cfind = new RegExp(`#define\\s+${mb}\\s+\\d+\\s*//(.+)`, 'gm');
+    r = cfind.exec(files.boards.text);
+    out.description = r ? r[1].trim() : '';
   }
   else {
-    const bfind = new RegExp(`#error\\s+"(${mb} has been renamed \\w+)`, 'g');
-    out.error = (r = bfind.exec(files.pins.text)) ? r[1] : `Unknown MOTHERBOARD ${mb}`;
+    const ofind = new RegExp(`#error\\s+"(${mb} is no longer [^.]+)`, 'g'),
+          bfind = new RegExp(`#error\\s+"(${mb} (has been renamed|is now) [^.]+)`, 'g');
+    if ((r = ofind.exec(files.pins.text))) {
+      out.error = r[1];
+      out.short = `Unsupported MOTHERBOARD`;
+    }
+    else if ((r = bfind.exec(files.pins.text))) {
+      // TODO: Show a "Fix" button to update an old board name.
+      out.error = r[1];
+      out.fix = `fixboard("${mb}")`;
+    }
+    else if (!mb.startsWith('BOARD_')) {
+      out.error = "MOTHERBOARD name missing 'BOARD_'";
+      out.short = "Missing 'BOARD_'?";
+    }
+    else {
+      out.error = `Unknown MOTHERBOARD ${mb}`;
+      out.short = `Unknown MOTHERBOARD`;
+    }
   }
-
-  // Get the description from the boards.h file
-  var cfind = new RegExp(`#define\\s+${mb}\\s+\\d+\\s*//(.+)`, 'gm');
-  r = cfind.exec(files.boards.text);
-  out.description = r ? r[1].trim() : '';
 
   board_info = out;
   return board_info;
@@ -331,6 +286,7 @@ function extractBoardInfo(mb) {
 
 //
 // Get the type of geometry and stuff like that
+// Return hashed array { name, style, dimensions, description, heated_bed, (bed_sensor) }
 //
 var machine_info;
 function getMachineSettings() {
@@ -367,6 +323,7 @@ function getMachineSettings() {
 
 //
 // Get the number of EXTRUDERS and related options
+// Return hashed array { extruders, diam, (sensors[]), (sensor_err), type, fancy, description }
 //
 var extruder_info;
 function getExtruderSettings() {
@@ -436,14 +393,16 @@ function getExtruderSettings() {
 }
 
 //
-// Get information from the board's pins file(s)
+// Re-fetch information from the board's pins file(s)
+// and re-load the pins file contents into files['pindef'].text
+// Return hashed array with { name, path, mb }
 //
 var pindef_info;
 function getPinDefinitionInfo(mb) {
   if (!files.pindef || files.pindef.mb != mb) {
     const pbits = `src/pins/${board_info.pins_file}`.split('/');
     files.pindef = { name: pbits.pop(), path: pbits, mb: mb };
-    processMarlinFile('pindef');
+    processMarlinFile('pindef'); // Since temp.filesToLoad == 0 just read the file
   }
 
   pindef_info = {
@@ -459,7 +418,6 @@ module.exports = {
   files, init, reboot, validate, refreshAll,
 
   watchConfigurations, watchAndValidate,
-  refreshDefineList,
 
   configEnabled,
   configValue, confValue, _confValue,

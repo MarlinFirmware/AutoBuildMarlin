@@ -15,7 +15,6 @@
  */
 'use strict';
 
-const verbose = false;
 function log(message, line = 0) {
   if (ConfigSchema.verbose) console.log(line ? `[${line}] ${message}` : message);
 }
@@ -25,6 +24,8 @@ function log(message, line = 0) {
  * imported from C/C++ files with #define directives and custom macros.
  */
 class ConfigSchema {
+  static verbose = false;
+
   constructor(text, numstart=0) {
     this.data = {};
     this.index = {};
@@ -45,25 +46,35 @@ class ConfigSchema {
     return instance;
   }
 
+  // Clean up options so they can be JSON parsed.
+  static cleanOptions(opts) {
+    if (opts.match(/\[\s*\d\s*:\s*[\'"]/))
+      opts = opts.replace('[', '{').replace(']', '}');
+    return opts;
+  }
+
   debug() { console.dir(this.data); }
   debug_sections() { console.log(Object.keys(this.data)); }
 
   /**
-   * Remove all comments and other detritus from the given config text.
+   * Reduce the given config text down to just preprocessor
+   * directive lines, removing all block comments.
+   * This makes the text quicker to parse, but don't apply
+   * if you need to preserve comments and line numbers.
    */
   static strippedConfig(config) {
     var text = '', count = 0, addnext = false;
-    const lines = config.split('\n');
+    const lines = config.replace(/\/\*.+?\*\//).split('\n'); // Strip block comments, split into lines
     for (const line of lines) {
-      if (addnext)
+      if (addnext)                              // Previous line ended with '\'
         text += ' ';
-      else if (!line.match(/^\s*(\/\/)?\s*#/))
+      else if (!line.match(/^\s*(\/\/)?\s*#/))  // Only keep lines starting with '#' or '//#'
         continue;
-      addnext = (/\\$/.test(line));
-      text += line;
+      addnext = (/\\$/.test(line));             // New line ends with '\'?
+      text += line.replace(/ *\\$/, '');        // Add the line to the text, minus any '\'
       if (!addnext) {
-        text += '\n';
-        count++;
+        text += '\n';                           // Terminate if it didn't end with '\'
+        count++;                                // Count up the number of lines
       }
     }
     return { text:text, lines:count };
@@ -85,12 +96,15 @@ class ConfigSchema {
       "eeprom",
 
       "stepper drivers",
+      "multi stepper",
+      "idex",
       "extruder",
 
       "geometry",
       "homing",
       "?kinematics",
       "motion",
+      "motion control",
 
       "endstops",
       "?probe type",
@@ -99,9 +113,11 @@ class ConfigSchema {
       "leveling",
 
       "temperature",
+      "mpctemp",
       "bed temp",
       "fans",
 
+      "tool change",
       "advanced pause",
       "calibrate",
 
@@ -110,6 +126,7 @@ class ConfigSchema {
       "cnc",
 
       "?lcd",
+      "interface",
       "custom main menu",
       "custom config menu",
       "custom buttons",
@@ -120,17 +137,17 @@ class ConfigSchema {
       "delta",
       "scara",
       "tpara",
+      "polar",
 
       "filament width",
       "gcode",
 
       "host",
+
       "i2c encoders",
       "i2cbus",
-      "interface",
       "joystick",
       "lights",
-      "mpctemp",
       "multi-material",
       "nanodlp",
       "network",
@@ -182,6 +199,7 @@ class ConfigSchema {
       "bed temp": "🌡",
       "bltouch": "☝️",
       "calibrate": "🔍",
+      "caselight": "💡",
       "chamber temp": "🌡",
       "cnc": "🪚",
       "custom": "❓",
@@ -212,11 +230,14 @@ class ConfigSchema {
       "lights": "💡",
       "machine": "🤖",
       "motion": "🏃",
+      "motion control": "🏃",
       "mpctemp": "🌡",
       "multi-material": "🍔",
+      "multi stepper": "🛞",
       "nanodlp": "🦤",
       "network": "🕸",
       "photo": "📷",
+      "polar": "🐧",
       "power": "⚡️",
       "probes": "🛰",
       "probing": "🛰",
@@ -241,6 +262,7 @@ class ConfigSchema {
       "tmc/status": "😎",
       "tmc/stealthchop": "😎",
       "tmc/tmc26x": "😎",
+      "tool change": "🔧",
       "tpara": "🦄",
       "units": "🇺🇳",
       "volumetrics": "🎚"
@@ -468,7 +490,7 @@ class ConfigSchema {
 
     function _nonzero(name) {
       const item = priorItemNamed(name);
-      log(`_nonzero(${name})`, item);
+      //console.log(`_nonzero(${name})`, item);
       return item && item.enabled && item.value && item.value !== 'false';
     }
 
@@ -479,10 +501,9 @@ class ConfigSchema {
     // The item is enabled by its E < EXTRUDERS.
     function HAS_EAXIS(eindex) {
       const extruders = priorItemNamed(`EXTRUDERS`);
-      if (extruders == null)
-        return false;
+      if (extruders == null) return false;
       const stat = extruders && extruders.enabled && eindex < extruders.value;
-      console.log(`HAS_EAXIS(${eindex}) == ${stat ? 'true' : 'false'}`, extruders);
+      //console.log(`HAS_EAXIS(${eindex}) == ${stat ? 'true' : 'false'}`, extruders);
       return stat;
     }
 
@@ -520,6 +541,23 @@ class ConfigSchema {
       return false;
     }
 
+    function AXIS_IS_TMC_CONFIG(axis) {
+      const driver = priorItemNamed(`${axis}_DRIVER_TYPE`);
+      return driver && ['TMC2130','TMC2160','TMC2208','TMC2209','TMC2660','TMC5130','TMC5160'].includes(driver.value);
+    }
+
+    // DGUS_UI_IS for DGUS_LCD_UI
+    function _dgus_ui_is(dgus) {
+      const lcd = priorItemNamed('DGUS_LCD_UI');
+      return lcd && (lcd.value == dgus);
+    }
+    function DGUS_UI_IS(dgus) {
+      if (!(dgus instanceof Array)) return _dgus_ui_is(dgus);
+      const len = dgus.length;
+      for (var i = 0; i < len; i++) if (_dgus_ui_is(dgus[i])) return true;
+      return false;
+    }
+
     // Loose names may be in the schema or be defined by Conditionals_LCD.h
     // which we don't (yet) parse.
     function OTHER(cond) {
@@ -539,6 +577,9 @@ class ConfigSchema {
           }
           return false;
 
+        case 'XY': return 2;
+        case 'XYZ': return 3;
+
         case 'HAS_TRINAMIC_CONFIG':
           return HAS_DRIVER(['TMC2130','TMC2160','TMC2208','TMC2209','TMC2660','TMC5130','TMC5160']);
 
@@ -554,15 +595,35 @@ class ConfigSchema {
 
     const before_mangle = cond;
 
-    // Convert Marlin macros into JavaScript function calls
-    // For example: ENABLED(X, Y, Z) -> ENABLED(["X", "Y", "Z"])
+    //
+    // Find MAP(...) macros and expand them
+    // Example:
+    //      #define CB(N) || (BLAH(N) && HAS_## N ##_AXIS)
+    //      #if 0 MAP(CB, X, Y, Z)
+    //   => #if 0 || (BLAH(X) && HAS_X_AXIS) || (BLAH(Y) && HAS_Y_AXIS) || (BLAH(Z) && HAS_Z_AXIS)
+    //
+    const mappatt = /(MAP\((([^)]+))\))/g;
+    var res;
+    while (res = mappatt.exec(cond)) {
+      const maparr = res[2].split(/\s*,\s*/),
+            fun = maparr.shift(),
+            funcinfo = priorItemNamed(fun),
+            funcpar = funcinfo.value.match(/^\(([^)]+)\)\s*(.*)/),
+            funcarg = funcpar[1], functpl = funcpar[2],
+            regp = new RegExp(`(##\\s*${funcarg}\\s*##|##\\s*${funcarg}\\b|\\b${funcarg}\\s*##)`, 'g');
+      var newmap = '';
+      for (let n of maparr) newmap += functpl.replace(regp, n);
+      cond = cond.replace(res[0], newmap);
+      //console.log("mapInfo", { maparr, fun, funcinfo, funcarg, functpl, newmap });
+    }
+
+    // Convert Marlin macros into JavaScript function calls:
     cond = cond
-      //.replace('HAS_BED_PROBE', 'ANY(TOUCH_MI_PROBE, Z_PROBE_ALLEN_KEY, SOLENOID_PROBE, Z_PROBE_SLED, RACK_AND_PINION_PROBE, SENSORLESS_PROBING, MAGLEV4, MAG_MOUNTED_PROBE, HAS_Z_SERVO_PROBE, FIX_MOUNTED_PROBE, BD_SENSOR, NOZZLE_AS_PROBE)')
-      //.replace('PROBE_SELECTED', 'ANY(HAS_BED_PROBE, PROBE_MANUALLY, MESH_BED_LEVELING)')
-      .replace(/(AXIS_DRIVER_TYPE)_(\w+)\((.+?)\)/g, '$1($2, $3)')
-      .replace(/(\b[A-Z0-9_]{4,}\b)(\s*([^(),]|$))/g, 'OTHER($1)$2')
-      .replace(/(\b[A-Z0-9_]+\b)([^(])/gi, '"$1"$2')
-      .replace(/(\b[A-Z0-9_]+\b)\(([^)]+?,[^)]+)\)/g, '$1([$2])');
+      .replace(/(AXIS_DRIVER_TYPE)_(\w+)\((.+?)\)/g, '$1($2,$3)')         // AXIS_DRIVER_TYPE_X(A4988)   => AXIS_DRIVER_TYPE(X,A4988)
+      .replace(/\b([A-Z][A-Z0-9_]*)\b(\s*([^(,]|$))/g, 'OTHER($1)$2')     // LOOSE_SYMBOL                => OTHER(LOOSE_SYMBOL)
+      .replace(/([A-Z0-9_]\s*\(|,\s*)OTHER\(([^)]+)\)/g, '$1$2')          // ANYCALL(OTHER(LOOSE_SYMBOL) => LOOSE_SYMBOL
+      .replace(/(\b[A-Z0-9_]+\b)([^(])/gi, '"$1"$2')                      // LOOSE_SYMBOL[^(]            => "LOOSE_SYMBOL"
+      .replace(/(\b[A-Z][A-Z0-9_]+\b)\(([^)]+?,[^)]+)\)/g, '$1([$2])');   // Wrap simple macro args into an [array]
 
     try {
       initem.evaled = eval(cond);
@@ -575,7 +636,7 @@ class ConfigSchema {
     //log(`${initem.name} -----${initem.evaled} == ${cond} ----------`);
 
     return initem.evaled;
-  }
+  } // evaluateRequires
 
   // Evaluate the requirements for every define to see if it
   // is ruled out by its presence in a conditional block.
@@ -656,6 +717,7 @@ class ConfigSchema {
    *    line     (int)    - 1-based line number of the item in the text.
    *    requires (string) - Conditions required to enable the item, if any.
    *    comment  (string) - Comment for the item, if any.
+   *    notes    (string) - An additional comment for the item.
    *    evaled   (bool)   - Evaluated requirements (true if not possible).
    * During form editing:
    *    dirty    (bool)   - Has the item been modified from its original enabled/value?
@@ -707,7 +769,7 @@ class ConfigSchema {
         comment_buff = [],    // A temporary buffer for comments
         prev_comment = '',    // Copy before reset for an EOL comment
         options_json = '',    // A buffer for the most recent options JSON found
-        eol_options = false,  // The options came from end of line, so only apply once
+        oneshot_opt = false,  // The options came from end of line, so only apply once
         join_line = false,    // A flag that the line should be joined with the previous one
         line = '',            // A line buffer to handle \ continuation
         last_added_ref,       // Reference to the last added item
@@ -732,7 +794,6 @@ class ConfigSchema {
       // Strip the end off. The next line will be joined with it.
       join_line = line.endsWith("\\");
       if (join_line) {
-        //log("Joining line", line_number);
         line = line.slice(0, -1).trim();
         continue;
       }
@@ -757,7 +818,7 @@ class ConfigSchema {
           if (last_added_ref.comment) {
             // A (block or slash) comment was already added
             last_added_ref.notes = cstring;
-            console.log("Extra comment", cstring);
+            //console.log("Extra comment", cstring);
           }
           else {
             last_added_ref.comment = cstring;
@@ -774,17 +835,15 @@ class ConfigSchema {
        * @param  {string} c      The comment line, trimmed
        */
       function use_comment(c) {
-        log(0, `use_comment(${c})`);
+        log(`use_comment(${c})`);
         if (c.startsWith(':')) {        // If the comment starts with : then it has magic JSON
           const d = c.slice(1).trim(),
               cbr = d.startsWith('{') ? c.lastIndexOf('}') : d.startsWith('[') ? c.lastIndexOf(']') : 0;
           if (cbr) {
-            options_json = c.slice(1, cbr + 1).trim();
+            options_json = d.slice(0, cbr).trim();
             const cmt = c.slice(cbr + 1).trim();
             if (cmt != '') comment_buff.push(cmt);
           }
-          else
-            opt = c.slice(1).trim();
         }
         else if (c.startsWith('@section'))    // Start a new section
           section = c.slice(8).trim();
@@ -829,10 +888,7 @@ class ConfigSchema {
         }
 
         // Strip the leading '*' from block comments
-        if (cline.startsWith('*')) {
-          cline = cline.slice(1);
-          if (cline) cline = cline.slice(1)
-        }
+        cline = cline.replace(/^\* ?/, '');
 
         const tline = cline.trim();
 
@@ -841,7 +897,7 @@ class ConfigSchema {
           const sens = tline.match(/^(-?\d+)\s*:\s*(.+)$/);
           if (sens) {
             //log(`Sensor: ${sens[1]} = ${sens[2]}`, line_number);
-            const s2 = sens[2].replace(/'/g, "\\'");
+            const s2 = sens[2].replace(/(['"])/g, "\\$1");
             options_json += `'${sens[1]}':'${sens[1]} - ${s2}', `;
           }
         }
@@ -867,7 +923,7 @@ class ConfigSchema {
         if (cpos1 != -1 && (cpos1 < cpos2 || cpos2 == -1)) {
           cpos = cpos1;
           state = Parse.BLOCK_COMMENT;
-          eol_options = false;
+          oneshot_opt = false;
           log("Begin block comment", line_number);
         }
         else if (cpos2 != -1 && (cpos2 < cpos1 || cpos1 == -1)) {
@@ -877,7 +933,7 @@ class ConfigSchema {
             state = Parse.EOL_COMMENT;
             prev_comment = comment_buff.join('\n');
             comment_buff = [];
-            console.log("Begin EOL comment", line_number);
+            log("Begin EOL comment", line_number);
           }
           else {
             state = Parse.SLASH_COMMENT;
@@ -893,11 +949,11 @@ class ConfigSchema {
 
           if (state == Parse.BLOCK_COMMENT) {
             // Strip leading '*' from block comments
-            if (cline.startsWith('*')) cline = cline.slice(1).trim();
+            cline = cline.replace(/^\* ?/, '');
           }
           else {
             // Expire end-of-line options after first use
-            if (cline.startsWith(':')) eol_options = true;
+            if (cline.startsWith(':')) oneshot_opt = true;
           }
 
           // Buffer a non-empty comment start
@@ -919,18 +975,19 @@ class ConfigSchema {
           return `(${s})`;
         }
 
-        function combine_conditions(incond) {
-          var cond = incond.flat().join(' && ');
+        // Combine adjacent conditions where possible
+        function combine_conditions(condarr) {
+          var cond = '(' + condarr.flat().join(') && (') + ')';
           while (true) {
             const old_cond = '' + cond;
             cond = cond.replace('!ENABLED', 'DISABLED').replace('!DISABLED', 'ENABLED')
-              .replace(/ENABLED\s*\(\s*([A-Z0-9_]+)\s*\)\s*&&\s*ENABLED\s*\(\s*/g, 'BOTH($1, ')
+              .replace(/ENABLED\s*\(\s*([A-Z0-9_]+)\s*\)\s*&&\s*ENABLED\s*\(\s*/g, 'ALL($1, ')
               .replace(/(ALL|BOTH)\s*\(\s*([^()]+?)\s*\)\s*&&\s*ENABLED\s*\(\s*/g, 'ALL($2, ')
               .replace(/ENABLED\s*\(\s*([A-Z0-9_]+)\s*\)\s*&&\s*(ALL|BOTH)\s*\(\s*/g, 'ALL($1, ')
-              .replace(/ENABLED\s*\(\s*([A-Z0-9_]+)\s*\)\s*\|\|\s*ENABLED\s*\(\s*/g, 'EITHER($1, ')
+              .replace(/ENABLED\s*\(\s*([A-Z0-9_]+)\s*\)\s*\|\|\s*ENABLED\s*\(\s*/g, 'ANY($1, ')
               .replace(/(ANY|EITHER)\s*\(\s*([^()]+?)\s*\)\s*\|\|\s*ENABLED\s*\(\s*/g, 'ANY($2, ')
               .replace(/(NONE|DISABLED)\s*\(\s*([^()]+?)\s*\)\s*&&\s*(NONE|DISABLED)\s*\(\s*/g, 'NONE($2, ')
-              .replace(/DISABLED\s*\(\s*([A-Z0-9_]+)\s*\)\s*\|\|\s*DISABLED\s*\(\s*/g, '!BOTH($1, ')
+              .replace(/DISABLED\s*\(\s*([A-Z0-9_]+)\s*\)\s*\|\|\s*DISABLED\s*\(\s*/g, '!ALL($1, ')
               .replace(/!(ALL|BOTH)\s*\(\s*([^()]+?)\s*\)\s*\|\|\s*(DISABLED|!ALL|!BOTH)\s*\(\s*/g, '!ALL($2, ')
               .replace(/^\((!?[A-Z]+\([^()]+?\))\)$/, '$1');
             if (old_cond == cond) break;
@@ -990,11 +1047,18 @@ class ConfigSchema {
           // Handle a complete #define line
 
           const define_name = defmatch[3];
+
+          // Certain defines are always left out of the schema
           if (ignore.includes(define_name)) continue;
+
+          const enabled = !defmatch[1];
+
+          // Disabled conditionals can be left out entirely.
+          // All others are retained since conditions can change.
+          if (!enabled && section == '_') continue;
 
           log(`Got #define ${define_name}`, line_number);
 
-          const enabled = !defmatch[1];
           var val = defmatch[4];
 
           // Increment the serial ID
@@ -1098,8 +1162,8 @@ class ConfigSchema {
 
           // Some items depend on axes being enabled
           const axis = is_axis_item(define_name),
-            eindex = is_eaxis_item(define_name),
-            hindex = is_heater_item(define_name);
+              eindex = is_eaxis_item(define_name),
+              hindex = is_heater_item(define_name);
 
           function extend_requires(cond) {
             if (define_info.requires !== undefined)
@@ -1138,9 +1202,32 @@ class ConfigSchema {
           if (define_name == "MOTHERBOARD" && boards != '') {
             define_info.options = boards;
           }
-          else if (options_json != '') {
-            define_info.options = options_json;
-            if (eol_options) options_json = '';
+          else if (options_json != '') { // Options, thermistors, boards, etc.
+            const optstr = ConfigSchema.cleanOptions(options_json);
+            let opts;
+            try {
+              eval(`opts = ${optstr}`);
+            }
+            catch (e) {
+              console.error(`Error evaluating: ${optstr}`);
+              opts = [];
+            }
+
+            let isopt = false;
+            if (opts.includes !== undefined)
+              isopt = opts.includes(val);   // Array, probably
+            else
+              isopt = val in opts;          // Dictionary, probably
+
+            if (isopt)
+              define_info.options = options_json; // Ok to use options
+            else
+              oneshot_opt = true;           // Done with any previous options
+
+            if (oneshot_opt) {
+              oneshot_opt = false;
+              options_json = '';
+            }
           }
 
           // Create section dict if it doesn't exist yet
@@ -1219,11 +1306,17 @@ class ConfigSchema {
  */
 class MultiSchema {
   constructor(schemas) {
-    this.schemas = schemas;
+    fromSchemas(schemas);
   }
 
-  getData() {
-    const data = {};
+  fromSchemas(schemas) {
+    this.schemas = schemas;
+    refresh();
+  }
+
+  // Return all schemas merged together in the instantiated order
+  refresh() {
+    let data = {};
     for (const schema of this.schemas) {
       for (const [sect, opts] of Object.entries(schema.data)) {
         if (!(sect in data)) data[sect] = {};
@@ -1235,8 +1328,10 @@ class MultiSchema {
         }
       }
     }
-    return data;
+    this.combo = ConfigSchema.fromData(data);
   }
+
+  schema() { return this.combo; }
 }
 
 try {
