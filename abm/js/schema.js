@@ -20,8 +20,23 @@ function log(message, line = 0) {
 }
 
 /**
- * ConfigSchema encapsulates a single configuration file schema,
- * imported from C/C++ files with #define directives and custom macros.
+ * ConfigSchema encapsulates a single configuration file schema, imported
+ * from C/C++ header files with #define directives and custom macros.
+ *
+ * - The schema is stored in a 'data' dictionary keyed by option name.
+ * - The first import pass:
+ *   - Gathers an exhaustive list of all #define items, both enabled and disabled.
+ *   - Captures the nested #if structure indirectly:
+ *     - Each item has a 'requires' field with the block conditions translated into Javascript.
+ *     - The 'requires' Javascript can only run inside of evaluateRequires.
+ *   - The 'evaled' result on an item is set by calling evaluateRequires(item).
+ *   - Deleting the 'evaled' field and calling evaluateRequires(item) forces re-evaluation.
+ *     Since every item afterward needs re-evaluation, call updateEditedItem(item).
+ *
+ * - Each item in the schema is a dictionary with information about a single #define.
+ *   See the description at importText() below for the #define info structure.
+ * - The schema 'index' contains every #define in order of import / appearance.
+ *   (If the sid is guaranteed to be contiguous 'index' can be an array.)
  */
 class ConfigSchema {
   static verbose = false;
@@ -270,6 +285,10 @@ class ConfigSchema {
     return emojis[s] ? emojis[s] : "🍅";
   }
 
+  //
+  // Schema Accessors API
+  //
+
   // Was the given item defined before the given 'sid'?
   definedBefore(item, before) {
     if (!before) return true;
@@ -281,10 +300,11 @@ class ConfigSchema {
   /**
    * @brief Get all items that pass the given test function, in schema order.
    *
-   * @param {function} fn A function like: (itm) => { return itm.type == "string"; }
-   * @param {int} before The maximum sid to consider. (optional)
-   * @param {int} limit The maximum number of items to return. (optional)
-   * @returns Array of item references.
+   * @param {string}   sect    A section name such as "machine".
+   * @param {function} fn      A function like: (itm) => { return itm.type == "string"; }
+   * @param {int}      before  The maximum sid to consider. (optional)
+   * @param {int}      limit   The maximum number of items to return. (optional)
+   * @return Array of item references.
    */
   getItemsInSection(sect, fn, before, limit) {
     var results = [];
@@ -311,7 +331,7 @@ class ConfigSchema {
    * @param {function} fn A function like: (itm) => { return itm.type == "string"; }
    * @param {int} before The maximum sid to consider. (optional)
    * @param {int} limit The maximum number of items to return. (optional)
-   * @returns Array of item references.
+   * @return Array of item references.
    */
   getItems(fn, before, limit) {
     var results = [];
@@ -321,11 +341,11 @@ class ConfigSchema {
   }
 
   /**
-   * Find an item by name in the schema.
+   * Find the first item in the schema with a given name before an optional sid.
    *
    * @param {string} name Name of the item to find.
    * @param {int} before The last index allowed for the item.
-   * @returns The item found, or null.
+   * @return The item found, or null.
    */
   firstItemWithName(name, before=9999) {
     for (const [sect, opts] of Object.entries(this.data)) {
@@ -341,13 +361,13 @@ class ConfigSchema {
   }
 
   /**
-   * Find the last item by name before the given item in the schema.
+   * Find the last item in the schema with a given name before an optional sid.
    *
    * @param {string} name Name of the item to find.
    * @param {int} before The last index allowed for the item.
-   * @returns The item found, or null.
+   * @return The item found, or null.
    */
-   lastItemWithName(name, before=9999) {
+  lastItemWithName(name, before=9999) {
     var outitem = null;
     for (const [sect, opts] of Object.entries(this.data)) {
       if (name in opts) {
@@ -364,9 +384,10 @@ class ConfigSchema {
   /**
    * @brief Evaluate the 'requires' field of an item.
    * @description The 'item' is an entry in the data keyed by the option name.
-   * Evaluate a single condition string based on enabled options.
-   * This recurses as needed to check nested conditions, with prior
-   * evaluations being cached.
+   *              Evaluate a single condition string based on previous enabled options.
+   *              This recurses as needed to check nested conditions, with prior
+   *              evaluations being cached.
+   * @param {object} initem The item to evaluate w/r/t the full schema.
    */
   evaluateRequires(initem) {
     const self = this, sdict = this.data;
@@ -375,6 +396,9 @@ class ConfigSchema {
     // which can slow things down a bit for that file. If the file is open in the
     // other editor, maybe that can be skipped by passing messages between the
     // windows by some intermediary.
+
+    // Get the last item prior to the passed item that has the given name.
+    // This function doesn't care if the item is enabled or not.
     function priorItemNamed(name) { return self.lastItemWithName(name, initem.sid); }
 
     // A cond string is a list of conditions using Marlin macros
@@ -383,7 +407,7 @@ class ConfigSchema {
     // do all the hard work.
 
     // If already evaluated, return the last result.
-    // To refresh the result, delete the 'eval' key.
+    // To refresh the result, delete the 'evaled' key.
     if (initem.evaled !== undefined) return initem.evaled;
 
     // If no conditions, return true.
@@ -412,7 +436,7 @@ class ConfigSchema {
       return self.evaluateRequires(item);
     }
 
-    // Is a single item enabled?
+    // Is a single item enabled? (defined and has no value, 1, or true)
     function _enabled(item) {
       //log(`_enabled(${item.name})`)
       if (!_defined(item)) return false;
@@ -439,7 +463,7 @@ class ConfigSchema {
       return true;
     }
 
-    // Are all given items enabled?
+    // Are the given items all enabled or all disabled?
     function _enatest(foo, state) {
       //log(`_enatest(${foo}, ${state})`);
       // For an array, loop and call _enatest on each item
@@ -559,7 +583,6 @@ class ConfigSchema {
     }
 
     // Loose names may be in the schema or be defined by Conditionals_LCD.h
-    // which we don't (yet) parse.
     function OTHER(cond) {
       // See if the item is enabled in the schema and use its value.
       const found = self.getItems(it => it.name == cond && it.evaled && it.enabled, initem.sid, 1);
@@ -638,8 +661,9 @@ class ConfigSchema {
     return initem.evaled;
   } // evaluateRequires
 
-  // Evaluate the requirements for every define to see if it
+  // Evaluate the 'requires' field of every define to see if it
   // is ruled out by its presence in a conditional block.
+  // Called at the end of importText to parse all 'requires'.
   refreshAllRequires() {
     const sdict = this.data;
     // Clear all the evaluation results first.
@@ -696,6 +720,7 @@ class ConfigSchema {
   }
 
   // Update an item's enabled / value from an (edited) item.
+  // Re-run 'requires' on all items that follow to update 'evaled'.
   updateEditedItem(initem) {
     Object.assign(this.index[initem.sid], initem);
     this.refreshRequiresAfter(initem.sid);
@@ -719,6 +744,7 @@ class ConfigSchema {
    *    comment  (string) - Comment for the item, if any.
    *    notes    (string) - An additional comment for the item.
    *    evaled   (bool)   - Evaluated requirements (true if not possible).
+   *    undef    (int)    - SID before an undef that undefined this item.
    * During form editing:
    *    dirty    (bool)   - Has the item been modified from its original enabled/value?
    *    orig     (dict)   - Original state of the item. Used for better "dirty" state.
@@ -1254,8 +1280,8 @@ class ConfigSchema {
           if (state == Parse.EOL_COMMENT) last_added_ref = define_info;
         }
         else {
-          // For an #undef mark all previous instances of the name
-          // disabled and add a field with the sid it was undefined after.
+          // For an #undef mark all previous instances of the name disabled and
+          // add an 'undef' field containing the sid it was undefined after.
           const unmatch = line.match(/^\s*#undef\s+([^\s]+)/);
           if (unmatch) {
             const name = unmatch[1];
