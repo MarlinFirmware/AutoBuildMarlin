@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.50
+- Recognize more config sections
+- Fix build action button envs
+
 ## 2.1.49
 
 - Recognize Chitu firmware with .cbd extension
