@@ -490,15 +490,22 @@ function terminal_exit_command(term) {
 // Send a command and ping back when it completes
 //
 function command_with_ping(t, cmdline, ping) {
-  if (process.platform == 'win32') {
+  const sh = vscode.env.shell,
+        isbash = sh.indexOf('bash') >= 0,
+        iszsh = sh.indexOf('zsh') >= 0,
+        iscmd = sh.indexOf('cmd') >= 0,
+        ispwsh = sh.search(/(powersh|pwsh)/i) >= 0,
+        iswin = process.platform == 'win32',
+        p = iscmd ? '&' : ';',
+        q = iswin && isbash ? "'" : '"',
+        r = (isbash || iszsh) ? '>|' : '>';
+  ping_cmd = `echo "done" ${r}${q}${ipc_file}${q}`;
+  if (iswin) {
     t.sendText(cmdline);
-    var cmd = `echo "done" >"${ipc_file}"`;
-    if (vscode.env.shell.indexOf('bash') != -1)
-      cmd = `echo "done" >'${ipc_file}'`;
-    if (ping) t.sendText(cmd);
+    if (ping) t.sendText(ping_cmd);
   }
   else
-    t.sendText(cmdline + (ping ? ` ; echo "done" >|"${ipc_file}"` : ''));
+    t.sendText(ping ? `${cmdline} ${p} ${ping_cmd}` : cmdline);
 }
 
 //
