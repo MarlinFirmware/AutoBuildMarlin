@@ -2,6 +2,11 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.51
+- Adjust build command line for different shells (#46)
+- Fix init of HIGH / LOW slider custom controls (#68)
+- Fix an issue with `//` comments before the first `#define` (#77)
+
 ## 2.1.50
 - Recognize more config sections
 - Fix build action button envs
