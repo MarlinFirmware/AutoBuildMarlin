@@ -813,16 +813,19 @@ class ConfigSchema {
           log("... EOL comment", line_number);
         }
         else {
-          // If the line is not a comment, we're done with the EOL comment
-          const cstring = comment_buff.join('\n');
-          if (last_added_ref.comment) {
-            // A (block or slash) comment was already added
-            last_added_ref.notes = cstring;
-            //console.log("Extra comment", cstring);
-          }
-          else {
-            last_added_ref.comment = cstring;
-            //console.log("EOL comment", cstring);
+          if (last_added_ref !== undefined) { // Ignore EOL comments before any #define
+            // If the line is not a comment, we're done with the EOL comment
+            const cstring = comment_buff.join('\n');
+            // If the comment property exists treat the extra comment as "notes"
+            if (last_added_ref.comment) {
+              // A (block or slash) comment was already added
+              last_added_ref.notes = cstring;
+              //console.log("Extra comment", cstring);
+            }
+            else {
+              last_added_ref.comment = cstring;
+              //console.log("EOL comment", cstring);
+            }
           }
           comment_buff = [];
           state = Parse.NORMAL;
