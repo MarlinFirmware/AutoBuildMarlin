@@ -509,7 +509,7 @@ $(function () {
     if (!isswitch) {
       if (type == 'state') {
         const $cl = $("<label>", { class: 'bool' }),
-          $cb = $('<input>', { type: 'checkbox', checked: val == 'true', value: 'true' }).bind('change', handleBoolField),
+          $cb = $('<input>', { type: 'checkbox', checked: val == 'HIGH', value: 'true' }).bind('change', handleBoolField),
           $sl = $("<div>", { class: 'slider round' }),
           $sp = $("<span>", { class: 'state low', text: "LOW" }),
           $ss = $("<span>", { class: 'state high', text: "HIGH" });
