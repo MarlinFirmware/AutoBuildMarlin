@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48">
-  <path style="solid-color:#000;solid-opacity:1" d="M11 19v3h26v-3z" color="#000" fill="#fff" fill-rule="evenodd"/>
-  <path style="solid-color:#000;solid-opacity:1" d="M26 21h-4v20h4z" color="#000" fill="#fff" fill-rule="evenodd"/>
-  <path style="solid-color:#000;solid-opacity:1" d="M24 10.505c-8.815 0-16 7.184-16 16 0 8.815 7.184 16 16 16 8.815 0 16-7.184 16-16 0-8.815-7.184-16-16-16zm0 3c7.201 0 13 5.798 13 12.999a12.971 12.971 0 01-13 12.999c-7.201 0-13-5.798-13-12.999a12.971 12.971 0 0113-12.999z" color="#000" fill="#fff" fill-rule="evenodd"/>
-  <path d="M4 22.505l6 2M3 30.505h7M6 38.505l6-3M44 22.505l-6 2M45 30.505h-7M42 38.505l-6-3M37 7.505s-10-5-10 5M11 7.505s10-5 10 5" fill="none" stroke="#fff" stroke-width="3"/>
-</svg>
