@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.52
+- Fix `getItems` handling of `limit` across multiple sections
+- Fix the regex that gets the `archs` list from `pins.h`
+
 ## 2.1.51
 - Adjust build command line for different shells (#46)
 - Fix init of HIGH / LOW slider custom controls (#68)

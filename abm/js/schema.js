@@ -335,8 +335,12 @@ class ConfigSchema {
    */
   getItems(fn, before, limit) {
     var results = [];
-    for (const sect in this.data)
+    for (const sect in this.data) {
       results.concat(this.getItemsInSection(sect, fn, before, limit));
+      limit -= results.length;
+      if (limit <= 0) break;
+    }
+
     return results;
   }
 
