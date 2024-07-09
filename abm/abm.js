@@ -572,6 +572,10 @@ function pio_command(opname, env, nosave) {
     case 'clean':     args = 'run --target clean';  break;
     case 'traceback':
     case 'upload':    args = 'run --target upload'; break;
+    case 'purge':
+      vscode.workspace.fs.delete(vscode.Uri.file(envBuildPath(env)), { recursive:true });
+      refreshNewData();
+      return;
     default:
       vw.showErrorMessage('Unknown action: "' + opname + '"');
       return;

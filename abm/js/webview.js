@@ -43,10 +43,20 @@ var ABM = (function(){
       });
 
       //
-      // Show on Startup checkbox updates the config
+      // Checkboxes like "Show on Startup" send a command to update settings
       //
       $('#showy input').change((e) => {
         msg({ command:$(e.target).attr('name'), value:e.target.checked });
+      });
+
+      //
+      // Watch for option key events and change the title of all button.clean elements
+      //
+      $(document).keydown((e) => {
+        if (e.key === 'Alt') $('button.clean').addClass('opt')
+      });
+      $(document).keyup((e) => {
+        if (e.key === 'Alt') $('button.clean').removeClass('opt')
       });
 
       //
