@@ -2,21 +2,24 @@
 /* Styles for Auto Build Marlin Home - and eventually Configurator */
 
 * {
-  --marlin-svg: url(marlin-b.svg);
   --abm-header-height: 50px;
   --abm-toolbar-width: 70px;
   --abm-social-width: 40px;
   --abm-footer-height: 40px;
   --abm-font-size-caption: small;
+  --abm-svg-white: #FFF;
   }
 
-body.vscode-dark {
+body.vscode-dark, body.vscode-high-contrast {
   --marlin-svg: url(marlin-w.svg);
   --abm-background: #282C34;
   --abm-toolbar-bg: #333636;
   --abm-color-border: #CCC;
   --abm-tool-bg-hover: #666;
   --abm-tool-bg-active: #4D73B9;
+  --abm-text-color-link: #67DEFF;
+  --abm-text-color-subtitle: #FFF;
+  --abm-text-color-vers: #E9DB6A;
   --abm-text-color-label: #827461;
   --abm-text-color-data: #FFE;
   --abm-text-color-pale: #8A8;
@@ -28,12 +31,16 @@ body.vscode-dark {
   --abm-color-progress-border: #FFF;
   }
 
-body.vscode-light {
+body.vscode-light, body.vscode-high-contrast-light {
+  --marlin-svg: url(marlin-b.svg);
   --abm-background: #DEF;
   --abm-toolbar-bg: #BCD;
   --abm-color-border: #888;
   --abm-tool-bg-hover: #666;
   --abm-tool-bg-active: #4D73B9;
+  --abm-text-color-link: #478EFF;
+  --abm-text-color-subtitle: #276EDF;
+  --abm-text-color-vers: #1C0C00;
   --abm-text-color-label: #3C2200;
   --abm-text-color-data: #365;
   --abm-text-color-pale: #45F;
@@ -46,20 +53,26 @@ body.vscode-light {
   }
 
 body.vscode-high-contrast {
-  --marlin-svg: url(marlin-w.svg);
-  --abm-background: #282C34;
-  --abm-toolbar-bg: #333636;
-  --abm-color-border: #666;
+  --abm-background: #000;
+  --abm-toolbar-bg: #222;
+  --abm-color-border: #444;
   --abm-tool-bg-hover: #666;
-  --abm-tool-bg-active: #4D73B9;
-  --abm-text-color-label: #827461;
-  --abm-text-color-data: #FFE;
-  --abm-text-color-pale: #8A8;
-  --abm-text-color-good: #6E6;
-  --abm-text-color-limbo: #DB6;
-  --abm-text-color-busy: #FA0;
-  --abm-text-color-error: #C44;
-  --abm-text-color-caption: #58A;
+  --abm-text-color-label: #FFF;
+  --abm-text-color-vers: #CC0;
+  --abm-text-color-data: #88F;
+  --abm-text-color-pale: #DDF;
+  }
+
+body.vscode-high-contrast-light {
+  --abm-background: #FFF;
+  --abm-color-border: #DDD;
+  --abm-toolbar-bg: #DDD;
+  --abm-tool-bg-hover: #AAA;
+  --abm-text-color-label: #000;
+  --abm-text-color-vers: #228;
+  --abm-text-color-data: #222;
+  --abm-text-color-pale: #228;
+  --abm-text-color-good: #080;
   }
 
 /* Styles based on theme variant. Where to get a set of hues? */
@@ -70,11 +83,11 @@ html { margin: 0; padding: 0; }
 body {
   --abm-progress-offset: 0px;
   margin: 0; padding: 0;
-  background: var(--abm-background);
+  background-color: var(--abm-background);
   color: var(--abm-text-color-data);
   }
 
-a { text-decoration: none; color: #478EFF; }
+a { text-decoration: none; color: var(--abm-text-color-link); }
 a:hover, a:active { color: #579EFF; }
 
 h1 {
@@ -84,7 +97,8 @@ h1 {
   color: #FFFFF8;
   }
 
-h1 span { font-size: 66%; }
+h1 span { font-size: 66%; color: var(--abm-text-color-subtitle); }
+h1 span span { color: var(--abm-text-color-vers); }
 
 h2 { text-align: center; }
 
@@ -165,7 +179,7 @@ pre {
   padding-top: 20px;
   text-align: center;
   background: var(--abm-toolbar-bg);
-  color: #79820E;
+  color: var(--abm-text-color-vers); }
   }
 #abm-footer span { position: relative; top: -0.6em; }
 
@@ -382,7 +396,7 @@ div.subtabs button.active {
   color: #FFF;
   }
 
-a.reveal { font-size: small; }
+a.reveal { font-size: small; color: var(--abm-text-color-link); }
 
 form#showy { display: block; position: relative; float: right; }
 form#showy label { display: block; padding: 2px 0; }

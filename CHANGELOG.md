@@ -2,6 +2,12 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.53
+- Prevent `platformio.ini` from opening by overriding a PlatformIO IDE setting.
+  Enable "Preserve PIO" in settings to leave PlatformIO IDE settings unchanged.
+- Display the version number in the ABM Panel.
+- Improve high contrast color schemes.
+
 ## 2.1.52
 - Fix `getItems` handling of `limit` across multiple sections
 - Fix the regex that gets the `archs` list from `pins.h`
