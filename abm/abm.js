@@ -759,7 +759,7 @@ function run_command(action) {
       'marlinConfig', 'Auto Build Marlin',
       vscode.ViewColumn.One,
       {
-        enableCommandUris: true,         // The view can accept commands?
+        enableCommandUris: false,        // No need for command: URLs to our extension. Our way is cleaner.
         retainContextWhenHidden: true,   // getState / setState require more work
         enableScripts: true,             // Scripts are needed for command passing, at least?
         localResourceRoots: [

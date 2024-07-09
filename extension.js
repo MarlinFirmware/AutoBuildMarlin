@@ -45,7 +45,11 @@ exports.activate = (context) => {
   abm.watchAndValidate();             // Watch files and folders for changes to update the status
   abm.set_context('active', true);    // Tell VSCode the status to update the UI
 
-  if (prefs.show_on_startup()) setTimeout(abm.run_command, 1000);
+  // No one actually wants platformio.ini to open, unless they do
+  if (!prefs.preserve_pio()) prefs.set_pio_open_ini(false);
+
+  // Show the panel with no command
+  if (prefs.show_on_startup()) abm.run_command();
 };
 
 exports.deactivate = () => { abm.set_context('active', false); };

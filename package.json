@@ -93,6 +93,11 @@
           "default": true,
           "markdownDescription": "Open the **Auto Build Marlin** panel on startup."
         },
+        "auto-build.preservePIO": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Allow PlatformIO to open platformio.ini on startup. Enable this to leave its settings unaltered."
+        },
         "auto-build.build.silent": {
           "type": "boolean",
           "default": true,
