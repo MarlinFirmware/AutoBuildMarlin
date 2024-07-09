@@ -60,11 +60,16 @@ function init(c) {
  */
 
 // Return the path to the given item within the build folder.
-function envBuildPath(env, item) {
-  var bp = path.join(marlin.workspaceRoot, '.pio', 'build', env);
+function envSubPath(sub, env, item) {
+  var bp = path.join(marlin.workspaceRoot, '.pio', sub, env);
   if (item !== undefined) bp = path.join(bp, item);
   return bp;
 }
+
+// Return the path to the given item within the build folder.
+function envBuildPath(env, item) { return envSubPath('build', env, item); }
+// Return the path to the given item within the libdeps folder.
+function envLibdepsPath(env, item) { return envSubPath('libdeps', env, item); }
 
 /**
  * Find an existing build folder. If 'debug' exists, prefer it.
@@ -572,6 +577,11 @@ function pio_command(opname, env, nosave) {
     case 'clean':     args = 'run --target clean';  break;
     case 'traceback':
     case 'upload':    args = 'run --target upload'; break;
+    case 'purge':
+      vscode.workspace.fs.delete(vscode.Uri.file(envBuildPath(env)), { recursive:true });
+      vscode.workspace.fs.delete(vscode.Uri.file(envLibdepsPath(env)), { recursive:true });
+      refreshNewData();
+      return;
     default:
       vw.showErrorMessage('Unknown action: "' + opname + '"');
       return;

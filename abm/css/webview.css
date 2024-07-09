@@ -313,6 +313,12 @@ table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
 /* Show CLEAN for existing build */
 #info-envs         button.clean { display: none; }
 #info-envs .exists button.clean { display: inline-block; }
+#info-envs .exists button.clean.opt { display: none; }
+
+/* More specific selector for alternate function */
+#info-envs         button.clean.purge,
+#info-envs .exists button.clean.purge { display: none; }
+#info-envs .exists button.clean.purge.opt { display: inline-block; }
 
 /* Only show 'Upload' or 'Debug' depending on the env */
                   button.debug { display: none; }
