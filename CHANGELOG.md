@@ -2,6 +2,11 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.54
+- Fix parsing of defined() in schema.js
+- Alt/Option changes "Clean" to "Purge" to delete build and libdeps
+- Add on-the-fly log_() function to editview.js
+
 ## 2.1.53
 - Prevent `platformio.ini` from opening by overriding a PlatformIO IDE setting.
   Enable "Preserve PIO" in settings to leave PlatformIO IDE settings unchanged.
