@@ -120,6 +120,12 @@ $(function () {
     console.log(`[editview] ${message}`);
     if (data !== undefined) console.dir(data);
   }
+  function log_(message, data) {
+    const oldverbose = verbose;
+    verbose = 1;
+    log(message, data);
+    verbose = oldverbose;
+  }
 
   var schema = ConfigSchema.newSchema(),
       config_filter = { terms:'', show: true },
@@ -228,7 +234,7 @@ $(function () {
     $(`div.line.sid-${optref.sid}`).toggleClass('dirty', fields.dirty);
 
     Object.assign(optref, fields);
-    log("Updated Option:", optref);
+    log("Updated Option:", [ optref, fields ]);
     schema.refreshRequiresAfter(optref.sid);
     refreshVisibleItems();
     saveWebViewState();
