@@ -431,7 +431,7 @@ class ConfigSchema {
 
     //var loud = false;
 
-    // Is a single item defined?
+    // Is a single item defined before the current line?
     function _defined(item) {
       //log(`_defined(${item.name})`)
       if (!item.enabled) return false;
@@ -450,21 +450,24 @@ class ConfigSchema {
 
     // Does the given define exist and is it enabled?
     function defined(foo) {
-      //log(`defined(...)`)
-      if (!(foo instanceof Array)) foo = [foo];
-      for (const name of foo) {
-        for (const [sect, opts] of Object.entries(sdict)) {
-          if (name in opts) {
-            //log(`defined(${name})`)
-            const baz = sdict[sect][name];
-            if (baz instanceof Array) {
-              for (const item of baz) if (!_defined(item)) return false;
-            }
-            else if (!_defined(baz)) return false;
+      //if (foo === true) return true;
+      if (foo instanceof Array) {
+        //log(`defined(array)`)
+        const len = foo.length;
+        for (const f of foo) if (!defined(f)) return false;
+        return true;
+      }
+      //log(`defined({foo})`)
+      for (const [sect, opts] of Object.entries(sdict)) {
+        if (foo in opts) {
+          const baz = sdict[sect][foo];
+          if (baz instanceof Array) {
+            for (const item of baz) if (_defined(item)) return true;
           }
+          else if (_defined(baz)) return true;
         }
       }
-      return true;
+      return false;
     }
 
     // Are the given items all enabled or all disabled?
@@ -646,17 +649,19 @@ class ConfigSchema {
 
     // Convert Marlin macros into JavaScript function calls:
     cond = cond
-      .replace(/(AXIS_DRIVER_TYPE)_(\w+)\((.+?)\)/g, '$1($2,$3)')         // AXIS_DRIVER_TYPE_X(A4988)   => AXIS_DRIVER_TYPE(X,A4988)
-      .replace(/\b([A-Z][A-Z0-9_]*)\b(\s*([^(,]|$))/g, 'OTHER($1)$2')     // LOOSE_SYMBOL                => OTHER(LOOSE_SYMBOL)
-      .replace(/([A-Z0-9_]\s*\(|,\s*)OTHER\(([^)]+)\)/g, '$1$2')          // ANYCALL(OTHER(LOOSE_SYMBOL) => LOOSE_SYMBOL
-      .replace(/(\b[A-Z0-9_]+\b)([^(])/gi, '"$1"$2')                      // LOOSE_SYMBOL[^(]            => "LOOSE_SYMBOL"
-      .replace(/(\b[A-Z][A-Z0-9_]+\b)\(([^)]+?,[^)]+)\)/g, '$1([$2])');   // Wrap simple macro args into an [array]
+      .replace(/(AXIS_DRIVER_TYPE)_(\w+)\((.+?)\)/g, '$1($2,$3)')         // AXIS_DRIVER_TYPE_X(A4988)     => AXIS_DRIVER_TYPE(X,A4988)
+      .replace(/\b([A-Z][A-Z0-9_]*)\b(\s*([^(,]|$))/g, 'OTHER($1)$2')     // LOOSE_SYMBOL                  => OTHER(LOOSE_SYMBOL)
+      .replace(/([A-Z0-9_]\s*\(|,\s*)OTHER\(([^)]+)\)/g, '$1$2')          // ANYCALL(OTHER(LOOSE_SYMBOL)   => ANYCALL(LOOSE_SYMBOL
+      .replace(/(\bdefined\b)\s*\(?\s*OTHER\s*\(\s*([^)]+)\s*\)\s*\)?/g, '$1($2)') // defined(OTHER(ABCD)) => defined(ABCD)
+      .replace(/(\b[A-Z0-9_]+\b)([^(])/gi, '"$1"$2')                      // LOOSE_SYMBOL[^(]              => "LOOSE_SYMBOL"
+      .replace(/(\b[A-Z][A-Z0-9_]+\b)\(([^)]+?,[^)]+)\)/g, '$1([$2])')    // Wrap simple macro args into an [array]
+      ;
 
     try {
       initem.evaled = eval(cond);
     }
     catch (e) {
-      console.error(`Error evaluating: ${cond}\n\n${before_mangle}`);
+      console.error(`Error evaluating: ${cond}\n\n${before_mangle}`, e);
       initem.evaled = true;
     }
 
