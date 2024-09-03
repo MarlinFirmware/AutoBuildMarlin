@@ -37,7 +37,7 @@
  *
  * So here's the plan:
  * - For Configuration.h do the normal thing and send the entire config schema to the webview.
- * - For Configuration_adv.h load Configuration.h plus Conditionals_LCD.h into
+ * - For Configuration_adv.h load Configuration.h plus Conditionals-2-LCD.h into
  *   a single text blob, strip out all non-directive lines (disabled directives
  *   are needed to provide a definitive 'disabled' state for requirements), and
  *   process that into the schema first, in a section called '_' (underscore), and
@@ -107,15 +107,26 @@ function combinedSchema() {
         con2 = marlin.pathFromArray(['Configuration_adv.h']),
         cond = marlin.pathFromArray(['src', 'inc', 'Conditionals_LCD.h']);
 
-  // Read all three files into strings.
+  // Read configs into strings
   const config1 = fs.readFileSync(con1, 'utf8'),
-        config2 = fs.readFileSync(con2, 'utf8'),
-        configd = fs.readFileSync(cond, 'utf8');
+        config2 = fs.readFileSync(con2, 'utf8');
 
-  // Strip down Configuration.h and Conditionals_LCD.h to just the
+  // Read conditionals into a string
+  var configd;
+  if (fs.existsSync(cond)) {
+    configd = fs.readFileSync(cond, 'utf8');
+  }
+  else {
+    const cond1 = marlin.pathFromArray(['src', 'inc', 'Conditionals-1-axes.h']),
+          cond2 = marlin.pathFromArray(['src', 'inc', 'Conditionals-2-LCD.h']),
+          cond3 = marlin.pathFromArray(['src', 'inc', 'Conditionals-3-etc.h']);
+    configd = fs.readFileSync(cond1, 'utf8') + fs.readFileSync(cond2, 'utf8') + fs.readFileSync(cond3, 'utf8');
+  }
+
+  // Strip down Configuration.h and Conditionals-2-LCD.h to just the
   // preprocessor directives for faster parsing below.
   // TODO: Allow a schema to be copied and/or extended.
-  //       Conditionals_LCD.h should still be stripped down.
+  //       Conditionals-2-LCD.h should still be stripped down.
   const sch1 = ConfigSchema.strippedConfig(config1),
         sch2 = ConfigSchema.strippedConfig(configd);
 
@@ -126,9 +137,9 @@ function combinedSchema() {
 
   //
   // Create two schemas for use in editor interaction, since we need to know if a change
-  // was made in Configuration.h that affects Conditionals_adv.h directly or indirectly.
+  // was made in Configuration.h that affects Conditionals-4-adv.h directly or indirectly.
   // s1 : Configuration.h schema
-  // s2 : Configuration_adv.h schema with Configuration.h + Conditionals_adv.h precursor
+  // s2 : Configuration_adv.h schema with Configuration.h + Conditionals-4-adv.h precursor
   //
   const s1 = ConfigSchema.fromText(config1),
         s2 = ConfigSchema.fromText(adv_combo, -prefix_lines);

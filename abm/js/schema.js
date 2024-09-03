@@ -589,7 +589,7 @@ class ConfigSchema {
       return false;
     }
 
-    // Loose names may be in the schema or be defined by Conditionals_LCD.h
+    // Loose names may be in the schema or be defined by Conditionals-2-LCD.h
     function OTHER(cond) {
       // See if the item is enabled in the schema and use its value.
       const found = self.getItems(it => it.name == cond && it.evaled && it.enabled, initem.sid, 1);

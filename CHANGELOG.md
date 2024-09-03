@@ -2,6 +2,9 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.55
+- Update for new `Conditionals-#-abc.h` files
+
 ## 2.1.54
 - Fix parsing of defined() in schema.js
 - Alt/Option changes "Clean" to "Purge" to delete build and libdeps
