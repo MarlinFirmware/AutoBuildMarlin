@@ -535,7 +535,7 @@ function reveal_env_build(env) {
   switch (process.platform) {
     case 'win32': cmd = `Explorer /select,${stat.filename}`; break;
     case 'darwin': cmd = `open -R ${stat.filename}`; break;
-    default: cmd = '`which xdg-open open other-open | grep -v found | head -n1` .';
+    default: cmd = 'bash -c "`which xdg-open open other-open | grep -v found | head -n1` ."';
   }
   command_with_ping(aterm, `cd "${escpath}"`);
   command_with_ping(aterm, cmd);
