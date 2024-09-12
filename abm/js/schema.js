@@ -517,6 +517,15 @@ class ConfigSchema {
       return count;
     }
 
+    // Is MOTHERBOARD any one of the boards provided?
+    function MB(foo) {
+      const item = priorItemNamed('MOTHERBOARD');
+      if (!item) return false;
+      const mb = item.value.replace(/^BOARD_/, '');
+      if (foo instanceof Array) return foo.includes(mb);
+      return foo == mb;
+    }
+
     ///// Conditions based on other criteria, e.g., item.name /////
 
     function _nonzero(name) {
@@ -531,7 +540,7 @@ class ConfigSchema {
 
     // The item is enabled by its E < EXTRUDERS.
     function HAS_EAXIS(eindex) {
-      const extruders = priorItemNamed(`EXTRUDERS`);
+      const extruders = priorItemNamed('EXTRUDERS');
       if (extruders == null) return false;
       const stat = extruders && extruders.enabled && eindex < extruders.value;
       //console.log(`HAS_EAXIS(${eindex}) == ${stat ? 'true' : 'false'}`, extruders);

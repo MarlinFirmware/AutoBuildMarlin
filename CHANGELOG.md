@@ -2,6 +2,9 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.56
+- Handle `MB(...)` in schema
+
 ## 2.1.55
 - Update for new `Conditionals-#-abc.h` files
 
