@@ -128,6 +128,7 @@ div.comment span {
   /* color: var(--abm-edit-color-comment); */
   }
 .hide-comments div.comment { display: none; }
+.hide-disabled div.disabled { display: none; }
 
 /* The config form contains all options in a cascade. */
 #config-form {

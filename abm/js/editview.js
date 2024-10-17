@@ -128,7 +128,7 @@ $(function () {
   }
 
   var schema = ConfigSchema.newSchema(),
-      config_filter = { terms:'', show: true },
+      config_filter = { terms:'', show_comments: true, show_disabled: true },
       result_index = 0;
 
   // We need getState, setState, and postMessage.
@@ -183,14 +183,18 @@ $(function () {
     });
 
     // A checkbox to show/hide comments in the editor.
-    var $shower = $('#show-comments');
-    $shower.bind('change', (e) => { applyShowComments($(e.target).is(':checked')); });
+    var $show_comments = $('#show-comments');
+    $show_comments.bind('change', (e) => { applyShowComments($(e.target).is(':checked')); });
+
+    // A checkbox to show/hide comments in the editor.
+    var $show_disabled = $('#show-disabled');
+    $show_disabled.bind('change', (e) => { applyShowDisabled($(e.target).is(':checked')); });
 
     // A button to test sending messages to the extension.
     const $button = $('#hello-button');
     $button.find('button').bind('click', () => {
       vscode.postMessage({ type: 'hello' });
-    })
+    });
   }
 
   // Update state from the stored data structure and filter.
@@ -206,8 +210,13 @@ $(function () {
   // Called immediately after an item is edited.
   //
   function refreshVisibleItems() {
+    // Each .line item represents a single #define line in the config,
+    // as gathered by the schema class. Each .line also has a class ".sid-##"
+    // containing the serial ID for the option.
     $('#config-form div.line').each((i, div) => {
+      // Direct access to the schema data structure
       const data = div.inforef;
+      // Set .nope on options that are disabled based on other options
       $(div).toggleClass('nope', data.evaled !== undefined && !data.evaled);
     });
     hideEmptySections(true);
@@ -220,24 +229,35 @@ $(function () {
    * @param {dict} fields - The fields to replace in the option.
    */
   function commitChange(optref, fields) {
+    // Mark fields as dirty
     fields.dirty = true;
+
+    // Save original values if not already marked as dirty
     if (optref.dirty === undefined || optref.dirty == false) {
       optref.orig = { value: optref.value, enabled: optref.enabled };
     }
+    // Reset dirty flag if values are unchanged
     else if ( (fields.value === undefined || optref.orig.value == fields.value)
       && (fields.enabled === undefined || optref.orig.enabled == fields.enabled)
     ) {
       fields.dirty = false;
       delete optref.orig;
     }
+
+    // Log and update UI
     log(`Setting Dirty flag: ${fields.dirty}`);
     $(`div.line.sid-${optref.sid}`).toggleClass('dirty', fields.dirty);
 
+    // Assign new field values to the option reference
     Object.assign(optref, fields);
     log("Updated Option:", [ optref, fields ]);
+
+    // Refresh UI and state
     schema.refreshRequiresAfter(optref.sid);
     refreshVisibleItems();
     saveWebViewState();
+
+    // Handle message posting
     ignore_update = true;
     const msg = { type: 'change', data: optref };
     if (multi_update)
@@ -380,24 +400,33 @@ $(function () {
   /**
    * Hide all sections with no visible items.
    */
-  function hideEmptySections(hasterms, $target=$formdiv) {
-    $('#zero-box').removeClass('show');
+  function _hideEmptySections($target=$formdiv) {
     const $sects = $target.find('fieldset.section');
     $sects.addClass('hide');    // Hide all sections by default
 
-    // Count up visible items in each section. Hide empty sections.
+    const selector = 'div.line:not(.hide):not(.nope)' + (config_filter.show_disabled ? '' : ':not(.disabled)');
+
+    // Count up visible items in each section. Re-show non-empty sections.
     let count = 0;
     for (const sect of $sects) {
-      // Select all div.line without class 'hide'
-      const $lines = $(sect).find('div.line:not(.hide):not(.nope)'), len = $lines.length;
+      // Select all div.line without class 'hide' or 'nope'
+      const $lines = $(sect).find(selector), len = $lines.length
       if (len > 0) {
         $(sect).removeClass('hide');
         count += len;
       }
     }
+    return count;
+  }
 
+  /**
+   * Hide all sections with no visible items.
+   */
+  function hideEmptySections(hasterms, $target=$formdiv) {
+    const count = _hideEmptySections($target);
+    $('#zero-box').removeClass('show');
     if (count > 0)
-      $('#filter-count').text(`${count ? count : 'No'} Setting${count != 1 ? 's' : ''}${hasterms ? ' Found' : ''}`);
+      $('#filter-count').text(`${count} Setting${count != 1 ? 's' : ''}${hasterms ? ' Found' : ''}`);
 
     // If there's no filter we're done.
     if (!hasterms) return;
@@ -453,11 +482,17 @@ $(function () {
     applyFilter(terms, $target);
   }
 
-  /**
-   * Apply the comment checkbox filter by hiding/showing comments.
-   */
-   function showComments(show) {
+
+  // Apply the "show comments" checkbox filter by hiding/showing comments.
+  function showComments(show) {
     $formdiv.toggleClass('hide-comments', !show);
+  }
+
+  // Apply the "show disabled" checkbox filter by hiding/showing disabled options.
+  function showDisabled(show) {
+    $formdiv.toggleClass('hide-disabled', !show);
+    // Count up visible divs in each fieldset.section and hide empty ones.
+    hideEmptySections(false);
   }
 
   // Save the filter in the window. Unless flagged, also set the filter fields.
@@ -469,8 +504,14 @@ $(function () {
   }
 
   function applyShowComments(show) {
-    config_filter.show = show;
+    config_filter.show_comments = show;
     showComments(show);
+    saveWebViewState();
+  }
+
+  function applyShowDisabled(show) {
+    config_filter.show_disabled = show;
+    showDisabled(show);
     saveWebViewState();
   }
 
@@ -617,7 +658,7 @@ $(function () {
         $revealer = $(`<legend><span class="section-title">${title}</span></legend>`),
            $inner = $(`<div class="section-inner">`);
 
-      $revealer.find(".section-title").click((e) => { do_reveal(e, sectid); }); // Bind click event to the revealer
+      $revealer.click((e) => { do_reveal(e, sectid); }); // Bind click event to the revealer
 
       // Emit all the option lines for this section.
       // Gathered items with the same name will appear at the same

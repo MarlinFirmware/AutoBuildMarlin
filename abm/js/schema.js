@@ -41,6 +41,7 @@ function log(message, line = 0) {
 class ConfigSchema {
   static verbose = false;
 
+  // Populate a new schema from text, numbering lines starting from an index.
   constructor(text, numstart=0) {
     this.data = {};
     this.index = {};

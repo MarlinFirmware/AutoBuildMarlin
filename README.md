@@ -4,7 +4,7 @@
 
 The **Auto Build** tool automatically detects the correct environments for your `MOTHERBOARD` and provides an interface to build them. No more editing `platformio.ini` or scanning a long list of environments in the PlatformIO IDE. Just press the **Build** button and go!
 
-The **Configuration Editor** provides an enhanced interface to locate and edit configuration options, making it easier to locate the options you need and to discover the features you didn't know you needed. ***This is only an alpha preview at this time and will probably have some issues. Use "Reopen Editor With… > Text Editor" to use the standard text editor.*** Stay tuned for more enhancements to this excellent new feature.
+The **Configuration Editor** provides an enhanced interface to locate and edit configuration options. The config editor includes a search filter to find the options you need and discover useful features. To use, right-click a file in the VSCode file explorer and select **Open With… > Config Editor**. ***This is only an alpha preview at this time and will probably have some issues.***
 
 ## PlatformIO Required
 

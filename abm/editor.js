@@ -133,14 +133,15 @@ function combinedSchema() {
   // Combine configs into one schema to use when editing the second config.
   const adv_combo = '// @section _\n' + sch1.text + sch2.text + '// @section none\n' + config2;
 
+  // The number of lines to subtract in the second schema.
   const prefix_lines = sch1.lines + sch2.lines + 2;
 
-  //
-  // Create two schemas for use in editor interaction, since we need to know if a change
-  // was made in Configuration.h that affects Conditionals-4-adv.h directly or indirectly.
-  // s1 : Configuration.h schema
-  // s2 : Configuration_adv.h schema with Configuration.h + Conditionals-4-adv.h precursor
-  //
+  /**
+   * Create two schemas for use in editor interaction, since we need to know if a change
+   * was made in Configuration.h that affects Configuration_adv.h directly or indirectly.
+   * s1 : Configuration.h schema
+   * s2 : Configuration_adv.h schema with Configuration.h + Conditionals_LCD.h precursor
+   */
   const s1 = ConfigSchema.fromText(config1),
         s2 = ConfigSchema.fromText(adv_combo, -prefix_lines);
 
@@ -150,6 +151,7 @@ function combinedSchema() {
 const schemas = combinedSchema();
 //console.log("abmeditor.js"); console.dir(schemas);
 
+// Utility function to get the name of a document from a full path.
 const document_name = document => document.uri.fsPath.split(path.sep).pop();
 
 var webviews = [];
@@ -313,16 +315,16 @@ class ConfigEditorProvider {
       //console.log("(ConfigEditorProvider) handleMessage", e);
       switch (e.type) {
         case 'change':
-          applyConfigChange(document, e.data);
-          break; // Update the document line based on the data.
+          applyConfigChange(document, e.data); // Update the document line based on the data.
+          break;
 
         case 'multi-change':
           const edit = new vscode.WorkspaceEdit();
           e.changes.forEach(d => {
             applyConfigChange(document, d.data, edit);
           });
-          ws.applyEdit(edit);
-          break; // Update the document line based on the data.
+          ws.applyEdit(edit); // Update the document line based on the data.
+          break;
 
         case 'hello':
           vw.showInformationMessage("Hello from the webview!");
@@ -371,6 +373,7 @@ class ConfigEditorProvider {
   <form id="filter-form">
     <label for="filter">Filter:</label><input type="search" id="filter" name="filter" />
     <label for="show-comments"><input type="checkbox" id="show-comments" name="show-comments" checked="checked" />Show Comments</label>
+    <label for="show-disabled"><input type="checkbox" id="show-disabled" name="show-disabled" checked="checked" />Show Disabled</label>
     <span id="filter-count"></span>
   </form>
   <div id="config-form"></div>

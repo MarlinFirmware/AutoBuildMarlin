@@ -13,7 +13,7 @@
 //<![CDATA[
 
   // Template parameters are evaluated in the context of abm.js.
-  // But this script is evaluated in the context of webview.js.
+  // But this script is evaluated in the context of abmview.js.
 
   const vscode = acquireVsCodeApi();
 
@@ -47,8 +47,8 @@
 // ]]>
 </script>
 <script src="${ js_path('jquery-3.6.0.min.js') }"></script>
-<script src="${ js_path('webview.js') }"></script>
-<link nonce="${nonce}" rel="stylesheet" href="${ css_path('webview.css') }" type="text/css" media="all" />
+<script src="${ js_path('abmview.js') }"></script>
+<link nonce="${nonce}" rel="stylesheet" href="${ css_path('abmview.css') }" type="text/css" media="all" />
 </head>
 <body>
 <div id="abm-layout">
@@ -62,7 +62,7 @@
     <button type="button" onclick="msg({ command:'monitor' })"><img src="${ img_path('btn-monitor.svg') }" /> Monitor</button>
     <button type="button" onclick="msg({ command:'refresh' })"><img src="${ img_path('btn-refresh.svg') }" /> Refresh</button>
   </div>
-  <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Auto Build <span id="abm-vers">2.1.56</span></span></h1>
+  <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Auto Build <span id="abm-vers">${abm_version}</span></span></h1>
   <div id="error"></div>
   <div id="abm-main">
     <form id="showy">

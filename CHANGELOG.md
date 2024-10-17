@@ -2,6 +2,9 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.57
+- Config Editor "Show Disabled" checkbox
+
 ## 2.1.56
 - Handle `MB(...)` in schema
 
@@ -9,9 +12,9 @@ The following enhancements and changes have been made to ***Auto Build Marlin***
 - Update for new `Conditionals-#-abc.h` files
 
 ## 2.1.54
-- Fix parsing of defined() in schema.js
+- Fix parsing of `defined()` in `schema.js`
 - Alt/Option changes "Clean" to "Purge" to delete build and libdeps
-- Add on-the-fly log_() function to editview.js
+- Add on-the-fly log_() function to `editview.js`
 
 ## 2.1.53
 - Prevent `platformio.ini` from opening by overriding a PlatformIO IDE setting.

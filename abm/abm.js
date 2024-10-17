@@ -675,6 +675,9 @@ function webViewContent() {
   // Load SD pane
   panes.sd = load_pane('sd');
 
+  // Get the version from package.json
+  abm_version = context.extension.packageJSON.version;
+
   // Load WebView content using evaluated template
   const home_html = load_home();
   const nonce = getNonce();
