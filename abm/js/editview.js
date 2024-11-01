@@ -276,7 +276,7 @@ $(function () {
 
   function applyEnableCheckbox($cb) {
     const $line = $cb.closest('.line'), // Parent div.line of the checkbox.
-        enabled = $cb.is(':checked');   // State based on the checkbox.
+        enabled = $cb.is(':checked') || $cb.hasClass('checked');  // State based on the checkbox or class.
 
     // Change the field in the data structure now,
     // since the receiver can't change it directly.
@@ -298,24 +298,22 @@ $(function () {
     applyEnableCheckbox($(e.target));
   }
 
-  //! @brief Handle a checkbox d$ event in a mutual-exclusive group.
-  function handleCheckboxGroup(e) {
-    const $cb = $(e.target), // The checkbox.
-         $divs = $cb.closest('div.section-inner');
-    console.log("Group div", $divs[0]);
+  //! @brief Handle enabling an item in a mutual-exclusive "radio button" group.
+  function handleRadioGroup(e) {
     start_multi_update();
-    $divs.find('div.d0 .radio:checked').each(
-      function() {
-        if (this === e.target) return;
-        console.log("CB checked", this);
-        //$acb.trigger('click');
-        const $acb = $(this);
-        $acb.prop('checked', false);
-        applyEnableCheckbox($acb);
-      }
-    );
 
-    applyEnableCheckbox($cb);
+    const $rb = $(e.target),        // The clicked radio button
+          name = $rb.prop('name');  // Radio group name
+
+    $rb.removeClass('checked');
+    $(`input[name="${name}"].checked`).each(function(i,o) {
+      const $arb = $(o);
+      $arb.removeClass('checked');
+      applyEnableCheckbox($arb);
+    });
+    $rb.addClass('checked');
+    applyEnableCheckbox($rb);
+
     end_multi_update();
   }
 
@@ -534,19 +532,24 @@ $(function () {
             ts = item.type.split('['), type = ts[0],
         tclass = type + (ts.length > 1 ? '-arr' : ''),
       isswitch = type == 'switch',
-       isradio = item.section[0] == '?' && item.depth == 0;
+         group = item.group;
 
     log(`${name} = ${val}`);
 
     // Prepare the div, label, label text, and option enable checkbox / radio
     const $linediv = $("<div>", { id: `-${name.toID()}-${item.sid}`, class: `line sid-${item.sid}` }),
         $linelabel = $("<label>", { class: "opt" }),
-        $labelspan = $("<span>").text(name.toLabel()),
-           $linecb = $("<input>", { type: "checkbox", name, tabindex: 9999, checked: ena }).bind("change", isradio ? handleCheckboxGroup : handleCheckbox);
+        $labelspan = $("<span>").text(name.toLabel());
 
-    if (isradio) $linecb.addClass('radio');
+    var $linecb;
+    if (group) {
+      $linecb = $("<input>", { type: "radio", name: group, tabindex: 9999, value: name }).bind("change", handleRadioGroup);
+      if (ena) $linecb.addClass('checked');
+    }
+    else
+      $linecb = $("<input>", { type: "checkbox", name, tabindex: 9999, checked: ena }).bind("change", handleCheckbox);
+
     $linediv[0].inforef = data;
-    //if (item.depth)
     $linediv.addClass(`d${item.depth}`);
     if (item.dirty) $linediv.addClass('dirty');
     if (!item.evaled) $linediv.addClass('nope');

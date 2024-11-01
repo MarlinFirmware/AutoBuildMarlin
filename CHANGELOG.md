@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.58
+- Fix filtering options by axis
+- Implement radio grouping for LCD items
+
 ## 2.1.57
 - Config Editor "Show Disabled" checkbox
 

@@ -820,9 +820,9 @@ function run_command(action) {
     panel.onDidChangeViewState(
       () => {
         if (panel.active) {
-          postMessage({ command: 'check', name:'show_on_startup',  state:prefs.show_on_startup() });
-          postMessage({ command: 'check', name:'silent_build', state:prefs.silent_build() });
-          postMessage({ command: 'check', name:'auto_reveal', state:prefs.auto_reveal() });
+          postMessage({ command:'check', name:'show_on_startup',  state:prefs.show_on_startup() });
+          postMessage({ command:'check', name:'silent_build', state:prefs.silent_build() });
+          postMessage({ command:'check', name:'auto_reveal', state:prefs.auto_reveal() });
         }
       },
       null, cs

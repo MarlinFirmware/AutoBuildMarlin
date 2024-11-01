@@ -387,6 +387,97 @@ class ConfigSchema {
   }
 
   /**
+   * Get the group an item should belong to, by name.
+   * There may be exceptions. e.g., Only the top level U8GLIB_SSD1306 should be in the "lcd" radio group.
+   * If an item shows up more than once in a configuration
+   * file, it may belong to different groups, so the logic
+   * should be expanded for known special cases.
+   *
+   * @param {info} item Item info to get the group for.
+   * @returns The name of the group, or null.
+   */
+  itemGroup(item) {
+    const lcd_names = [
+      'REPRAP_DISCOUNT_SMART_CONTROLLER',
+      'YHCB2004',
+      'RADDS_DISPLAY',
+      'ULTIMAKERCONTROLLER',
+      'ULTIPANEL',
+      'PANEL_ONE',
+      'G3D_PANEL',
+      'RIGIDBOT_PANEL',
+      'MAKEBOARD_MINI_2_LINE_DISPLAY_1602',
+      'ZONESTAR_LCD', 'ANET_KEYPAD_LCD',
+      'ULTRA_LCD',
+      'RA_CONTROL_PANEL',
+      'LCD_SAINSMART_I2C_1602', 'LCD_SAINSMART_I2C_2004', 'LCD_I2C_SAINSMART_YWROBOT',
+      'LCM1602',
+      'LCD_I2C_PANELOLU2',
+      'LCD_I2C_VIKI',
+      'SAV_3DLCD',
+      'FF_INTERFACEBOARD',
+      'TFTGLCD_PANEL_SPI', 'TFTGLCD_PANEL_I2C',
+      'REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER',
+      'K3D_FULL_GRAPHIC_SMART_CONTROLLER',
+      'REPRAPWORLD_GRAPHICAL_LCD',
+      'VIKI2', 'miniVIKI',
+      'WYH_L12864',
+      'MINIPANEL', 'MAKRPANEL',
+      'ELB_FULL_GRAPHIC_CONTROLLER',
+      'BQ_LCD_SMART_CONTROLLER',
+      'CARTESIO_UI',
+      'LCD_FOR_MELZI',
+      'ULTI_CONTROLLER',
+      'MKS_MINI_12864', 'MKS_MINI_12864_V3',
+      'MKS_LCD12864A', 'MKS_LCD12864B',
+      'FYSETC_MINI_12864_X_X', 'FYSETC_MINI_12864_1_2',
+      'FYSETC_MINI_12864_2_0', 'FYSETC_MINI_12864_2_1',
+      'FYSETC_GENERIC_12864_1_1',
+      'BTT_MINI_12864', 'BEEZ_MINI_12864', 'BTT_MINI_12864_V1',
+      'CR10_STOCKDISPLAY', 'ENDER2_STOCKDISPLAY',
+      'ANET_FULL_GRAPHICS_LCD', 'ANET_FULL_GRAPHICS_LCD_ALT_WIRING',
+      'CTC_A10S_A13',
+      'AZSMZ_12864',
+      'SILVER_GATE_GLCD_CONTROLLER',
+      'EMOTION_TECH_LCD',
+      'U8GLIB_SSD1306', // top-level only
+      'SAV_3DGLCD',
+      'OLED_PANEL_TINYBOY2',
+      'MKS_12864OLED', 'MKS_12864OLED_SSD1306',
+      'ZONESTAR_12864LCD', 'ZONESTAR_12864OLED', 'ZONESTAR_12864OLED_SSD1306',
+      'U8GLIB_SH1106_EINSTART',
+      'OVERLORD_OLED',
+      'FYSETC_242_OLED_12864',
+      'K3D_242_OLED_CONTROLLER',
+      'DGUS_LCD_UI', 'DGUS_LCD',
+      'MALYAN_LCD',
+      'TOUCH_UI_FTDI_EVE', 'LULZBOT_TOUCH_UI',
+      'ANYCUBIC_LCD_CHIRON', 'ANYCUBIC_LCD_I3MEGA', 'ANYCUBIC_LCD_VYPER', 'ANYCUBIC_TFT_MODEL',
+      'SOVOL_SV06_RTS',
+      'NEXTION_TFT',
+      'EXTENSIBLE_UI',
+      'MKS_TS35_V2_0',
+      'MKS_ROBIN_TFT24', 'MKS_ROBIN_TFT28', 'MKS_ROBIN_TFT32', 'MKS_ROBIN_TFT35', 'MKS_ROBIN_TFT43',
+      'MKS_ROBIN_TFT_V1_1R', 'MKS_ROBIN_TFT',
+      'TFT_TRONXY_X5SA',
+      'ANYCUBIC_TFT35',
+      'LONGER_LK_TFT28',
+      'ANET_ET4_TFT28', 'ANET_ET5_TFT35',
+      'BIQU_BX_TFT70',
+      'BTT_TFT35_SPI_V1_0',
+      'TFT_GENERIC',
+      'TFT_CLASSIC_UI', 'TFT_COLOR_UI', 'TFT_LVGL_UI', 'TFT_LVGL_UI_FSMC', 'TFT_LVGL_UI_SPI',
+      'FSMC_GRAPHICAL_TFT', 'SPI_GRAPHICAL_TFT', 'TFT_320x240', 'TFT_320x240_SPI', 'TFT_480x320', 'TFT_480x320_SPI',
+      'DWIN_CREALITY_LCD', 'DWIN_LCD_PROUI', 'DWIN_CREALITY_LCD_JYERSUI', 'DWIN_MARLINUI_PORTRAIT', 'DWIN_MARLINUI_LANDSCAPE'
+    ];
+    if (lcd_names.includes(item.name)) {
+      if (item.depth === undefined || item.depth == 0) return 'lcd';
+      return null;
+    }
+    return null;
+  }
+
+  /**
    * @brief Evaluate the 'requires' field of an item.
    * @description The 'item' is an entry in the data keyed by the option name.
    *              Evaluate a single condition string based on previous enabled options.
@@ -537,7 +628,10 @@ class ConfigSchema {
 
     // [AXIS]_DRIVER_TYPE is enabled. For older config versions
     // we can check the value of NUM_AXES or LINEAR_AXES.
-    const HAS_AXIS = axis => ENABLED(`${axis}_DRIVER_TYPE`);
+    function HAS_AXIS(axis) {
+      const driver = priorItemNamed(`${axis}_DRIVER_TYPE`);
+      return driver && driver.enabled;
+    }
 
     // The item is enabled by its E < EXTRUDERS.
     function HAS_EAXIS(eindex) {
@@ -958,7 +1052,7 @@ class ConfigSchema {
           }
           use_comment(cline);
         }
-      }
+      } // end COMMENT, SENSORS
       // For the normal state we're looking for any non-blank line
       else if (state == Parse.NORMAL) {
         // Skip a commented define when evaluating comment opening
@@ -1163,6 +1257,10 @@ class ConfigSchema {
             define_info.depth = if_depth;
           }
 
+          // Does the item belong to a "radio button" group?
+          const group = this.itemGroup(define_info);
+          if (group) define_info.group = group;
+
           // Items that depend on TEMP_SENSOR_* to be enabled.
           function is_heater_item(name) {
             const m1 = name.match(/\b(BED|CHAMBER|COOLER)_(PULLUP_RESISTOR_OHMS|RESISTANCE_25C_OHMS|BETA|SH_C_COEFF)\b/);
@@ -1176,7 +1274,7 @@ class ConfigSchema {
 
           // Items that depend on EXTRUDERS to be enabled.
           function is_eaxis_item(name) {
-            const m1 = name.match(/\bE(\d)(_DRIVER_TYPE|_AUTO_FAN_PIN|_FAN_TACHO_PIN|_FAN_TACHO_PULLUP|_FAN_TACHO_PULLDOWN|_MAX_CURRENT|_SENSE_RESISTOR|_MICROSTEPS|_CURRENT|_MICROSTEPS|_RSENSE|_CHAIN_POS|_INTERPOLATE|_HOLD_MULTIPLIER|_CS_PIN|_SLAVE_ADDRESS|_HYBRID_THRESHOLD)\b/);
+            const m1 = name.match(/\bE(\d)_(DRIVER_TYPE|AUTO_FAN_PIN|FAN_TACHO_PIN|FAN_TACHO_PULLUP|FAN_TACHO_PULLDOWN|MAX_CURRENT|SENSE_RESISTOR|MICROSTEPS|CURRENT|RSENSE|CHAIN_POS|INTERPOLATE|HOLD_MULTIPLIER|CS_PIN|SLAVE_ADDRESS|HYBRID_THRESHOLD)\b/);
             if (m1) return m1[1];
             const m2 = name.match(/\bCHOPPER_TIMING_E(\d)\b/);
             if (m2) return m2[1];
@@ -1188,23 +1286,27 @@ class ConfigSchema {
             if (m5) return m5[1];
             const m6 = name.match(/\bFIL_RUNOUT(\d)_(STATE|PULL(UP|DOWN))\b/);
             if (m6) return m6[1];
+            if (name == 'DISABLE_IDLE_E') return '0';
+            if (name == 'STEP_STATE_E') return '0';
             return '';
           }
 
           // Items that depend on *_DRIVER_TYPE to be enabled.
           function is_axis_item(name) {
-            const m1 = name.match(/\b([XYZIJKUVW]\d?)(_CHAIN_POS|_CS_PIN|_CURRENT_HOME|_CURRENT|_ENABLE_ON|_HOLD_MULTIPLIER|_HOME_DIR|_HYBRID_THRESHOLD|_INTERPOLATE|_MAX_CURRENT|_MAX_ENDSTOP_INVERTING|_MAX_POS|_MICROSTEPS|_MICROSTEPS|_MIN_ENDSTOP_INVERTING|_MIN_POS|_RSENSE|_SENSE_RESISTOR|_SLAVE_ADDRESS|_STALL_SENSITIVITY)\b/);
+            const m1 = name.match(/\b([XYZIJKUVW]\d?)_(CHAIN_POS|CS_PIN|CURRENT(|_HOME)|ENABLE_ON|HOLD_MULTIPLIER|HOME_DIR|HYBRID_THRESHOLD|INTERPOLATE|MAX_CURRENT|M(AX|IN)_ENDSTOP_(INVERTING|HIT_STATE)|M(AX|IN)_POS|MICROSTEPS|RSENSE|SAFETY_STOP|SENSE_RESISTOR|SLAVE_ADDRESS|STALL_SENSITIVITY)\b/);
             if (m1) return m1[1];
-            const m2 = name.match(/\b(CHOPPER_TIMING_|DISABLE_|DISABLE_INACTIVE_|MAX_SOFTWARE_ENDSTOP_|MIN_SOFTWARE_ENDSTOP_|SAFE_BED_LEVELING_START_|STEALTHCHOP_)([XYZIJKUVW]\d?)\b/);
-            if (m2) return m2[2];
-            const m3 = name.match(/\bINVERT_(.+)(_DIR|_STEP_PIN)\b/);
+            const m2 = name.match(/\b(CHOPPER_TIMING|DISABLE(|_INACTIVE|_IDLE)|M(AX|IN)_SOFTWARE_ENDSTOP|SAFE_BED_LEVELING_START|STEALTHCHOP|STEP_STATE)_([XYZIJKUVW]\d?)\b/);
+            if (m2) return m2[4];
+            const m3 = name.match(/\bINVERT_(.+)_(DIR|STEP_PIN)\b/);
             if (m3) return m3[1];
             const m4 = name.match(/\bMANUAL_(.+)_HOME_POS\b/);
             if (m4) return m4[1];
-            const m5 = name.match(/\bUSE_(.+)(MIN|MAX)_PLUG\b/);
+            const m5 = name.match(/\bUSE_(.+)M(IN|AX)_PLUG\b/);
             if (m5) return m5[1];
             const m6 = name.match(/\bENDSTOPPULL(UP|DOWN)_(.+)(MIN|MAX)\b/);
             if (m6) return m6[2];
+            const m7 = name.match(/\bAXIS(\d)_(NAME|ROTATES)\b/);
+            if (m7) return [ 'I', 'J', 'K', 'U', 'V', 'W' ][m7[1] - 4];
             return '';
           }
 
@@ -1333,8 +1435,8 @@ class ConfigSchema {
             }
           }
         }
-      }
-    }
+      } // end NORMAL
+    } // loop lines
 
     // Replace the data with the new schema
     this.data = sdict;
