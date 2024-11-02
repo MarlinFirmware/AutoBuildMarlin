@@ -35,8 +35,8 @@ function log(message, line = 0) {
  *
  * - Each item in the schema is a dictionary with information about a single #define.
  *   See the description at importText() below for the #define info structure.
- * - The schema 'index' contains every #define in order of import / appearance.
- *   (If the sid is guaranteed to be contiguous 'index' can be an array.)
+ * - The schema 'bysid' contains every #define in order of import / appearance.
+ *   (If the sid was guaranteed to be contiguous 'bysid' could be an array.)
  */
 class ConfigSchema {
   static verbose = false;
@@ -44,7 +44,7 @@ class ConfigSchema {
   // Populate a new schema from text, numbering lines starting from an index.
   constructor(text, numstart=0) {
     this.data = {};
-    this.index = {};
+    this.bysid = {};
     if (text) this.importText(text, numstart);
   }
   // Factory method to create a new uninitialized schema.
@@ -290,12 +290,20 @@ class ConfigSchema {
   // Schema Accessors API
   //
 
-  // Was the given item defined before the given 'sid'?
+  /**
+   * @brief Is the given item fully defined before the given sid?
+   *
+   * @param {info}   item    The item to query.
+   * @param {int}    before  The sid it must precede.
+   * @return True if the item is fully defined before the given sid.
+   */
   definedBefore(item, before) {
     if (!before) return true;
     if (item.sid >= before) return false;
-    if (item.undef === undefined) return true;
-    return (item.undef > before);
+    if (item.enabled !== undefined && !item.enabled) return false;
+    if (item.evaled !== undefined && !item.evaled) return false;
+    if (item.undef !== undefined && item.undef < before) return false;
+    return true;
   }
 
   /**
@@ -308,6 +316,7 @@ class ConfigSchema {
    * @return Array of item references.
    */
   getItemsInSection(sect, fn, before, limit) {
+    log(`getItemsInSection(${sect}, ..., ${before}, ${limit})`);
     var results = [];
     for (const [name, foo] of Object.entries(this.data[sect])) {
       if (foo instanceof Array) {
@@ -347,12 +356,14 @@ class ConfigSchema {
 
   /**
    * Find the first item in the schema with a given name before an optional sid.
+   * The item will be enabled and not since undefined.
    *
    * @param {string} name Name of the item to find.
    * @param {int} before The last index allowed for the item.
    * @return The item found, or null.
    */
-  firstItemWithName(name, before=9999) {
+  firstItemWithName(name, before=99999) {
+    log(`firstItemWithName(${name}, ${before})`);
     for (const [sect, opts] of Object.entries(this.data)) {
       if (name in opts) {
         const foo = opts[name];
@@ -366,13 +377,14 @@ class ConfigSchema {
   }
 
   /**
-   * Find the last item in the schema with a given name before an optional sid.
+   * Find the last defined (and not since undefined) item in the schema with a given name before an optional sid.
    *
    * @param {string} name Name of the item to find.
    * @param {int} before The last index allowed for the item.
    * @return The item found, or null.
    */
-  lastItemWithName(name, before=9999) {
+  lastItemWithName(name, before=99999) {
+    log(`lastItemWithName(${name}, ${before})`);
     var outitem = null;
     for (const [sect, opts] of Object.entries(this.data)) {
       if (name in opts) {
@@ -397,6 +409,7 @@ class ConfigSchema {
    * @returns The name of the group, or null.
    */
   itemGroup(item) {
+    // LCD Names
     const lcd_names = [
       'REPRAP_DISCOUNT_SMART_CONTROLLER',
       'YHCB2004',
@@ -474,28 +487,87 @@ class ConfigSchema {
       if (item.depth === undefined || item.depth == 0) return 'lcd';
       return null;
     }
+
+    // U8GLIB
+    const u8glib = [ 'U8GLIB_SSD1306', 'U8GLIB_SH1106' ];
+    if (u8glib.includes(item.name)) return 'u8glib';
+
+    // TFT Interfaces
+    const tft_if = [ 'TFT_INTERFACE_FSMC', 'TFT_INTERFACE_SPI' ];
+    if (tft_if.includes(item.name)) return 'tft-if';
+
+    // TFT Resolutions
+    const tft_res = [ 'TFT_RES_320x240', 'TFT_RES_480x272', 'TFT_RES_480x320', 'TFT_RES_1024x600' ];
+    if (tft_res.includes(item.name)) return 'tft-res';
+
+    // RGB or RGBW
+    const rgbled = [ 'RGB_LED', 'RGBW_LED' ];
+    if (rgbled.includes(item.name)) return 'rgbled';
+
+    // Hotend temperature control methods
+    const temp_control = [ 'PIDTEMP', 'MPCTEMP' ];
+    if (temp_control.includes(item.name)) return 'temp-control';
+
+    // Probe types
+    const probes = [
+      'PROBE_MANUALLY',
+      'BLTOUCH', 'BD_SENSOR',
+      'FIX_MOUNTED_PROBE', 'NOZZLE_AS_PROBE',
+      'TOUCH_MI_PROBE',
+      'SOLENOID_PROBE',
+      'Z_PROBE_ALLEN_KEY', 'Z_PROBE_SLED',
+      'RACK_AND_PINION_PROBE',
+      'SENSORLESS_PROBING',
+      'MAGLEV4', 'MAG_MOUNTED_PROBE',
+      'BIQU_MICROPROBE_V1', 'BIQU_MICROPROBE_V2'
+    ];
+    if (probes.includes(item.name)) return 'probe';
+
+    // Leveling methods
+    const leveling = [
+      'AUTO_BED_LEVELING_3POINT',
+      'AUTO_BED_LEVELING_LINEAR',
+      'AUTO_BED_LEVELING_BILINEAR',
+      'AUTO_BED_LEVELING_UBL',
+      'MESH_BED_LEVELING',
+    ];
+    if (leveling.includes(item.name)) return 'leveling';
+
+    // Kinematics / Machine Types
+    const kinematics = [
+      'DELTA',
+      'MORGAN_SCARA', 'MP_SCARA', 'AXEL_TPARA',
+      'COREXY', 'COREXZ', 'COREYZ', 'COREYX', 'COREZX', 'COREZY',
+      'MARKFORGED_XY', 'MARKFORGED_YX',
+      'ARTICULATED_ROBOT_ARM', 'FOAMCUTTER_XYUV', 'POLAR'
+    ];
+    if (kinematics.includes(item.name)) return 'kinematics';
+
+    // Axis Homing Submenus
+    const lcd_homing = [ 'INDIVIDUAL_AXIS_HOMING_MENU', 'INDIVIDUAL_AXIS_HOMING_SUBMENU' ];
+    if (lcd_homing.includes(item.name)) return 'lcd-homing';
+
+    // Digital Potentiometers
+    const digipot = [ 'DIGIPOT_MCP4018', 'DIGIPOT_MCP4451' ];
+    if (digipot.includes(item.name)) return 'digipot';
+
+    // Return null for all other items.
     return null;
   }
 
   /**
    * @brief Evaluate the 'requires' field of an item.
-   * @description The 'item' is an entry in the data keyed by the option name.
+   * @description The 'initem' is a single entry in the schema data.
    *              Evaluate a single condition string based on previous enabled options.
    *              This recurses as needed to check nested conditions, with prior
    *              evaluations being cached.
    * @param {object} initem The item to evaluate w/r/t the full schema.
    */
   evaluateRequires(initem) {
-    const self = this, sdict = this.data;
-
     // TODO: For Configuration_adv.h we'll need to open and scan Configuration.h,
     // which can slow things down a bit for that file. If the file is open in the
     // other editor, maybe that can be skipped by passing messages between the
     // windows by some intermediary.
-
-    // Get the last item prior to the passed item that has the given name.
-    // This function doesn't care if the item is enabled or not.
-    function priorItemNamed(name) { return self.lastItemWithName(name, initem.sid); }
 
     // A cond string is a list of conditions using Marlin macros
     // that we can convert into JavaScript and eval. Later we can
@@ -521,7 +593,10 @@ class ConfigSchema {
 
     //log("evaluateRequires"); if (verbose) console.dir(initem);
 
-    //var loud = false;
+    const self = this, sdict = this.data;
+
+    // Last item, by name, before the evaluated item.
+    function priorItemNamed(name, before=initem.sid) { return self.lastItemWithName(name, before); }
 
     // Is a single item defined before the current line?
     function _defined(item) {
@@ -623,27 +698,31 @@ class ConfigSchema {
     function _nonzero(name) {
       const item = priorItemNamed(name);
       //console.log(`_nonzero(${name})`, item);
-      return item && item.enabled && item.value && item.value !== 'false';
+      return item && item.value && (item.value !== 'false');
     }
 
     // [AXIS]_DRIVER_TYPE is enabled. For older config versions
     // we can check the value of NUM_AXES or LINEAR_AXES.
     function HAS_AXIS(axis) {
       const driver = priorItemNamed(`${axis}_DRIVER_TYPE`);
-      return driver && driver.enabled;
+      return driver !== null;
     }
 
     // The item is enabled by its E < EXTRUDERS.
     function HAS_EAXIS(eindex) {
-      const extruders = priorItemNamed('EXTRUDERS');
+      const extruders = priorItemNamed('EXTRUDERS', 99999);
       if (extruders == null) return false;
-      const stat = extruders && extruders.enabled && eindex < extruders.value;
+      const stat = eindex < extruders.value;
       //console.log(`HAS_EAXIS(${eindex}) == ${stat ? 'true' : 'false'}`, extruders);
       return stat;
     }
 
     // The item is enabled by TEMP_SENSOR_[NAME] != 0.
     const HAS_SENSOR = name => _nonzero(`TEMP_SENSOR_${name}`);
+
+    function HAS_SERIAL(sindex) {
+      return priorItemNamed(sindex == '0' ? 'SERIAL_PORT' : `SERIAL_PORT_${sindex}`) !== null;
+    }
 
     ////// Other macros appearing in #if conditions //////
 
@@ -656,7 +735,7 @@ class ConfigSchema {
         if (axis.slice(1) >= extruders.value) return false;
       }
       const driver = priorItemNamed(`${axis}_DRIVER_TYPE`);
-      return driver && driver.enabled && driver.value == type;
+      return driver && (driver.value == type);
     }
 
     // The temp sensor for the given heater/cooler is a thermocouple.
@@ -706,7 +785,7 @@ class ConfigSchema {
           if (extruders && extruders.value > 0) {
             for (var i = 0; i < extruders.value; i++) {
               const sensor = priorItemNamed(`TEMP_SENSOR_${i}`);
-              if (sensor && sensor.enabled && sensor.value) return true;
+              if (sensor && sensor.value) return true;
             }
           }
           return false;
@@ -835,7 +914,7 @@ class ConfigSchema {
   // Update an item's enabled / value from an (edited) item.
   // Re-run 'requires' on all items that follow to update 'evaled'.
   updateEditedItem(initem) {
-    Object.assign(this.index[initem.sid], initem);
+    Object.assign(this.bysid[initem.sid], initem);
     this.refreshRequiresAfter(initem.sid);
   }
 
@@ -847,7 +926,7 @@ class ConfigSchema {
    *    name     (string) - Full option name (its key in the dictionary).
    *    enabled  (bool)   - False if the option is commented out.
    *    value    (any)    - Value of the item, if any.
-   *    type     (string) - Type of the option (e.g. bool, int, float, etc.)
+   *    type     (string) - Type of the option (e.g. bool, int, float, macro, etc.)
    *    units    (string) - Units of the item, from the comment.
    *    options  (json)   - Options for the item, if any.
    *    depth    (int)    - Depth of the item in the structure.
@@ -893,6 +972,8 @@ class ConfigSchema {
     const sdict = ConfigSchema.emptyOrderedSchema();
     // Regex for #define NAME [VALUE] [COMMENT] with sanitized line
     const defgrep = /^(\/\/)?\s*(#define)\s+([A-Za-z0-9_]+)\s*(.*?)\s*(\/\/.+)?$/;
+    // Regex for #define MACRONAME() [VALUE] [COMMENT] with sanitized line
+    const macrogrep = /^(\/\/)?\s*(#define)\s+([A-Za-z0-9_]+)(\(.*?\)\s*(.*?))\s*(\/\/.+)?$/;
     // Defines to ignore
     const ignore = ['CONFIGURATION_H_VERSION', 'CONFIGURATION_ADV_H_VERSION', 'CONFIG_EXAMPLES_DIR', 'LCD_HEIGHT'];
     // Start with unknown state
@@ -1193,6 +1274,7 @@ class ConfigSchema {
           // Certain defines are always left out of the schema
           if (ignore.includes(define_name)) continue;
 
+          // "enabled" indicated it's not commented out
           const enabled = !defmatch[1];
 
           // Disabled conditionals can be left out entirely.
@@ -1226,6 +1308,9 @@ class ConfigSchema {
             value_type = 'float'
             val = val.replace('f', '') * 1;
           }
+          else if (macrogrep.test(line)) {
+            value_type = 'macro';
+          }
           else {
             value_type = (
                 val[0] == '"' ? 'string'
@@ -1246,10 +1331,11 @@ class ConfigSchema {
             'name': define_name,
             'enabled': enabled,
             'line': line_start,
-            'sid': sid
+            'sid': sid,
+            'orig': { 'enabled': enabled },
           };
 
-          if (val !== '') define_info.value = val;
+          if (val !== '') { define_info.value = val; define_info.orig.value = val; }
           if (value_type != '') define_info.type = value_type;
 
           if (conditions.length) {
@@ -1263,57 +1349,70 @@ class ConfigSchema {
 
           // Items that depend on TEMP_SENSOR_* to be enabled.
           function is_heater_item(name) {
-            const m1 = name.match(/\b(BED|CHAMBER|COOLER)_(PULLUP_RESISTOR_OHMS|RESISTANCE_25C_OHMS|BETA|SH_C_COEFF)\b/);
-            if (m1) return m1[1];
-            const m2 = name.match(/\bHOTEND(\d)_.+\b/);
+            const m1 = name.match(/^(EXTRUDER|HOTEND|BED|CHAMBER|COOLER|PROBE)_(AUTO_FAN_(TEMPERATURE|SPEED)|BETA|M(AX|IN)TEMP|OVERSHOOT|PULLUP_RESISTOR_OHMS|RESISTANCE_25C_OHMS|SH_C_COEFF)$/);
+            if (m1) return [ 'EXTRUDER', 'HOTEND' ].includes(m1[1]) ? '0' : m1[1];
+            const m2 = name.match(/^HOTEND(\d)_.+$/);
             if (m2) return m2[1];
-            const m3 = name.match(/\bHEATER_(\d)_M(IN|AX)TEMP\b/);
+            const m3 = name.match(/^HEATER_(\d)_M(AX|IN)TEMP$/);
             if (m3) return m3[1];
+            const m4 = name.match(/^PREHEAT_\d_TEMP_(EXTRUDER|HOTEND|BED|CHAMBER|COOLER|PROBE)$/);
+            if (m4) return [ 'EXTRUDER', 'HOTEND' ].includes(m4[1]) ? '0' : m4[1];
             return '';
           }
 
           // Items that depend on EXTRUDERS to be enabled.
           function is_eaxis_item(name) {
-            const m1 = name.match(/\bE(\d)_(DRIVER_TYPE|AUTO_FAN_PIN|FAN_TACHO_PIN|FAN_TACHO_PULLUP|FAN_TACHO_PULLDOWN|MAX_CURRENT|SENSE_RESISTOR|MICROSTEPS|CURRENT|RSENSE|CHAIN_POS|INTERPOLATE|HOLD_MULTIPLIER|CS_PIN|SLAVE_ADDRESS|HYBRID_THRESHOLD)\b/);
+            const m1 = name.match(/^E(\d)_(DRIVER_TYPE|AUTO_FAN_PIN|FAN_TACHO_PIN|FAN_TACHO_PULL(UP|DOWN)|MAX_CURRENT|SENSE_RESISTOR|MICROSTEPS|CURRENT|RSENSE|CHAIN_POS|INTERPOLATE|HOLD_MULTIPLIER|CS_PIN|SLAVE_ADDRESS|HYBRID_THRESHOLD)$/);
             if (m1) return m1[1];
-            const m2 = name.match(/\bCHOPPER_TIMING_E(\d)\b/);
+            const m2 = name.match(/^CHOPPER_TIMING_E(\d)$/);
             if (m2) return m2[1];
-            const m3 = name.match(/\bINVERT_E(\d)_DIR\b/);
+            const m3 = name.match(/^INVERT_E(\d)_DIR$/);
             if (m3) return m3[1];
-            const m4 = name.match(/\bHEATER_(\d)_M(IN|AX)TEMP\b/);
+            const m4 = name.match(/^HEATER_(\d)_M(AX|IN)TEMP$/);
             if (m4) return m4[1];
-            const m5 = name.match(/\bTEMP_SENSOR_(\d)\b/);
+            const m5 = name.match(/^TEMP_SENSOR_(\d)$/);
             if (m5) return m5[1];
-            const m6 = name.match(/\bFIL_RUNOUT(\d)_(STATE|PULL(UP|DOWN))\b/);
+            const m6 = name.match(/^FIL_RUNOUT(\d)_(STATE|PULL(UP|DOWN))$/);
             if (m6) return m6[1];
-            if (name == 'DISABLE_IDLE_E') return '0';
-            if (name == 'STEP_STATE_E') return '0';
+            if (['DISABLE_IDLE_E', 'STEP_STATE_E', 'NOZZLE_PARK_FEATURE', 'NOZZLE_CLEAN_FEATURE'].includes(name)) return '0';
             return '';
           }
 
           // Items that depend on *_DRIVER_TYPE to be enabled.
           function is_axis_item(name) {
-            const m1 = name.match(/\b([XYZIJKUVW]\d?)_(CHAIN_POS|CS_PIN|CURRENT(|_HOME)|ENABLE_ON|HOLD_MULTIPLIER|HOME_DIR|HYBRID_THRESHOLD|INTERPOLATE|MAX_CURRENT|M(AX|IN)_ENDSTOP_(INVERTING|HIT_STATE)|M(AX|IN)_POS|MICROSTEPS|RSENSE|SAFETY_STOP|SENSE_RESISTOR|SLAVE_ADDRESS|STALL_SENSITIVITY)\b/);
+            const m1 = name.match(/^([XYZIJKUVW]\d?)_(CHAIN_POS|CS_PIN|CURRENT(|_HOME)|ENABLE_ON|HOLD_MULTIPLIER|HOME_DIR|HYBRID_THRESHOLD|INTERPOLATE|MAX_CURRENT|M(AX|IN)_ENDSTOP_(INVERTING|HIT_STATE)|M(AX|IN)_POS|MICROSTEPS|RSENSE|SAFETY_STOP|SENSE_RESISTOR|SLAVE_ADDRESS|STALL_SENSITIVITY)$/);
             if (m1) return m1[1];
-            const m2 = name.match(/\b(CHOPPER_TIMING|DISABLE(|_INACTIVE|_IDLE)|M(AX|IN)_SOFTWARE_ENDSTOP|SAFE_BED_LEVELING_START|STEALTHCHOP|STEP_STATE)_([XYZIJKUVW]\d?)\b/);
+            const m2 = name.match(/^(CHOPPER_TIMING|DISABLE(|_INACTIVE|_IDLE)|M(AX|IN)_SOFTWARE_ENDSTOP|SAFE_BED_LEVELING_START|STEALTHCHOP|STEP_STATE)_([XYZIJKUVW]\d?)$/);
             if (m2) return m2[4];
-            const m3 = name.match(/\bINVERT_(.+)_(DIR|STEP_PIN)\b/);
+            const m3 = name.match(/^INVERT_(.+)_(DIR|STEP_PIN)$/);
             if (m3) return m3[1];
-            const m4 = name.match(/\bMANUAL_(.+)_HOME_POS\b/);
+            const m4 = name.match(/^MANUAL_(.+)_HOME_POS$/);
             if (m4) return m4[1];
-            const m5 = name.match(/\bUSE_(.+)M(IN|AX)_PLUG\b/);
+            const m5 = name.match(/^CALIBRATION_MEASURE_(.+)M(AX|IN)$/);
             if (m5) return m5[1];
-            const m6 = name.match(/\bENDSTOPPULL(UP|DOWN)_(.+)(MIN|MAX)\b/);
-            if (m6) return m6[2];
-            const m7 = name.match(/\bAXIS(\d)_(NAME|ROTATES)\b/);
-            if (m7) return [ 'I', 'J', 'K', 'U', 'V', 'W' ][m7[1] - 4];
+            const m6 = name.match(/^USE_(.+)M(AX|IN)_PLUG$/);
+            if (m6) return m6[1];
+            const m7 = name.match(/^ENDSTOPPULL(UP|DOWN)_(.+)M(AX|IN)$/);
+            if (m7) return m7[2];
+            const m8 = name.match(/^AXIS(\d)_(NAME|ROTATES)$/);
+            if (m8) return [ 'I', 'J', 'K', 'U', 'V', 'W' ][m8[1] - 4];
+            return '';
+          }
+
+          function is_serial_item(name) {
+            const m1 = name.match(/^BAUDRATE(_(\d))?$/);
+            if (m1) return m1[2] || '0';
+            if (name == 'BAUD_RATE_GCODE') return '0';
+            const m2 = name.match(/^SERIAL_PORT_(\d)$/);
+            if (m2) return m2[1] == '2' ? '0' : (m2[1] - 1).toString();
             return '';
           }
 
           // Some items depend on axes being enabled
           const axis = is_axis_item(define_name),
               eindex = is_eaxis_item(define_name),
-              hindex = is_heater_item(define_name);
+              hindex = is_heater_item(define_name),
+              sindex = is_serial_item(define_name);
 
           function extend_requires(cond) {
             if (define_info.requires !== undefined)
@@ -1324,6 +1423,7 @@ class ConfigSchema {
           if (axis) extend_requires(`HAS_AXIS(${axis})`);
           if (eindex) extend_requires(`HAS_EAXIS(${eindex})`);
           if (hindex) extend_requires(`HAS_SENSOR(${hindex})`);
+          if (sindex) extend_requires(`HAS_SERIAL(${sindex})`);
 
           // If the comment specifies units, add that to the info
           function set_units(comm) {
@@ -1383,13 +1483,18 @@ class ConfigSchema {
           // Create section dict if it doesn't exist yet
           if (!(section in sdict)) sdict[section] = {};
 
-          // If define has already been seen it becomes an array
+          // If define has already been seen it becomes an array.
+          // Done non-destructively to preserve old references.
           if (define_name in sdict[section]) {
+            define_info.group = define_name.toLowerCase();
+            // The previously defined item or array
             const info = sdict[section][define_name];
             if (info instanceof Array)
               info.push(define_info);
-            else
+            else {
+              info.group = define_info.group;
               sdict[section][define_name] = [info, define_info];
+            }
             log(`Duplicate #define ${define_name}`, line_number);
           }
           else {
@@ -1397,12 +1502,14 @@ class ConfigSchema {
             sdict[section][define_name] = define_info;
             log(`Added a define for ${define_name} to section '${section}'`, line_number);
           }
-          this.index[sid] = define_info;
+          // Keep an index by SID
+          this.bysid[sid] = define_info;
           if (state == Parse.EOL_COMMENT) last_added_ref = define_info;
         }
         else {
           // For an #undef mark all previous instances of the name disabled and
           // add an 'undef' field containing the sid it was undefined after.
+          // If it was already undefined earlier, don't override that sid.
           const unmatch = line.match(/^\s*#undef\s+([^\s]+)/);
           if (unmatch) {
             const name = unmatch[1];
@@ -1423,12 +1530,10 @@ class ConfigSchema {
                   const foo = opts[name];
                   if (foo instanceof Array)
                     for (const item of foo) {
-                      item.enabled = false;
-                      item.undef = sid;
+                      if (item.undef === undefined) item.undef = sid;
                     }
                   else {
-                    foo.enabled = false;
-                    foo.undef = sid;
+                    if (foo.undef === undefined) foo.undef = sid;
                   }
                 }
               }

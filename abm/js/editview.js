@@ -229,31 +229,19 @@ $(function () {
    * @param {dict} fields - The fields to replace in the option.
    */
   function commitChange(optref, fields) {
-    // Mark fields as dirty
-    fields.dirty = true;
-
-    // Save original values if not already marked as dirty
-    if (optref.dirty === undefined || optref.dirty == false) {
-      optref.orig = { value: optref.value, enabled: optref.enabled };
-    }
-    // Reset dirty flag if values are unchanged
-    else if ( (fields.value === undefined || optref.orig.value == fields.value)
-      && (fields.enabled === undefined || optref.orig.enabled == fields.enabled)
-    ) {
-      fields.dirty = false;
-      delete optref.orig;
-    }
-
-    // Log and update UI
-    log(`Setting Dirty flag: ${fields.dirty}`);
-    $(`div.line.sid-${optref.sid}`).toggleClass('dirty', fields.dirty);
-
     // Assign new field values to the option reference
     Object.assign(optref, fields);
-    log("Updated Option:", [ optref, fields ]);
 
-    // Refresh UI and state
-    schema.refreshRequiresAfter(optref.sid);
+    // Is the value / enabled state different from the original?
+    const dirty = optref.orig.enabled != optref.enabled || (optref.value !== undefined && optref.orig.value != optref.value);
+    optref.dirty = dirty;
+
+    // Log and update UI
+    log("commitChange", [ optref, fields ]);
+    $(`div.line.sid-${optref.sid}`).toggleClass('dirty', dirty);
+
+    // Refresh UI and state)
+    schema.refreshRequiresAfter(optref.name == 'EXTRUDERS' ? 1 : optref.sid);
     refreshVisibleItems();
     saveWebViewState();
 
@@ -294,8 +282,26 @@ $(function () {
 
   //! @brief Handle a checkbox change event.
   function handleCheckbox(e) {
-    console.log("handleCheckbox", e);
     applyEnableCheckbox($(e.target));
+  }
+
+  //! @brief Handle a checkbox event in a mutual-exclusive group.
+  function handleCheckboxGroup(e) {
+    start_multi_update();
+
+    const cb = e.target, $cb = $(cb), // The checkbox.
+          $sdiv = $('div.section-inner'), // Some groups cross sections
+          clas = $cb.prop('class');
+
+    $sdiv.find(`.${clas}:checked`).each(function(i,o) {
+      if (o === cb) return;
+      const $acb = $(o);
+      $acb.prop('checked', false);
+      applyEnableCheckbox($acb);
+    });
+    applyEnableCheckbox($cb);
+
+    end_multi_update();
   }
 
   //! @brief Handle enabling an item in a mutual-exclusive "radio button" group.
@@ -522,7 +528,7 @@ $(function () {
    * @param {item} data : An option to add to the form
    * @param {jquery} $inner : The element to append to
    */
-  const option_defaults = { type: '', value: '', options: '', depth: 0, dirty: false, evaled: true };
+  const option_defaults = { type: '', value: '', options: '', group: '', depth: 0, dirty: false, evaled: true };
   function addOptionLine(data, $inner) {
     // Add defaults for missing fields
     const item = { ...option_defaults, ...data };
@@ -539,15 +545,10 @@ $(function () {
     // Prepare the div, label, label text, and option enable checkbox / radio
     const $linediv = $("<div>", { id: `-${name.toID()}-${item.sid}`, class: `line sid-${item.sid}` }),
         $linelabel = $("<label>", { class: "opt" }),
-        $labelspan = $("<span>").text(name.toLabel());
+        $labelspan = $("<span>").text(name.toLabel()),
+           $linecb = $("<input>", { type: "checkbox", name, tabindex: 9999, checked: ena }).bind("change", group ? handleCheckboxGroup : handleCheckbox);
 
-    var $linecb;
-    if (group) {
-      $linecb = $("<input>", { type: "radio", name: group, tabindex: 9999, value: name }).bind("change", handleRadioGroup);
-      if (ena) $linecb.addClass('checked');
-    }
-    else
-      $linecb = $("<input>", { type: "checkbox", name, tabindex: 9999, checked: ena }).bind("change", handleCheckbox);
+    if (group) $linecb.addClass(`radio-${group}`);
 
     $linediv[0].inforef = data;
     $linediv.addClass(`d${item.depth}`);

@@ -2,6 +2,12 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.59
+- Fix handling of #undef
+- Identify macro defines
+- Use checkbox groups for optional items
+- Add checkbox groups for like-named items
+
 ## 2.1.58
 - Fix filtering options by axis
 - Implement radio grouping for LCD items
