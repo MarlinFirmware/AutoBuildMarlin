@@ -142,8 +142,8 @@ function combinedSchema() {
    * s1 : Configuration.h schema
    * s2 : Configuration_adv.h schema with Configuration.h + Conditionals_LCD.h precursor
    */
-  const s1 = ConfigSchema.fromText(config1),
-        s2 = ConfigSchema.fromText(adv_combo, -prefix_lines);
+  const s1 = ConfigSchema.newSchemaFromText(config1),
+        s2 = ConfigSchema.newSchemaFromText(adv_combo, -prefix_lines);
 
   return { basic: s1, advanced: s2 };
 }

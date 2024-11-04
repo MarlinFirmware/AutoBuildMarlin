@@ -101,15 +101,40 @@ $(function () {
   });
 
   String.prototype.toTitleCase = function () {
-    return this.replace(/(\w)jerk/gi, '$1 jerk')
-               .replace(/([A-Z])(\w+)/gi, (m, p1, p2) => { return p1.toUpperCase() + p2.toLowerCase(); })
-               .replace(/(xyuv|\b[XYZ]{2,3}|[XYZ]{2,3}\b|g?lcd|yhcb|\b(blt|mpc|sd)|\b(adc|bd|btt|cnc|jd|la|lk|led|lin|mpe?|psu|ptc|ubl|usb|utf)\b|dgus|dwin|eeprom|ftdi|gfx|mks|pid|pwm|ssd|tft|wyh|(dlp|mmu)\b|rgbw?|oled|pca\d+|uuid|HD44\d+|(sd|hw|sw|ui)\b|(sc|tp)ara|\bSPI\b|cr\d+|\b[a-z]+\d+[a-z]*\b)/gi, (m, p1) => { return p1.toUpperCase(); })
-               .replace(/\bMm M\b/, 'mm/min').replace(/\b0 0\b/, '0,0').replace('Gcode', 'G-code')
-               .replace(/(\b(at|mm|ms|in|of|us)\b)/gi, (m, p1) => { return p1.toLowerCase(); })
-               .replace(/\bus\b/gi, 'µs');
+    return this.replace(/\b([A-Z])(\w+)\b/gi, (_, p1, p2) => { return p1.toUpperCase() + p2.toLowerCase(); })
+  }
+  String.prototype.toMarlinCase = function () {
+    return this.replace(/(\w)(jerk|step|temp|bed|chamber|probe)/gi, '$1 $2')
+              .replace(/\b(\w)(min|max|point)\b/gi, '$1 $2')
+              .replace(/toppull/gi, 'top pull')
+              // Title Case
+              .toTitleCase()
+              // Uppercase Words
+              .replace(/\b(..?|adc|azsmz|beez|biqu|btt|cnc|ctc|elb|led|lin|mpe|psu|ptc|rts|sav|soc|spi|ubl|usb|utf)\b/gi, (m) => { return m.toUpperCase(); })
+              // Uppercase Anywhere Sequences
+              .replace(/xyuv|g?lcd|yhcb|dgus|dwin|eeprom|ftdi|gfx|lvgl|mks|pid|pwm|ssd|tft|wyh|rgbw?|oled|pca\d+|uuid|HD44\d+|(sc|tp)ara|cr\d+/gi, (m) => { return m.toUpperCase(); })
+              // Uppercase Beginning Sequences
+              .replace(/\b([xyz]{2,3}|blt|mpc|sd)/gi, (m) => { return m.toUpperCase(); })
+              // Uppercase Ending Sequences
+              .replace(/([xyz]{2,3}|dlp|mmu|sd|hw|sw|ui)\b/gi, (m) => { return m.toUpperCase(); })
+              // Uppercase Numerical parts
+              .replace(/\b[a-z]+\d+[a-z]*\b/gi, (m) => { return m.toUpperCase(); })
+              // Title Case Strings and Substrings
+              .replace(/(count|pixel|print|\b(ON|NO|K[PID])\b)/g, (m) => { return m.toTitleCase(); })
+              // Lowercase words
+              .replace(/\b(and|at|mm|ms|in|of|or)\b/gi, (m) => { return m.toLowerCase(); })
+              // Special cases
+              .replace(/ per (unit|step)\b/gi, '-per-$1')
+              .replace(/\bmm M\b/, '(mm/min)')
+              .replace(/\b0 0\b/, '0,0')
+              .replace(/\bH\b/, '.h')
+              .replace(/ (V?.) (.)$/, ' $1.$2')
+              .replace('Gcode', 'G-code').replace(/\bLeds\b/, 'LEDs').replace('nkm', 'nkM')
+              .replace(/(\w)temp\b/g, '$1Temp').replace('Reprap', 'RepRap').replace('eboard', 'eBoard')
+              .replace(/\bus\b/gi, 'µs');
   }
   String.prototype.unbrace     = function () { return this.replace(/[\[\]]/g, ''); }
-  String.prototype.toLabel     = function () { return this.unbrace().replace(/_/g, ' ').toTitleCase(); }
+  String.prototype.toLabel     = function () { return this.unbrace().replace(/_/g, ' ').toMarlinCase(); }
   String.prototype.toID        = function () { return this.unbrace().replace(/_/g, '-').toLowerCase(); }
   String.prototype.sectID      = function () { return this.replace(/[^\w]+/g, '-').toLowerCase(); }
   String.prototype.camelToID   = function () { return this.unbrace().replace(/([a-z])([A-Z0-9_])/g, '$1_$2').replace(/_/g, '-').toLowerCase(); }
@@ -240,8 +265,9 @@ $(function () {
     log("commitChange", [ optref, fields ]);
     $(`div.line.sid-${optref.sid}`).toggleClass('dirty', dirty);
 
-    // Refresh UI and state)
-    schema.refreshRequiresAfter(optref.name == 'EXTRUDERS' ? 1 : optref.sid);
+    // Refresh UI and state
+    schema.refreshAllRequires();
+    //schema.refreshRequiresAfter(optref.name == 'EXTRUDERS' ? 1 : optref.sid);
     refreshVisibleItems();
     saveWebViewState();
 
@@ -653,11 +679,10 @@ $(function () {
     const $form = $('<form>');
     for (let [sect, dict] of Object.entries(data)) {
       if (sect == '_') continue;
-      if (sect[0] == '?') sect = sect.slice(1);
       const sectid = sect.sectID();
       log(`${sect} =====================`);
       // Create a form group for each section
-      const title = `${ConfigSchema.section_emoji(sect)}&nbsp;&nbsp;${sect.toLabel()}`,
+      const title = `${ConfigSchema.sectionEmoji(sect)}&nbsp;&nbsp;${sect.toLabel()}`,
         $fieldset = $(`<fieldset class="section ${sectid}">`),
         $revealer = $(`<legend><span class="section-title">${title}</span></legend>`),
            $inner = $(`<div class="section-inner">`);
@@ -692,7 +717,7 @@ $(function () {
   function buildConfigFormWithText(text) {
     log("buildConfigFormWithText");
     // Create a whole new schema and yeet the old one.
-    schema = ConfigSchema.fromText(text);
+    schema = ConfigSchema.newSchemaFromText(text);
     //schema.debug_sections();
     //schema.debug();
 
@@ -755,7 +780,7 @@ $(function () {
     if (state.filter !== undefined) initFilterVal(state.filter);
     if (state.data !== undefined) {
       log("Init CE Webview with stored data")
-      schema = ConfigSchema.fromData(state.data);
+      schema = ConfigSchema.newSchemaFromData(state.data);
       buildConfigForm();
     }
   }

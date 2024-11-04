@@ -23,7 +23,11 @@ function log(message, line = 0) {
  * ConfigSchema encapsulates a single configuration file schema, imported
  * from C/C++ header files with #define directives and custom macros.
  *
- * - The schema is stored in a 'data' dictionary keyed by option name.
+ * - The schema is stored in a 'data' dictionary keyed by section, then by option name.
+ * - The 'bysid' dictionary is keyed by sid and references the same data.
+ * - Each item in the schema is a dictionary with information about a single #define.
+ *   See the description at importText() below for the #define info structure.
+ *
  * - The first import pass:
  *   - Gathers an exhaustive list of all #define items, both enabled and disabled.
  *   - Captures the nested #if structure indirectly:
@@ -33,18 +37,18 @@ function log(message, line = 0) {
  *   - Deleting the 'evaled' field and calling evaluateRequires(item) forces re-evaluation.
  *     Since every item afterward needs re-evaluation, call updateEditedItem(item).
  *
- * - Each item in the schema is a dictionary with information about a single #define.
- *   See the description at importText() below for the #define info structure.
- * - The schema 'bysid' contains every #define in order of import / appearance.
- *   (If the sid was guaranteed to be contiguous 'bysid' could be an array.)
  */
 class ConfigSchema {
+
+  // Debugging and logging
   static verbose = false;
+  debug() { console.dir(this.data); }
+  debug_sections() { console.log(Object.keys(this.data)); }
 
   // Populate a new schema from text, numbering lines starting from an index.
   constructor(text, numstart=0) {
-    this.data = {};
-    this.bysid = {};
+    this.data = {};   // { sec1: { nam1: { ... }, ... }, ... }
+    this.bysid = {};  // { sid1: { ... }, ... }
     if (text) this.importText(text, numstart);
   }
   // Factory method to create a new uninitialized schema.
@@ -52,31 +56,29 @@ class ConfigSchema {
     return new ConfigSchema();
   }
   // Factory method to create a schema from a text string.
-  static fromText(text, numstart=0) {
+  static newSchemaFromText(text, numstart=0) {
     return new ConfigSchema(text, numstart);
   }
   // Factory method to create a schema from a data reference.
-  static fromData(data) {
+  static newSchemaFromData(data) {
     const instance = new ConfigSchema();
     instance.data = data;
     return instance;
   }
 
-  // Clean up options so they can be JSON parsed.
+  // Utility method to fix up an options string so it can be JSON parsed.
   static cleanOptions(opts) {
     if (opts.match(/\[\s*\d\s*:\s*[\'"]/))
       opts = opts.replace('[', '{').replace(']', '}');
     return opts;
   }
 
-  debug() { console.dir(this.data); }
-  debug_sections() { console.log(Object.keys(this.data)); }
-
   /**
-   * Reduce the given config text down to just preprocessor
-   * directive lines, removing all block comments.
-   * This makes the text quicker to parse, but don't apply
-   * if you need to preserve comments and line numbers.
+   * Utility method to reduce the given config text down to
+   * just preprocessor directive lines, removing all block
+   * comments. This makes the text much faster to parse.
+   * Don't apply if you need to preserve comments and line numbers.
+   * Return an object with the stripped text and the number of lines.
    */
   static strippedConfig(config) {
     var text = '', count = 0, addnext = false;
@@ -97,193 +99,123 @@ class ConfigSchema {
   }
 
   /**
-   * Pre-created schema dict with an array of section keys.
-   * This is the order sections will appear on all config editor forms.
-   * Keep adjusting to place the most relevant sections first.
+   * Sections with emojis to pretty up the UI.
+   *
+   *  👁 🤞 👤 👮‍♀️ 🥷 🎅 😱 😷 💩 👽 ☠️ 👾 🤖 🫵 👥 🧠 🗣 👩‍💻 🧜‍♀️ 🤷
+   *  🦺 👔 👑 👓 🧢 🕶 🥽 💼 🎩 🧤 🦄 🐝 🐛 🐌 🐢 🐙 📁 💾 📺 ⏰
+   *  ⏱ 🧭 📷 🪣 ⏰ 🔋 ⚓️ 🚦 🚑 🚗 🚀 💡 🔌 🔧 🔨 🧰 ⚒ 🛠 ⚙️ 🔑 💊
+   *  💣 📦 📖 ✏️ 📝 ❤️ 🆘 ❌ ✅ 🚸 ⚠️ ❓ ❗️ ▶️ ⏸ ⏹ 🎵 🕓 🇺🇦🇬🇧🇺🇸🇨🇦 ⚡️
+   *  🗑 🏛 ✈️ 🛸 🚜 🧩 🎲 🎮 🎱 🍿 🍔 🍊 🍅 ☂️ ☘️ 🍀 🦤 🪲 🕷 🤓 ☝️
+   *
    */
-  static emptyOrderedSchema() {
-    const sections = [
-      "_",
-      "test",
-      "custom",
+  static sectionOrderWithEmojis = {
+    '_': '❓',
+    'test': '🧪',
+    'custom': '❓',
 
-      "info",
-      "machine",
-      "eeprom",
+    'info': 'ℹ︎',
+    'machine': '🤖',
+    'eeprom': '💾',
 
-      "stepper drivers",
-      "multi stepper",
-      "idex",
-      "extruder",
+    'stepper drivers': '🛞',
+    'multi stepper': '🛞',
+    'idex': '👥',
+    'extruder': '💩',
 
-      "geometry",
-      "homing",
-      "?kinematics",
-      "motion",
-      "motion control",
+    'geometry': '📐',
+    'homing': '🏠',
+    'kinematics': '⚙️',
+    'motion': '🏃',
+    'motion control': '🏃',
 
-      "endstops",
-      "?probe type",
-      "probes",
-      "bltouch",
-      "leveling",
+    'endstops': '🛑',
+    'probe type': '🛰',
+    'probes': '🛰',
+    'bltouch': '☝️',
+    'leveling': '🧩',
 
-      "temperature",
-      "mpctemp",
-      "bed temp",
-      "fans",
+    'temperature': '🌡',
+    'hotend temp': '🌡',
+    'mpctemp': '🌡',
+    'mpc temp': '🌡',
+    'bed temp': '🌡',
+    'chamber temp': '🌡',
+    'fans': '💨',
 
-      "tool change",
-      "advanced pause",
-      "calibrate",
+    'tool change': '🔧',
+    'advanced pause': '⏯',
+    'calibrate': '🔍',
 
-      "hotend temp",
-      "chamber temp",
-      "cnc",
+    'lcd': '🖥',
+    'interface': '⌨️',
+    'custom main menu': '🔧',
+    'custom config menu': '🔧',
+    'custom buttons': '🔘',
 
-      "?lcd",
-      "interface",
-      "custom main menu",
-      "custom config menu",
-      "custom buttons",
+    'develop': '🛠',
+    'debug matrix': '🪲',
 
-      "develop",
-      "debug matrix",
+    'delta': '∆',
+    'scara': '🦄',
+    'tpara': '🦄',
+    'polar': '🐧',
+    'cnc': '🪚',
 
-      "delta",
-      "scara",
-      "tpara",
-      "polar",
+    'filament width': '📏',
+    'gcode': '🎱',
 
-      "filament width",
-      "gcode",
+    'host': '🐙',
 
-      "host",
+    'i2c encoders': '👀',
+    'i2cbus': '🧪',
+    'joystick': '🕹',
+    'lights': '💡',
+    'multi-material': '🍔',
+    'nanodlp': '🦤',
+    'network': '🕸',
+    'photo': '📷',
+    'power': '⚡️',
+    'psu control': '🔌',
+    'reporting': '📢',
+    'safety': '🚧',
+    'security': '🔒',
+    'serial': '🥣',
+    'servos': '🦾',
+    'stats': '📊',
 
-      "i2c encoders",
-      "i2cbus",
-      "joystick",
-      "lights",
-      "multi-material",
-      "nanodlp",
-      "network",
-      "photo",
-      "power",
-      "psu control",
-      "reporting",
-      "safety",
-      "security",
-      "serial",
-      "servos",
-      "stats",
+    'tmc/config': '😎',
+    'tmc/hybrid': '😎',
+    'tmc/serial': '😎',
+    'tmc/smart': '😎',
+    'tmc/spi': '😎',
+    'tmc/stallguard': '😎',
+    'tmc/status': '😎',
+    'tmc/stealthchop': '😎',
+    'tmc/tmc26x': '😎',
 
-      "tmc/config",
-      "tmc/hybrid",
-      "tmc/serial",
-      "tmc/smart",
-      "tmc/spi",
-      "tmc/stallguard",
-      "tmc/status",
-      "tmc/stealthchop",
-      "tmc/tmc26x",
+    'units': '🇺🇳',
+    'volumetrics': '🎚',
 
-      "units",
-      "volumetrics",
+    'extras': '🔍'
+  };
 
-      "extras"
-    ];
-
+  /**
+   * Utility method to get a pre-ordered dictionary of empty sections.
+   * This pre-determines the order that sections will be scanned and
+   * appear in the UI. Adjust as needed to put more relevant sections first.
+   */
+  static emptyOrderedData() {
     // Create a dictionary of empty sections in the order above.
-    var dict = {};
-    for (const s of sections) dict[s] = {};
+    let dict = {};
+    for (const s of Object.keys(ConfigSchema.sectionOrderWithEmojis)) dict[s] = {};
     return dict;
   }
 
   /**
    * Return an emoji to dress up the given section.
-   *
-   *  👁 🤞 👤 👮‍♀️ 🥷 🎅 😱 😷 💩 👽 ☠️ 👾 🤖 🫵 👥 🧠 🗣 👩‍💻 🧜‍♀️ 🤷
-   *  🦺 👔 👑 👓 🧢 🕶 🥽 💼 🎩 🧤 🦄 🐝 🐛 🐌 🐢 🐙 📁 💾 📺 ⏰
-   *  ⏱ 🧭 📷 🪣 ⏰ 🔋 ⚓️ 🚦 🚑 🚗 🚀 💡 🔌 🔧 🔨 🧰 ⚒ 🛠 ⚙️ 🔑 💊
-   *  💣 📦 📖 ✏️ 📝 ❤️ 🆘 ❌ ✅ 🚸 ⚠️ ❓ ❗️ ▶️ ⏸ ⏹ 🎵 🕓 🇺🇦🇬🇧🇺🇸🇨🇦
-   *  🗑 🏛 ✈️ 🛸 🚜 🧩 🎲 🎮 🎱 🍿 🍔 🍊 🍅 ☂️ ☘️ 🍀 🦤 🪲 🕷 🤓 ☝️
-   *
    */
-  static section_emoji(s) {
-    const emojis = {
-      "advanced pause": "⏯",
-      "bed temp": "🌡",
-      "bltouch": "☝️",
-      "calibrate": "🔍",
-      "caselight": "💡",
-      "chamber temp": "🌡",
-      "cnc": "🪚",
-      "custom": "❓",
-      "custom buttons": "🔘",
-      "custom config menu": "🔧",
-      "custom main menu": "🔧",
-      "debug matrix": "🪲",
-      "delta": "∆",
-      "develop": "🛠",
-      "eeprom": "💾",
-      "endstops": "🛑",
-      "extras": "🔍",
-      "extruder": "💩",
-      "fans": "💨",
-      "filament width": "📏",
-      "gcode": "🎱",
-      "geometry": "📐",
-      "homing": "🏠",
-      "host": "🐙",
-      "hotend temp": "🌡",
-      "i2c encoders": "👀",
-      "i2cbus": "🧪",
-      "info": "ℹ︎",
-      "interface": "⌨️",
-      "joystick": "🕹",
-      "lcd": "🖥",
-      "leveling": "🧩",
-      "lights": "💡",
-      "machine": "🤖",
-      "motion": "🏃",
-      "motion control": "🏃",
-      "mpctemp": "🌡",
-      "multi-material": "🍔",
-      "multi stepper": "🛞",
-      "nanodlp": "🦤",
-      "network": "🕸",
-      "photo": "📷",
-      "polar": "🐧",
-      "power": "⚡️",
-      "probes": "🛰",
-      "probing": "🛰",
-      "probe type": "🛰",
-      "psu control": "🔌",
-      "reporting": "📢",
-      "safety": "🦺",
-      "scara": "🦄",
-      "security": "🔒",
-      "serial": "🥣",
-      "servos": "🦾",
-      "stats": "📊",
-      "stepper drivers": "🛞",
-      "temperature": "🌡",
-      "test": "🧪",
-      "tmc/config": "😎",
-      "tmc/hybrid": "😎",
-      "tmc/serial": "😎",
-      "tmc/smart": "😎",
-      "tmc/spi": "😎",
-      "tmc/stallguard": "😎",
-      "tmc/status": "😎",
-      "tmc/stealthchop": "😎",
-      "tmc/tmc26x": "😎",
-      "tool change": "🔧",
-      "tpara": "🦄",
-      "units": "🇺🇳",
-      "volumetrics": "🎚"
-    };
-    return emojis[s] ? emojis[s] : "🍅";
+  static sectionEmoji(s) {
+    return ConfigSchema.sectionOrderWithEmojis[s] ?? "🍅";
   }
 
   //
@@ -377,7 +309,7 @@ class ConfigSchema {
   }
 
   /**
-   * Find the last defined (and not since undefined) item in the schema with a given name before an optional sid.
+   * Find by name the last defined (and not since undefined) item in the schema before an optional sid.
    *
    * @param {string} name Name of the item to find.
    * @param {int} before The last index allowed for the item.
@@ -409,6 +341,11 @@ class ConfigSchema {
    * @returns The name of the group, or null.
    */
   itemGroup(item) {
+    // U8GLIB
+    const u8glib = [ 'U8GLIB_SSD1306', 'U8GLIB_SH1106' ];
+    if (u8glib.includes(item.name))
+      return item?.depth ? 'sav-u8glib' : 'lcd';
+
     // LCD Names
     const lcd_names = [
       'REPRAP_DISCOUNT_SMART_CONTROLLER',
@@ -483,14 +420,8 @@ class ConfigSchema {
       'FSMC_GRAPHICAL_TFT', 'SPI_GRAPHICAL_TFT', 'TFT_320x240', 'TFT_320x240_SPI', 'TFT_480x320', 'TFT_480x320_SPI',
       'DWIN_CREALITY_LCD', 'DWIN_LCD_PROUI', 'DWIN_CREALITY_LCD_JYERSUI', 'DWIN_MARLINUI_PORTRAIT', 'DWIN_MARLINUI_LANDSCAPE'
     ];
-    if (lcd_names.includes(item.name)) {
-      if (item.depth === undefined || item.depth == 0) return 'lcd';
-      return null;
-    }
-
-    // U8GLIB
-    const u8glib = [ 'U8GLIB_SSD1306', 'U8GLIB_SH1106' ];
-    if (u8glib.includes(item.name)) return 'u8glib';
+    if (lcd_names.includes(item.name))
+      return item?.depth ? null : 'lcd';
 
     // TFT Interfaces
     const tft_if = [ 'TFT_INTERFACE_FSMC', 'TFT_INTERFACE_SPI' ];
@@ -499,6 +430,14 @@ class ConfigSchema {
     // TFT Resolutions
     const tft_res = [ 'TFT_RES_320x240', 'TFT_RES_480x272', 'TFT_RES_480x320', 'TFT_RES_1024x600' ];
     if (tft_res.includes(item.name)) return 'tft-res';
+
+    // TFT UIs
+    const tft_ui = [ 'TFT_COLOR_UI', 'TFT_CLASSIC_UI', 'TFT_LVGL_UI' ];
+    if (tft_ui.includes(item.name)) return 'tft-ui';
+
+    // Chiron TFTs
+    const tft_chiron = [ 'CHIRON_TFT_STANDARD', 'CHIRON_TFT_NEW' ];
+    if (tft_chiron.includes(item.name)) return 'tft-chiron';
 
     // RGB or RGBW
     const rgbled = [ 'RGB_LED', 'RGBW_LED' ];
@@ -542,6 +481,21 @@ class ConfigSchema {
       'ARTICULATED_ROBOT_ARM', 'FOAMCUTTER_XYUV', 'POLAR'
     ];
     if (kinematics.includes(item.name)) return 'kinematics';
+
+    // Extruder/Toolhead Types
+    const nozzle = [ 'SWITCHING_NOZZLE', 'MECHANICAL_SWITCHING_NOZZLE' ];
+    if (nozzle.includes(item.name)) return 'nozzles';
+
+    const switching = [ 'SWITCHING_EXTRUDER', 'MECHANICAL_SWITCHING_EXTRUDER' ];
+    if (switching.includes(item.name)) return 'switching';
+
+    const toolhead = [
+      'SINGLENOZZLE',
+      'DUAL_X_CARRIAGE',
+      'PARKING_EXTRUDER', 'MAGNETIC_PARKING_EXTRUDER',
+      'SWITCHING_TOOLHEAD', 'MAGNETIC_SWITCHING_TOOLHEAD', 'ELECTROMAGNETIC_SWITCHING_TOOLHEAD'
+    ];
+    if (toolhead.includes(item.name)) return 'toolhead';
 
     // Axis Homing Submenus
     const lcd_homing = [ 'INDIVIDUAL_AXIS_HOMING_MENU', 'INDIVIDUAL_AXIS_HOMING_SUBMENU' ];
@@ -969,7 +923,7 @@ class ConfigSchema {
     const boards = [];
 
     // Init the schema data with the preferred section order.
-    const sdict = ConfigSchema.emptyOrderedSchema();
+    const sdict = ConfigSchema.emptyOrderedData();
     // Regex for #define NAME [VALUE] [COMMENT] with sanitized line
     const defgrep = /^(\/\/)?\s*(#define)\s+([A-Za-z0-9_]+)\s*(.*?)\s*(\/\/.+)?$/;
     // Regex for #define MACRONAME() [VALUE] [COMMENT] with sanitized line
@@ -1495,16 +1449,13 @@ class ConfigSchema {
           // If define has already been seen it becomes an array.
           // Done non-destructively to preserve old references.
           if (define_name in sdict[section]) {
-            define_info.group = define_name.toLowerCase();
             // The previously defined item or array
             const info = sdict[section][define_name];
             if (info instanceof Array)
               info.push(define_info);
-            else {
-              info.group = define_info.group;
+            else
               sdict[section][define_name] = [info, define_info];
-            }
-            log(`Duplicate #define ${define_name}`, line_number);
+            log(`Duplicate #define ${define_name} (${sid})`, line_number);
           }
           else {
             // Add the define dict with name as key
@@ -1513,6 +1464,14 @@ class ConfigSchema {
           }
           // Keep an index by SID
           this.bysid[sid] = define_info;
+
+          // Sequential items with the same name go into a group together
+          if (sid > 1) {
+            const prev = this.bysid[sid - 1];
+            if (define_name == prev.name && define_info.group === undefined)
+              define_info.group = prev.group = define_name.toLowerCase();
+          }
+
           if (state == Parse.EOL_COMMENT) last_added_ref = define_info;
         }
         else {
@@ -1592,7 +1551,7 @@ class MultiSchema {
         }
       }
     }
-    this.combo = ConfigSchema.fromData(data);
+    this.combo = ConfigSchema.newSchemaFromData(data);
   }
 
   schema() { return this.combo; }
