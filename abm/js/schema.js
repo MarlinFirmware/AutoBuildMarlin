@@ -68,6 +68,7 @@ class ConfigSchema {
     const instance = new ConfigSchema();
     instance.data = data;
     instance.bysid = ConfigSchema.getIndexBySID(data);
+    instance.refreshAllRequires();
     return instance;
   }
   static getIndexBySID(data) {

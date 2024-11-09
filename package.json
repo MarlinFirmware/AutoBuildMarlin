@@ -1,8 +1,8 @@
 {
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
-  "description": "Provides an interface to quickly build and upload Marlin Firmware.",
-  "version": "2.1.59",
+  "description": "Provides an interface to configure, build, and upload Marlin Firmware.",
+  "version": "2.1.60",
   "preview": false,
   "publisher": "marlinfirmware",
   "icon": "icon.png",

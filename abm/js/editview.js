@@ -182,8 +182,9 @@ $(function () {
     changes = [];
   }
   function end_multi_update() {
-    vscode.postMessage({ type:'multi-change', changes });
     multi_update = false;
+    ignore_update = true;
+    vscode.postMessage({ type:'multi-change', changes }); // editor.js:handleMessage
   }
 
   // A filter text box to filter the list of options.
@@ -285,13 +286,14 @@ $(function () {
     refreshVisibleItems();
     saveWebViewState();
 
-    // Handle message posting
-    ignore_update = true;
+    // This update should be ignored when it comes back from onDidChangeTextDocument -> updateWebview
     const msg = { type: 'change', data: optref };
     if (multi_update)
       changes.push(msg);
-    else
-      vscode.postMessage(msg);
+    else {
+      ignore_update = true;
+      vscode.postMessage(msg); // editor.js:handleMessage
+    }
   }
 
   /**
@@ -794,7 +796,10 @@ $(function () {
           ignore_update = false;
         else
           buildConfigFormWithData(message.schema);  // Use the provided data to rebuild the form.
-          //buildConfigFormWithText(message.text);
+        break;
+
+      case 'text-update':
+        buildConfigFormWithText(message.text);  // Use the provided text to rebuild the form.
         break;
 
       // Display an error message

@@ -2,29 +2,39 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.60
+- Config Editor:
+  - Group sequential items with the same name
+  - Provide standard options for 'state' and 'dir' types
+  - More mutual-exclusive checkbox groups
+  - Preserve collapsed sections on show/hide document
+  - Clean up and document some code
+
 ## 2.1.59
-- Fix handling of #undef
-- Identify macro defines
-- Use checkbox groups for optional items
-- Add checkbox groups for like-named items
+- Config Editor:
+  - Fix handling of `#undef`
+  - Identify macro defines
+  - Use checkbox groups for optional distinct items
+  - Add checkbox groups for like-named items
 
 ## 2.1.58
-- Fix filtering options by axis
-- Implement radio grouping for LCD items
+- Config Editor:
+  - Fix filtering options by axis
+  - Implement radio grouping for LCD items
 
 ## 2.1.57
-- Config Editor "Show Disabled" checkbox
+- Config Editor: "Show Disabled" checkbox
 
 ## 2.1.56
-- Handle `MB(...)` in schema
+- Config Editor: Handle `MB(...)` in schema
 
 ## 2.1.55
 - Update for new `Conditionals-#-abc.h` files
 
 ## 2.1.54
-- Fix parsing of `defined()` in `schema.js`
+- Config Editor: Fix parsing of `defined()` in `schema.js`
 - Alt/Option changes "Clean" to "Purge" to delete build and libdeps
-- Add on-the-fly log_() function to `editview.js`
+- Config Editor: Add on-the-fly `log_()` function to `editview.js`
 
 ## 2.1.53
 - Prevent `platformio.ini` from opening by overriding a PlatformIO IDE setting.
