@@ -1289,7 +1289,7 @@ class ConfigSchema {
           sid++;
 
           // Type is based on the value
-          var value_type;
+          let value_type, options;
           if (val == '') {
             value_type = 'switch';
           }
@@ -1299,6 +1299,14 @@ class ConfigSchema {
           else if (/^(true|false)$/i.test(val)) {
             value_type = 'bool';
             val = val == 'true';
+          }
+          else if (/^.+_ENABLE_ON$/.test(define_name)) {
+            value_type = 'state';
+            val = [1,'1','true','HIGH'].includes(val) ? 'HIGH' : 'LOW';
+          }
+          else if (/^.+_HOME_DIR$/.test(define_name)) {
+            value_type = 'dir';
+            options = "{'-1':'Near', '0':'No Homing', '1':'Far'}";
           }
           else if (/^[-+]?\s*\d+$/.test(val)) {
             value_type = 'int';
@@ -1337,6 +1345,7 @@ class ConfigSchema {
 
           if (val !== '') { define_info.value = val; define_info.orig.value = val; }
           if (value_type != '') define_info.type = value_type;
+          if (options !== undefined) define_info.options = options;
 
           if (conditions.length) {
             define_info.requires = combine_conditions(conditions);
