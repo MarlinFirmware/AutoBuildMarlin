@@ -139,6 +139,18 @@ $(function () {
   String.prototype.sectID      = function () { return this.replace(/[^\w]+/g, '-').toLowerCase(); }
   String.prototype.camelToID   = function () { return this.unbrace().replace(/([a-z])([A-Z0-9_])/g, '$1_$2').replace(/_/g, '-').toLowerCase(); }
 
+  Array.prototype.toggle = function (val, tf) {
+    const hv = this.includes(val);
+    if (tf && !hv)
+      this.push(val);
+    else if (!tf && hv) {
+      // Remove the value from the array
+      for (let i = this.length - 1; i >= 0; i--)
+        if (this[i] === val) this.splice(i, 1);
+    }
+    return this;
+  };
+
   var verbose = false;
   function log(message, data) {
     if (!verbose) return;
@@ -153,7 +165,7 @@ $(function () {
   }
 
   var schema = ConfigSchema.newSchema(),
-      config_filter = { terms:'', show_comments: true, show_disabled: true },
+      config_filter = { terms: '', show_comments: true, show_disabled: true, collapsed: [] },
       result_index = 0;
 
   // We need getState, setState, and postMessage.
@@ -484,6 +496,7 @@ $(function () {
 
   /**
    * Apply the filter terms by hiding non-matching items.
+   * Hide any sections with no visible items.
    */
   function applyFilter(terms, $target=$formdiv) {
     $('#zero-box').removeClass('show');
@@ -512,33 +525,30 @@ $(function () {
     applyFilter(terms, $target);
   }
 
-
-  // Apply the "show comments" checkbox filter by hiding/showing comments.
-  function showComments(show) {
-    $formdiv.toggleClass('hide-comments', !show);
-  }
-
-  // Apply the "show disabled" checkbox filter by hiding/showing disabled options.
-  function showDisabled(show) {
-    $formdiv.toggleClass('hide-disabled', !show);
-    // Count up visible divs in each fieldset.section and hide empty ones.
-    hideEmptySections(false);
-  }
-
   // Save the filter in the window. Unless flagged, also set the filter fields.
-  function initFilterVal(filter, field=true) {
+  function initFilter(filter, field=true) {
     config_filter = filter;
     $filter.val(filter.terms);
-    $('#show-comments').prop('checked', filter.show);
-    showComments(filter.show);
+    $('#show-comments').prop('checked', filter.show_comments);
+    $('#show-disabled').prop('checked', filter.show_disabled);
   }
 
+  // Apply the "show comments" checkbox filter by hiding/showing comments.
+  function showComments(show, $target=$formdiv) {
+    $target.toggleClass('hide-comments', !show);
+  }
   function applyShowComments(show) {
     config_filter.show_comments = show;
     showComments(show);
     saveWebViewState();
   }
 
+  // Apply the "show disabled" checkbox filter by hiding/showing disabled options.
+  function showDisabled(show, $target=$formdiv) {
+    $target.toggleClass('hide-disabled', !show);
+    // Hide sections with no visible items.
+    hideEmptySections(false);
+  }
   function applyShowDisabled(show) {
     config_filter.show_disabled = show;
     showDisabled(show);
@@ -566,7 +576,7 @@ $(function () {
       isswitch = type == 'switch',
          group = item.group;
 
-    log(`${name} = ${val}`);
+    //log(`${name} = ${val}`);
 
     // Prepare the div, label, label text, and option enable checkbox / radio
     const $linediv = $("<div>", { id: `-${name.toID()}-${item.sid}`, class: `line sid-${item.sid}` }),
@@ -657,7 +667,30 @@ $(function () {
 
     // Keep mutual references between item info and its .line div.
     $inner.append($linediv);
-    log(`Added item ${name} to the form.`);
+    //log(`Added item ${name} to the form.`);
+  }
+
+  /**
+   * @brief Save the collapsed state of a section.
+   * @description Save the collapsed state of a section to the config_filter.
+   * @param {string} sect_class - The class
+   * @param {bool} hide - Whether to hide the section.
+   */
+  function saveSectionCollapsed(sect_class, hide) {
+    log("saveSectionCollapsed", {sect_class, hide});
+
+    if (!('collapsed' in config_filter)) config_filter.collapsed = [];
+
+    if (sect_class == 'all') {
+      config_filter.collapsed = [];
+      if (hide)
+        for (let sect in schema.data)
+          config_filter.collapsed.push(sect);
+    }
+    else
+      config_filter.collapsed.toggle(sect_class, hide);
+
+    saveWebViewState();
   }
 
   /**
@@ -667,12 +700,13 @@ $(function () {
   function buildConfigForm() {
     const data = schema.data;
     // Bind click event to the revealer
-    const do_reveal = (e, clas) => {
+    const do_collapse = (e, sectid) => {
       // Check if the alt/option key is pressed
-      const fs = `fieldset.${clas}`,
+      const fs = `fieldset.section.${sectid}`,
             ns = !$(fs).hasClass('collapsed'),
             $fs = $(e.altKey ? "fieldset" : fs);
       $fs.toggleClass('collapsed', ns);
+      saveSectionCollapsed(e.altKey ? 'all' : sectid, ns);
     };
 
     // Iterate over the config data and create a form
@@ -680,14 +714,15 @@ $(function () {
     for (let [sect, dict] of Object.entries(data)) {
       if (sect == '_') continue;
       const sectid = sect.sectID();
+      const collapsed = config_filter.collapsed.includes(sectid) ? ' collapsed' : '';
       log(`${sect} =====================`);
       // Create a form group for each section
       const title = `${ConfigSchema.sectionEmoji(sect)}&nbsp;&nbsp;${sect.toLabel()}`,
-        $fieldset = $(`<fieldset class="section ${sectid}">`),
+        $fieldset = $(`<fieldset class="section ${sectid}${collapsed}">`),
         $revealer = $(`<legend><span class="section-title">${title}</span></legend>`),
            $inner = $(`<div class="section-inner">`);
 
-      $revealer.click((e) => { do_reveal(e, sectid); }); // Bind click event to the revealer
+      $revealer.click((e) => { do_collapse(e, sectid); }); // Bind click event to the revealer
 
       // Emit all the option lines for this section.
       // Gathered items with the same name will appear at the same
@@ -703,6 +738,8 @@ $(function () {
       log(`Added section ${sect} to the form`);
     }
 
+    showComments(config_filter.show_comments, $form);
+    showDisabled(config_filter.show_disabled, $form);
     applyFilter($filter.val(), $form);
 
     $formdiv.html('').append($form);
@@ -773,16 +810,14 @@ $(function () {
   //
   // Tab Revealed
   //
-  // If there is state data then we can skip the parser and build the form.
+  // If there is state data then the tab is being re-shown
+  // we can just build the form using the saved data.
   const state = vscode.getState();
   if (state) {
     log("Got VSCode state", state);
-    if (state.filter !== undefined) initFilterVal(state.filter);
-    if (state.data !== undefined) {
-      log("Init CE Webview with stored data")
-      schema = ConfigSchema.newSchemaFromData(state.data);
-      buildConfigForm();
-    }
+    initFilter(state.filter);
+    schema = ConfigSchema.newSchemaFromData(state.data);
+    buildConfigForm();
   }
 
 });
