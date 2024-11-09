@@ -63,7 +63,18 @@ class ConfigSchema {
   static newSchemaFromData(data) {
     const instance = new ConfigSchema();
     instance.data = data;
+    instance.bysid = ConfigSchema.getIndexBySID(data);
     return instance;
+  }
+  static getIndexBySID(data) {
+    let bysid = {};
+    for (const [_, foo] of Object.entries(data)) {
+      if (foo instanceof Array) {
+        for (const item of foo) bysid[item.sid] = item;
+      }
+      else bysid[foo.sid] = foo;
+    }
+    return bysid;
   }
 
   // Utility method to fix up an options string so it can be JSON parsed.
