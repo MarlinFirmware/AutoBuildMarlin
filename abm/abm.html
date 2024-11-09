@@ -17,6 +17,7 @@
 
   const vscode = acquireVsCodeApi();
 
+  // Select a tool tab in the web view (Build, Config, etc.)
   function abm_tool(tool) {
     $('.abm-tool').hide();
     $('#abm-'+tool).show();
@@ -24,6 +25,7 @@
     $('#btn-'+tool).addClass('active');
   }
 
+  // Select a pane under the Config tool
   function abm_pane(name) {
     var $t;
     if (name)
@@ -38,6 +40,7 @@
     $t.parents('.abm-tool').find('.subpanes>.' + name).show();
   }
 
+  // Send a message to the controller (abm.js:handleMessage)
   function msg(m) {
     if (m.command == 'tool') abm_tool(m.tool); // Show the tool before alerting the controller
     if (m.command == 'pane') abm_pane(m.pane); // Show the pane before alerting the controller

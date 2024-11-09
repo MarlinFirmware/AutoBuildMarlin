@@ -63,7 +63,7 @@ class InfoPanelProvider {
 
     // Tell the webview to display something.
     function updateWebview() {
-      wv.postMessage({ type: 'say', text: "hello" });
+      wv.postMessage({ type: 'say', text: "hello" }); // infoview.js:handleMessage
     }
     updateWebview();
   }

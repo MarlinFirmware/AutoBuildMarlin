@@ -65,7 +65,7 @@ var ABM = (function(){
       window.addEventListener('message', this.handleMessage);
 
       // Activate the "Build" tool
-      msg({ command:'tool', tool:'build' });
+      msg({ command:'tool', tool:'build' }); // abm.js:handleMessage
 
       // Un-hide the first subpane
       abm_pane($('.subpanes>div').first().attr('class'));
@@ -202,6 +202,6 @@ var ABM = (function(){
 })();
 
 ABM.init();
-msg({ command:'ui-ready' });
+msg({ command:'ui-ready' }); // abm.js:handleMessage
 
 });

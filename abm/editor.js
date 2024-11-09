@@ -10,10 +10,10 @@
  *
  * This provider:
  *
- * - Sets up the initial webview for the config editor.
- * - Applies changes sent from the config editor.
- * - Sends messages to the config editor when the file is changed.
- * - Goes away when the file is closed.
+ * - Sets up the initial webview for a config editor.
+ * - Applies changes sent from a config editor to its text file.
+ * - Sends messages to a config editor when its file is changed.
+ * - Goes away when a config file is closed.
  *
  * TODO:
  * - With access to all resources, and loading at startup, it makes sense to
@@ -42,15 +42,14 @@
  *   are needed to provide a definitive 'disabled' state for requirements), and
  *   process that into the schema first, in a section called '_' (underscore), and
  *   always send that to the view.
- * - It will become clearer in the attempt how best to manage data caching and keep
- *   it all in sync.
  *
  * Currently:
- * - The schema is loaded at startup, and this scheme is then used as the canonical
+ * - The schema is loaded at startup, and this schema is then used as the canonical
  *   source for the config data displayed in the editors.
  * - Each editor has its own complete copy of its config schema, not just a reference.
- *   So any changes made to the local copy need to be applied to the global copy.
- * - The combined schema is stored in the global 'schemas' object, with keys 'basic' and 'advanced'.
+ *   Changes made to the local copy need to be applied separately to the global copy.
+     handleMessage() is used to apply changes to the global copy.
+ * - A combined schema is stored in the global 'schemas' object, with keys 'basic' and 'advanced'.
  * - The schema for the file is sent to the webview when the file is opened,
  *   instead of the text. So we must watch the configs for changes and keep
  *   them in sync, even when no config editor is open.
@@ -123,10 +122,8 @@ function combinedSchema() {
     configd = fs.readFileSync(cond1, 'utf8') + fs.readFileSync(cond2, 'utf8') + fs.readFileSync(cond3, 'utf8');
   }
 
-  // Strip down Configuration.h and Conditionals-2-LCD.h to just the
+  // Strip down Configuration.h and Conditionals*.h files to just the
   // preprocessor directives for faster parsing below.
-  // TODO: Allow a schema to be copied and/or extended.
-  //       Conditionals-2-LCD.h should still be stripped down.
   const sch1 = ConfigSchema.strippedConfig(config1),
         sch2 = ConfigSchema.strippedConfig(configd);
 
@@ -149,7 +146,7 @@ function combinedSchema() {
 }
 
 const schemas = combinedSchema();
-//console.log("abmeditor.js"); console.dir(schemas);
+abm.log("abmeditor.js", schemas);
 
 // Utility function to get the name of a document from a full path.
 const document_name = document => document.uri.fsPath.split(path.sep).pop();
@@ -175,12 +172,12 @@ class ConfigEditorProvider {
    * The passed document creates a closure, since it is used in subfunctions.
    */
   async resolveCustomTextEditor(document, webviewPanel, _token) {
-    //console.log("ConfigEditorProvider.resolveCustomTextEditor", document.uri);
+    abm.log("ConfigEditorProvider.resolveCustomTextEditor", document.uri);
 
     // Set values for items in this closure to use
     const name = document_name(document),
           is_adv = name == 'Configuration_adv.h',
-          schema = is_adv ? schemas.advanced : schemas.basic;
+          myschema = is_adv ? schemas.advanced : schemas.basic;
 
     // Set up the webview with options and basic html.
     const wv = webviewPanel.webview;
@@ -192,14 +189,14 @@ class ConfigEditorProvider {
 
     /**
      * @brief Tell my webview to rebuild itself with new config data.
-     * @description Send the updated data to this instance's webview so it can rebuild the form.
+     * @description Send initial data to this instance's webview so it can build the form.
      */
     function initWebview() {
       // Get the name of the document.
-      //console.log(`initWebview: ${name}`);
+      abm.log(`initWebview: ${name}`);
 
       // Send the pre-parsed data to the web view.
-      wv.postMessage({ type: 'update', schema: schema.data });
+      wv.postMessage({ type: 'update', schema: myschema.data }); // editview.js:handleMessage
 
       // Parse the text and send it to the webview.
       //sch.importText(document.getText());
@@ -209,15 +206,23 @@ class ConfigEditorProvider {
       //wv.postMessage({ type: 'update', text: document.getText() });
     }
 
-    function updateWebview() {
+    /**
+     * @brief Update my webview with the latest parsed schema data.
+     * @description Send updated data to this instance's webview so it can rebuild the form.
+     */
+    function updateWebview(external=false) {
       // Get the name of the document.
-      //console.log(`updateWebview: ${name}`);
+      abm.log(`updateWebview: ${name}`);
 
       // Send the parsed data to the web view.
-      wv.postMessage({ type: 'update', schema: schema.data });
+      if (external)
+        wv.postMessage({ type: 'update', schema: myschema.data }); // editview.js:handleMessage
 
-      if (!is_adv && 'Configuration_adv.h' in webviews)
+      // If the second config file is also open, update it as well.
+      if (!is_adv && 'Configuration_adv.h' in webviews) {
+        abm.log("updateWebview >> Configuration_adv.h");
         webviews['Configuration_adv.h'].postMessage({ type: 'update', schema: schemas.advanced.data });
+      }
     }
 
     /**
@@ -229,10 +234,15 @@ class ConfigEditorProvider {
      * NOTE: A single text document may be shared between multiple custom editors
      * (i.e., in a split custom editor)
      */
+
+    // Listen for changes to the document and update the webview
+    // These changes may be local or external.
+    // If the changes are local the webview has already updated itself,
+    // and the local copy will also have gotten an update message.
     const changeDocumentSubscription = ws.onDidChangeTextDocument(e => {
       if (e.document.uri.toString() === document.uri.toString()) {
-        //console.log("onDidChangeTextDocument", e);
-        if (e.contentChanges.length > 0) updateWebview();
+        abm.log("ws.onDidChangeTextDocument", e);
+        if (e.contentChanges.length > 0) updateWebview(true);
         // TODO: If change is not flagged as local then re-parse the text
         // of the whole file
       }
@@ -245,17 +255,20 @@ class ConfigEditorProvider {
     });
 
     /**
-     * @brief Update a document option based on the given define item (or array of them).
-     * @description Called in response to a 'change' message sent by the config editor.
+     * @brief Update a single document line based on the given define item.
+     * @description Called in response to 'change' messages sent by the config editor.
+     *              Only modifies 'enabled' state and 'value' so nothing too complicated.
+     *              This adds "edits" to the document text and optionally applies them.
+     *              By using edits they go into the undo/redo stack.
      */
-    function applyConfigChange(document, data, edit=null) {
+    function applyConfigChange(document, changes, edit=null) {
       //const name = document_name(document);
-      //console.log(`applyConfigChange (${name})`); console.dir(data);
+      abm.log(`applyConfigChange (${name})`); console.dir(changes);
 
       // Update the item in our local schema copy.
       // try {
-        schema.updateEditedItem(data);
-        schema.refreshAllRequires();
+        myschema.updateEditedItem({ sid:changes.sid, enabled:changes.enabled, value:changes.value });
+        myschema.refreshAllRequires();
       // }
       // catch (e) {
       //   console.error(`applyConfigChange failed (${name})`);
@@ -267,41 +280,43 @@ class ConfigEditorProvider {
       }
 
       // Get the line from the document.
-      const line = data.line - 1,
+      const line = changes.line - 1,
             text = document.lineAt(line).text;
-      //console.log(`${line} : ${text}`);
+      abm.log(`${line} : ${text}`);
 
       // Only handle valid #define lines.
       const defgrep = /^((\s*)(\/\/)?\s*(#define\s+))([A-Za-z0-9_]+)(\s*)(.*?)(\s*)(\/\/.*)?$/,
             match = defgrep.exec(text);
 
       if (!match) {
-        console.warn(`[applyConfigChange] Line ${data.line} is not a #define: ${text}`);
+        console.warn(`[applyConfigChange] Line ${line} is not a #define: ${text}`);
         return;
       }
 
-      var newtext = text;
+      let newtext = text;
 
       // Update the value of non-switch options
-      if (data.type !== 'switch') {
-        newtext = match[1] + match[5] + match[6] + data.value;
+      if (changes.type != 'switch') {
+        newtext = match[1] + match[5] + match[6] + changes.value;
         if (match[8]) {
           const sp = match[8] ? match[8] : ' '
           newtext += sp + match[9];
         }
       }
 
-      if (data.enabled)
+      if (changes.enabled)
         newtext = newtext.replace(/^(\s*)\/\/+\s*(#define)(\s{1,3})?(\s*)/, '$1$2 $4');
       else
         newtext = newtext.replace(/^(\s*)(#define)(\s{1,3})?(\s*)/, '$1//$2 $4');
 
-      //console.log("Before edit:", text);
-      //console.log("After edit:", newtext);
+      abm.log("Before edit:", text);
+      abm.log("After edit:", newtext);
 
       // Get the range for the whole line
       const range = new vscode.Range(line, 0, line, Number.MAX_VALUE);
 
+      // A single edit can be applied here, or multiple edits can be collected
+      // and applied all at once if the caller passes their own WorkspaceEdit.
       const inplace = edit === null;
       if (inplace) edit = new vscode.WorkspaceEdit();
 
@@ -311,11 +326,12 @@ class ConfigEditorProvider {
     }
 
     // Receive message from the webview via vscode.postMessage.
+    // The webview sends changes to apply to the underlying document.
     function handleMessage(e) {
-      //console.log("(ConfigEditorProvider) handleMessage", e);
+      abm.log("(ConfigEditorProvider) handleMessage", e);
       switch (e.type) {
         case 'change':
-          applyConfigChange(document, e.data); // Update the document line based on the data.
+          applyConfigChange(document, e.data); // Update the document text using the given data.
           break;
 
         case 'multi-change':
@@ -323,7 +339,7 @@ class ConfigEditorProvider {
           e.changes.forEach(d => {
             applyConfigChange(document, d.data, edit);
           });
-          ws.applyEdit(edit); // Update the document line based on the data.
+          ws.applyEdit(edit);
           break;
 
         case 'hello':
@@ -391,4 +407,4 @@ ConfigEditorProvider.viewType = 'abm.configEditor';
 // Export the provider
 exports.ConfigEditorProvider = ConfigEditorProvider;
 
-//console.log("ConfigEditorProvider.js loaded");
+abm.log("ConfigEditorProvider.js loaded");

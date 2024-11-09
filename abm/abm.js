@@ -23,7 +23,7 @@ function set_context(name, value) {
 
 const bugme = false; // Lots of debug output
 function log(s, d=null) {
-  if (bugme) { console.log(s); if (d) console.dir(d); }
+  if (bugme) { console.log(`[ABM] ${s}`); if (d) console.dir(d); }
 }
 
 function init(c) {
@@ -201,6 +201,7 @@ function onBuildFolderChanged(e, fname, env) {
   }
 }
 
+// Post a message to the view controller abmview.js:handleMessage
 function postMessage(msg) {
   log("Posting:", msg);
   pv.postMessage(msg);
@@ -620,7 +621,7 @@ function postError(msg, data) {
 
 // Send a Tool Select message
 function postTool(t) {
-  postMessage({ command:'tool', tool:t });   // Send a tool message back
+  postMessage({ command:'tool', tool:t });
 }
 
 // Post a value to the UI
@@ -899,4 +900,4 @@ function runPython(script, needs, args) {
 function run_schema_py(type) { runPython('schema.py', '', type); }
 function run_configuration_py() { runPython('configuration.py', path.join('Marlin', 'config.ini')); }
 
-module.exports = { init, set_context, run_command, validate, watchAndValidate, sponsor, getNonce, run_configuration_py, run_schema_py };
+module.exports = { log, init, set_context, run_command, validate, watchAndValidate, sponsor, getNonce, run_configuration_py, run_schema_py };

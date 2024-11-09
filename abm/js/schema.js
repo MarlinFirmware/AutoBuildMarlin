@@ -57,10 +57,14 @@ class ConfigSchema {
   }
   // Factory method to create a schema from a text string.
   static newSchemaFromText(text, numstart=0) {
+    //console.log("newSchemaFromText", { text, numstart } );
     return new ConfigSchema(text, numstart);
   }
   // Factory method to create a schema from a data reference.
+  // Used to recreate the schema from the state saved with vscode.setState()
+  // when re-showing the editor.
   static newSchemaFromData(data) {
+    //console.log("newSchemaFromData", data);
     const instance = new ConfigSchema();
     instance.data = data;
     instance.bysid = ConfigSchema.getIndexBySID(data);
@@ -92,7 +96,7 @@ class ConfigSchema {
    * Return an object with the stripped text and the number of lines.
    */
   static strippedConfig(config) {
-    var text = '', count = 0, addnext = false;
+    let text = '', count = 0, addnext = false;
     const lines = config.replace(/\/\*.+?\*\//).split('\n'); // Strip block comments, split into lines
     for (const line of lines) {
       if (addnext)                              // Previous line ended with '\'
@@ -260,8 +264,8 @@ class ConfigSchema {
    */
   getItemsInSection(sect, fn, before, limit) {
     log(`getItemsInSection(${sect}, ..., ${before}, ${limit})`);
-    var results = [];
-    for (const [name, foo] of Object.entries(this.data[sect])) {
+    let results = [];
+    for (const [_name, foo] of Object.entries(this.data[sect])) {
       if (foo instanceof Array) {
         for (const item of foo) {
           if (this.definedBefore(item, before) && fn(item)) {
@@ -287,7 +291,7 @@ class ConfigSchema {
    * @return Array of item references.
    */
   getItems(fn, before, limit) {
-    var results = [];
+    let results = [];
     for (const sect in this.data) {
       results.concat(this.getItemsInSection(sect, fn, before, limit));
       limit -= results.length;
@@ -307,7 +311,7 @@ class ConfigSchema {
    */
   firstItemWithName(name, before=99999) {
     log(`firstItemWithName(${name}, ${before})`);
-    for (const [sect, opts] of Object.entries(this.data)) {
+    for (const [_sect, opts] of Object.entries(this.data)) {
       if (name in opts) {
         const foo = opts[name];
         if (foo instanceof Array) {
@@ -328,8 +332,8 @@ class ConfigSchema {
    */
   lastItemWithName(name, before=99999) {
     log(`lastItemWithName(${name}, ${before})`);
-    var outitem = null;
-    for (const [sect, opts] of Object.entries(this.data)) {
+    let outitem = null;
+    for (const [_sect, opts] of Object.entries(this.data)) {
       if (name in opts) {
         const foo = opts[name];
         if (foo instanceof Array) {
@@ -534,10 +538,9 @@ class ConfigSchema {
     // other editor, maybe that can be skipped by passing messages between the
     // windows by some intermediary.
 
-    // A cond string is a list of conditions using Marlin macros
-    // that we can convert into JavaScript and eval. Later we can
-    // try to interpret, but for now it's much easier to let eval
-    // do all the hard work.
+    // A cond string is a list of conditions using Marlin macros that we can
+    // convert into JavaScript and eval. Later we can try to interpret, but for
+    // now it's much easier to let eval do all the hard work.
 
     // If already evaluated, return the last result.
     // To refresh the result, delete the 'evaled' key.
@@ -547,7 +550,7 @@ class ConfigSchema {
     if (initem.requires === undefined) return true;
 
     // Conditions are general C++ preprocessor macros.
-    var cond = initem.requires;
+    let cond = initem.requires;
 
     const istrue = ['', '1', 'true'],
          isfalse = ['0', 'false'];
@@ -558,6 +561,7 @@ class ConfigSchema {
 
     //log("evaluateRequires"); if (verbose) console.dir(initem);
 
+    // Convenience accessors for this scope
     const self = this, sdict = this.data;
 
     // Last item, by name, before the evaluated item.
@@ -644,7 +648,7 @@ class ConfigSchema {
     const NONE = DISABLED, BOTH = ENABLED, ALL = ENABLED, EITHER = ANY;
 
     function COUNT_ENABLED(names) {
-      var count = 0;
+      let count = 0;
       for (const name of names) if (ENABLED(name)) count++;
       return count;
     }
@@ -781,7 +785,7 @@ class ConfigSchema {
     //   => #if 0 || (BLAH(X) && HAS_X_AXIS) || (BLAH(Y) && HAS_Y_AXIS) || (BLAH(Z) && HAS_Z_AXIS)
     //
     const mappatt = /(MAP\((([^)]+))\))/g;
-    var res;
+    let res;
     while (res = mappatt.exec(cond)) {
       const maparr = res[2].split(/\s*,\s*/),
             fun = maparr.shift(),
@@ -789,7 +793,7 @@ class ConfigSchema {
             funcpar = funcinfo.value.match(/^\(([^)]+)\)\s*(.*)/),
             funcarg = funcpar[1], functpl = funcpar[2],
             regp = new RegExp(`(##\\s*${funcarg}\\s*##|##\\s*${funcarg}\\b|\\b${funcarg}\\s*##)`, 'g');
-      var newmap = '';
+      let newmap = '';
       for (let n of maparr) newmap += functpl.replace(regp, n);
       cond = cond.replace(res[0], newmap);
       //console.log("mapInfo", { maparr, fun, funcinfo, funcarg, functpl, newmap });
@@ -822,10 +826,11 @@ class ConfigSchema {
   // is ruled out by its presence in a conditional block.
   // Called at the end of importText to parse all 'requires'.
   refreshAllRequires() {
-    const sdict = this.data;
-    // Clear all the evaluation results first.
+    const sdict = this.data; // { "section": { "OPTION1": { item ... }, "OPTION2": { item ... } }, ... }
+
+    // Clear the specified evaluation results first.
     for (const sect in sdict) {
-      for (const [name, foo] of Object.entries(sdict[sect])) {
+      for (const [_name, foo] of Object.entries(sdict[sect])) {
         if (foo instanceof Array)
           for (const item of foo) delete item.evaled;
         else
@@ -835,7 +840,7 @@ class ConfigSchema {
 
     // Update the evaluation results for each item in sequence.
     for (const sect in sdict) {
-      for (const [name, foo] of Object.entries(sdict[sect])) {
+      for (const [_name, foo] of Object.entries(sdict[sect])) {
         if (foo instanceof Array)
           for (const item of foo) this.evaluateRequires(item);
         else
@@ -846,10 +851,11 @@ class ConfigSchema {
 
   // Refresh all requires that follow a changed item.
   refreshRequiresAfter(after) {
-    const sdict = this.data;
+    const sdict = this.data; // { "section": { "OPTION1": { item ... }, "OPTION2": { item ... } }, ... }
+
     // Clear the specified evaluation results first.
     for (const sect in sdict) {
-      for (const [name, foo] of Object.entries(sdict[sect])) {
+      for (const [_name, foo] of Object.entries(sdict[sect])) {
         if (foo instanceof Array) {
           for (const item of foo) if (item.sid >= after) delete item.evaled;
         }
@@ -859,7 +865,7 @@ class ConfigSchema {
 
     // Update the evaluation results for each item in sequence.
     for (const sect in sdict) {
-      for (const [name, foo] of Object.entries(sdict[sect])) {
+      for (const [_name, foo] of Object.entries(sdict[sect])) {
         if (foo instanceof Array) {
           for (const item of foo) if (item.sid >= after) this.evaluateRequires(item);
         }
@@ -876,11 +882,12 @@ class ConfigSchema {
       if (Object.keys(sdict[sect]).length === 0) delete sdict[sect];
   }
 
-  // Update an item's enabled / value from an (edited) item.
-  // Re-run 'requires' on all items that follow to update 'evaled'.
-  updateEditedItem(initem) {
-    Object.assign(this.bysid[initem.sid], initem);
-    this.refreshRequiresAfter(initem.sid);
+  // Update an item's fields from an (edited) item containing the sid and the fields to change.
+  // Then re-run 'requires' on all items that follow the changed item to update 'evaled'.
+  // NOTE: Some fields are shown/hidden based on things that come later, so now we must refresh ALL requires.
+  updateEditedItem(changes, refresh=false) {
+    Object.assign(this.bysid[changes.sid], changes);
+    if (refresh) this.refreshRequiresAfter(changes.sid);
   }
 
   /**
@@ -942,12 +949,12 @@ class ConfigSchema {
     // Defines to ignore
     const ignore = ['CONFIGURATION_H_VERSION', 'CONFIGURATION_ADV_H_VERSION', 'CONFIG_EXAMPLES_DIR', 'LCD_HEIGHT'];
     // Start with unknown state
-    var state = Parse.NORMAL;
+    let state = Parse.NORMAL;
     // Serial ID
-    var sid = 0;
+    let sid = 0;
 
     // Loop through files and parse them line by line
-    var section = 'none',     // Current Settings section
+    let section = 'none',     // Current Settings section
         line_number = numstart, // Counter for the line number of the file
         conditions = [],      // Condition stack to track #if block levels
         if_depth = 0,         // Depth of the current #if block
@@ -1055,7 +1062,7 @@ class ConfigSchema {
 
       // In a block comment, capture lines up to the end of the comment.
       // The comment will be applied to the next #define.
-      var cline = '';
+      let cline = '';
       if ([Parse.BLOCK_COMMENT, Parse.GET_SENSORS].includes(state)) {
 
         const endpos = line.indexOf('*/');
@@ -1107,7 +1114,7 @@ class ConfigSchema {
           cpos2 = line.indexOf('//', st);  // Start an end of line comment on the line?
 
         // Only the first comment starter gets evaluated
-        var cpos = -1;
+        let cpos = -1;
         if (cpos1 != -1 && (cpos1 < cpos2 || cpos2 == -1)) {
           cpos = cpos1;
           state = Parse.BLOCK_COMMENT;
@@ -1165,7 +1172,7 @@ class ConfigSchema {
 
         // Combine adjacent conditions where possible
         function combine_conditions(condarr) {
-          var cond = '(' + condarr.flat().join(') && (') + ')';
+          let cond = '(' + condarr.flat().join(') && (') + ')';
           while (true) {
             const old_cond = '' + cond;
             cond = cond.replace('!ENABLED', 'DISABLED').replace('!DISABLED', 'ENABLED')
@@ -1248,7 +1255,7 @@ class ConfigSchema {
 
           log(`Got #define ${define_name}`, line_number);
 
-          var val = defmatch[4];
+          let val = defmatch[4];
 
           // Increment the serial ID
           sid++;
@@ -1401,7 +1408,7 @@ class ConfigSchema {
 
           // If the comment specifies units, add that to the info
           function set_units(comm) {
-            var units = comm.match(/^\(([^)]+)\)/);
+            let units = comm.match(/^\(([^)]+)\)/);
             if (units) {
               units = units[1];
               if (['s', 'sec'].includes(units)) units = 'seconds';
@@ -1410,7 +1417,7 @@ class ConfigSchema {
           }
 
           // If the comment_buff is not empty, add the comment to the info
-          var full_comment = '';
+          let full_comment = '';
           if (prev_comment != '') {
             full_comment = prev_comment;
             prev_comment = '';
@@ -1471,7 +1478,7 @@ class ConfigSchema {
           else {
             // Add the define dict with name as key
             sdict[section][define_name] = define_info;
-            log(`Added a define for ${define_name} to section '${section}'`, line_number);
+            log(`Added #define ${define_name} (${sid}) to section '${section}'`, line_number);
           }
           // Keep an index by SID
           this.bysid[sid] = define_info;
@@ -1492,9 +1499,9 @@ class ConfigSchema {
           const unmatch = line.match(/^\s*#undef\s+([^\s]+)/);
           if (unmatch) {
             const name = unmatch[1];
-            var isactive = true;
+            let isactive = true;
             if (conditions.length) {
-              var define_info = {
+              let define_info = {
                 name, sid,
                 'enabled': true,
                 'line': line_start,
@@ -1504,7 +1511,7 @@ class ConfigSchema {
               isactive = define_info.evaled;
             }
             if (isactive) {
-              for (const [sect, opts] of Object.entries(sdict)) {
+              for (const [_sect, opts] of Object.entries(sdict)) {
                 if (name in opts) {
                   const foo = opts[name];
                   if (foo instanceof Array)

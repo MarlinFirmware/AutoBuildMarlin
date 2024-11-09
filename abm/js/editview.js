@@ -152,18 +152,19 @@ $(function () {
   };
 
   var verbose = false;
-  function log(message, data) {
+  function log(s, d) {
     if (!verbose) return;
-    console.log(`[editview] ${message}`);
-    if (data !== undefined) console.dir(data);
+    console.log(`[editview] ${s}`);
+    if (d !== undefined) console.dir(d);
   }
-  function log_(message, data) {
+  function log_(s, d) {
     const oldverbose = verbose;
-    verbose = 1;
-    log(message, data);
+    verbose = true;
+    log(s, d);
     verbose = oldverbose;
   }
 
+  // A copy of ConfigSchema for local usage
   var schema = ConfigSchema.newSchema(),
       config_filter = { terms: '', show_comments: true, show_disabled: true, collapsed: [] },
       result_index = 0;
@@ -230,7 +231,7 @@ $(function () {
     // A button to test sending messages to the extension.
     const $button = $('#hello-button');
     $button.find('button').bind('click', () => {
-      vscode.postMessage({ type: 'hello' });
+      vscode.postMessage({ type: 'hello' }); // editor.js:handleMessage
     });
   }
 
@@ -262,6 +263,7 @@ $(function () {
   /**
    * @brief Update an option, persistent state, and document.
    * @description Update an option, save the full state, send the change to the document.
+   *              Called indirectly from the form event handlers.
    * @param {dict} optref - The option to update.
    * @param {dict} fields - The fields to replace in the option.
    */
@@ -747,8 +749,8 @@ $(function () {
 
   /**
    * @brief Create a new schema from document text then build a new form.
-   * @description This is called when the Custom Editor is first loaded,
-   *              and when the app detects an external change in the file.
+   * @description This may be called when the Custom Editor is first loaded, or
+   *              when the app detects an external change in the current config file.
    * @param {string} text - The text of the document.
    */
   function buildConfigFormWithText(text) {
@@ -762,6 +764,12 @@ $(function () {
     buildConfigForm();
   }
 
+  /**
+   * @brief Use the given schema data index to rebuild the form.
+   * @description This is called when the Custom Editor is first loaded,
+   *              and when the app detects an external change in the file.
+   * @param {string} text - The text of the document.
+   */
   function buildConfigFormWithData(data) {
     log("buildConfigFormWithData", data);
     schema.data = data;
@@ -807,9 +815,6 @@ $(function () {
   // Add handlers to the filter form, comment checkbox, etc.
   initConfigForm();
 
-  //
-  // Tab Revealed
-  //
   // If there is state data then the tab is being re-shown
   // we can just build the form using the saved data.
   const state = vscode.getState();
