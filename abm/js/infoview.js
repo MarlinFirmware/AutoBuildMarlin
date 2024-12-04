@@ -42,8 +42,8 @@ $(function () {
    * @param {object} message - The message object.
    */
   var ignore_update = false;  // Ignore the next update message.
-  function handleMessage(message) {
-    log("handleMessage", message);
+  function handleMessageToUI(message) {
+    log("handleMessageToUI", message);
     switch (message.type) {
       // Update the whole form in response to an external change.
       case 'info':
@@ -60,7 +60,7 @@ $(function () {
         break;
     }
   }
-  window.addEventListener('message', (e) => { handleMessage(e.data); });
+  window.addEventListener('message', (e) => { handleMessageToUI(e.data); });
 
   //
   // View was revealed.

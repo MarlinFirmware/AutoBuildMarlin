@@ -48,7 +48,7 @@
  *   source for the config data displayed in the editors.
  * - Each editor has its own complete copy of its config schema, not just a reference.
  *   Changes made to the local copy need to be applied separately to the global copy.
-     handleMessage() is used to apply changes to the global copy.
+     handleMessageFromUI() is used to apply changes to the global copy.
  * - A combined schema is stored in the global 'schemas' object, with keys 'basic' and 'advanced'.
  * - The schema for the file is sent to the webview when the file is opened,
  *   instead of the text. So we must watch the configs for changes and keep
@@ -171,7 +171,7 @@ class ConfigEditorProvider {
    * This provider method is called when a custom editor is opened.
    * The passed document creates a closure, since it is used in subfunctions.
    */
-  async resolveCustomTextEditor(document, webviewPanel, _token) {
+  async resolveCustomTextEditor(document, panel, _token) {
     abm.log("ConfigEditorProvider.resolveCustomTextEditor", document.uri);
 
     // Set values for items in this closure to use
@@ -180,7 +180,7 @@ class ConfigEditorProvider {
           myschema = is_adv ? schemas.advanced : schemas.basic;
 
     // Set up the webview with options and basic html.
-    const wv = webviewPanel.webview;
+    const wv = panel.webview;
     wv.options = { enableScripts: true };
     wv.html = this.getWebViewHtml(wv);
 
@@ -196,7 +196,7 @@ class ConfigEditorProvider {
       abm.log(`initWebview: ${name}`);
 
       // Send the pre-parsed data to the web view.
-      wv.postMessage({ type: 'update', schema: myschema.data }); // editview.js:handleMessage
+      wv.postMessage({ type: 'update', schema: myschema.data }); // editview.js:handleMessageToUI
 
       // Parse the text and send it to the webview.
       //sch.importText(document.getText());
@@ -216,7 +216,7 @@ class ConfigEditorProvider {
 
       // Send the parsed data to the web view.
       if (external)
-        wv.postMessage({ type: 'update', schema: myschema.data }); // editview.js:handleMessage
+        wv.postMessage({ type: 'update', schema: myschema.data }); // editview.js:handleMessageToUI
 
       // If the second config file is also open, update it as well.
       if (!is_adv && 'Configuration_adv.h' in webviews) {
@@ -249,7 +249,7 @@ class ConfigEditorProvider {
     });
 
     // Get rid of the listener when our editor is closed.
-    webviewPanel.onDidDispose(() => {
+    panel.onDidDispose(() => {
       changeDocumentSubscription.dispose();
       delete webviews[name];
     });
@@ -327,8 +327,8 @@ class ConfigEditorProvider {
 
     // Receive message from the webview via vscode.postMessage.
     // The webview sends changes to apply to the underlying document.
-    function handleMessage(e) {
-      abm.log("(ConfigEditorProvider) handleMessage", e);
+    function handleMessageFromUI(e) {
+      abm.log("(ConfigEditorProvider) handleMessageFromUI", e);
       switch (e.type) {
         case 'change':
           applyConfigChange(document, e.data); // Update the document text using the given data.
@@ -347,7 +347,7 @@ class ConfigEditorProvider {
           break;
       }
     }
-    wv.onDidReceiveMessage(handleMessage);
+    wv.onDidReceiveMessage(handleMessageFromUI);
 
     // Tell the webview to display the Configuration header file contents.
     initWebview();

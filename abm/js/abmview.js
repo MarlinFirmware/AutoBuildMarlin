@@ -62,10 +62,10 @@ var ABM = (function(){
       //
       // Add a handler for webview.postMessage
       //
-      window.addEventListener('message', this.handleMessage);
+      window.addEventListener('message', this.handleMessageToUI);
 
       // Activate the "Build" tool
-      msg({ command:'tool', tool:'build' }); // abm.js:handleMessage
+      msg({ command:'tool', tool:'build' }); // abm.js:handleMessageFromUI
 
       // Un-hide the first subpane
       abm_pane($('.subpanes>div').first().attr('class'));
@@ -75,7 +75,7 @@ var ABM = (function(){
     //
     // Calls to abm.postMessage or pv.postMessage from abm.html arrive here:
     //
-    handleMessage(event) {
+    handleMessageToUI(event) {
       const m = event.data; // JSON sent by the extension
       //console.log("ABM View got message:"); console.dir(m);
       switch (m.command) {
@@ -202,6 +202,6 @@ var ABM = (function(){
 })();
 
 ABM.init();
-msg({ command:'ui-ready' }); // abm.js:handleMessage
+msg({ command:'ui-ready' }); // abm.js:handleMessageFromUI
 
 });

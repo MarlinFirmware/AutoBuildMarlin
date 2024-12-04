@@ -184,7 +184,7 @@ $(function () {
   function end_multi_update() {
     multi_update = false;
     ignore_update = true;
-    vscode.postMessage({ type:'multi-change', changes }); // editor.js:handleMessage
+    vscode.postMessage({ type:'multi-change', changes }); // editor.js:handleMessageFromUI
   }
 
   // A filter text box to filter the list of options.
@@ -232,7 +232,7 @@ $(function () {
     // A button to test sending messages to the extension.
     const $button = $('#hello-button');
     $button.find('button').bind('click', () => {
-      vscode.postMessage({ type: 'hello' }); // editor.js:handleMessage
+      vscode.postMessage({ type: 'hello' }); // editor.js:handleMessageFromUI
     });
   }
 
@@ -292,7 +292,7 @@ $(function () {
       changes.push(msg);
     else {
       ignore_update = true;
-      vscode.postMessage(msg); // editor.js:handleMessage
+      vscode.postMessage(msg); // editor.js:handleMessageFromUI
     }
   }
 
@@ -787,8 +787,8 @@ $(function () {
    *              error(text) : Show an error message.
    * @param {object} message - The message object.
    */
-  function handleMessage(message) {
-    log("handleMessage", message);
+  function handleMessageToUI(message) {
+    log("editview.js:handleMessageToUI", message);
     switch (message.type) {
       // Update the whole form in response to an external change.
       case 'update':
@@ -808,7 +808,7 @@ $(function () {
         break;
     }
   }
-  window.addEventListener('message', (e) => { handleMessage(e.data); });
+  window.addEventListener('message', (e) => { handleMessageToUI(e.data); });
 
   //
   // File Loaded / Tab Revealed

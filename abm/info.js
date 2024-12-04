@@ -51,19 +51,19 @@ class InfoPanelProvider {
     });
 
     // Receive message from the webview.
-    function handleMessage(e) {
-      //console.log('InfoPanelProvider::handleMessage'); console.dir(e);
+    function handleMessageFromUI(e) {
+      //console.log('InfoPanelProvider::handleMessageFromUI'); console.dir(e);
       switch (e.type) {
         case 'hello':
           vw.showInformationMessage('Hello from the webview!');
           break;
       }
     }
-    wv.onDidReceiveMessage(handleMessage);
+    wv.onDidReceiveMessage(handleMessageFromUI);
 
     // Tell the webview to display something.
     function updateWebview() {
-      wv.postMessage({ type: 'say', text: "hello" }); // infoview.js:handleMessage
+      wv.postMessage({ type: 'say', text: "hello" }); // infoview.js:handleMessageToUI
     }
     updateWebview();
   }
