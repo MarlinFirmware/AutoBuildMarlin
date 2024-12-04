@@ -275,7 +275,7 @@ class ConfigEditorProvider {
       // }
 
       if (!is_adv) {
-        schemas.advanced.updateEditedItem(data);
+        schemas.advanced.updateEditedItem({ sid:changes.sid, enabled:changes.enabled, value:changes.value });
         schemas.advanced.refreshAllRequires();
       }
 

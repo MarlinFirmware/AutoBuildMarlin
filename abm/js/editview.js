@@ -799,7 +799,10 @@ $(function () {
         break;
 
       case 'text-update':
-        buildConfigFormWithText(message.text);  // Use the provided text to rebuild the form.
+        if (ignore_update)  // This view caused the update? Ignore it.
+          ignore_update = false;
+        else
+          buildConfigFormWithText(message.text);  // Use the provided text to rebuild the form.
         break;
 
       // Display an error message
