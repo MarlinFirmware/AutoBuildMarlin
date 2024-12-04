@@ -25,6 +25,8 @@ exports.activate = (context) => {
     vc.registerCommand('abm.clean',       () => { abm.run_command('clean');     }),
     vc.registerCommand('abm.config',      () => { abm.run_command('config');    }),
     vc.registerCommand('abm.show',        () => { abm.run_command();            }),
+    vc.registerCommand('abm.edit.base',   () => { abm.edit_config('base');      }),
+    vc.registerCommand('abm.edit.adv',    () => { abm.edit_config('adv');       }),
     vc.registerCommand('abm.sponsor',     () => { abm.sponsor();                }),
     vc.registerCommand('abm.codeformat',  () => { format.codeformat();          }),
     vc.registerCommand('abm.export.json', () => { abm.run_schema_py('json');    }),

@@ -754,7 +754,16 @@ function handleMessageFromUI(m) {
 // Open the author's sponsorship page
 //
 function sponsor() {
-  vscode.env.openExternal(vscode.Uri.parse('https://github.com/sponsors/MarlinFirmware'));
+  vscode.env.openExternal(vscode.Uri.parse('https://marlinfw.org/donate'));
+}
+
+//
+// Command handler for abm.edit.*
+//
+function edit_config(which) {
+  let conf = which == 'adv' ? 'Configuration_adv.h' : 'Configuration.h';
+  let uri = vscode.Uri.file(marlin.pathFromArray([conf]));
+  vc.executeCommand('vscode.openWith', uri, 'abm.configEditor');
 }
 
 //
@@ -900,4 +909,4 @@ function runPython(script, needs, args) {
 function run_schema_py(type) { runPython('schema.py', '', type); }
 function run_configuration_py() { runPython('configuration.py', path.join('Marlin', 'config.ini')); }
 
-module.exports = { log, init, set_context, run_command, validate, watchAndValidate, sponsor, getNonce, run_configuration_py, run_schema_py };
+module.exports = { log, init, set_context, edit_config, run_command, validate, watchAndValidate, sponsor, getNonce, run_configuration_py, run_schema_py };

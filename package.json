@@ -2,12 +2,12 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to configure, build, and upload Marlin Firmware.",
-  "version": "2.1.60",
+  "version": "2.1.61",
   "preview": false,
   "publisher": "marlinfirmware",
   "icon": "icon.png",
   "sponsor": {
-    "url": "https://github.com/sponsors/MarlinFirmware"
+    "url": "https://marlinfw.org/donate"
   },
   "badges": [
     {
@@ -230,6 +230,16 @@
         "category": "Auto Build Marlin",
         "command": "abm.apply.ini",
         "title": "Apply config.ini"
+      },
+      {
+        "category": "Auto Build Marlin",
+        "command": "abm.edit.base",
+        "title": "Edit Configuration.h"
+      },
+      {
+        "category": "Auto Build Marlin",
+        "command": "abm.edit.adv",
+        "title": "Edit Configuration_adv.h"
       }
     ],
     "menus": {

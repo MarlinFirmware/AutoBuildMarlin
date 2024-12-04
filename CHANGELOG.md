@@ -2,6 +2,11 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.61
+- Add commands and buttons to open the Config Editor
+- Fix config editor saving
+- Update sponsorship URL
+
 ## 2.1.60
 - Config Editor:
   - Group sequential items with the same name
