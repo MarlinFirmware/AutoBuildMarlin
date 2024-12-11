@@ -392,9 +392,10 @@ class ConfigEditorProvider {
     <label class="iconcb" for="show-disabled" title="Show Disabled"><input type="checkbox" id="show-disabled" name="show-disabled" checked="checked" /><span>🚫</span></label>
     <span id="filter-count"></span>
   </form>
+  <div id="hello-button"><button>Hello!</button></div>
+  <div id="left-nav-box"><div id="left-nav"></div></div>
   <div id="config-form"></div>
   <div id="zero-box">0 Results</div>
-  <div id="hello-button"><button>Hello!</button></div>
 </body>
 </html>`;
   }

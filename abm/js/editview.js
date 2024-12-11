@@ -201,8 +201,8 @@ $(function () {
     }
   });
 
-  // The container for the Configuraton form.
-  const $formdiv = $('#config-form');
+  // Global for the form.
+  var $form;
 
   // Set up event handlers on the header form fields.
   function initConfigForm() {
@@ -446,7 +446,7 @@ $(function () {
   /**
    * Hide all sections with no visible items.
    */
-  function _hideEmptySections($target=$formdiv) {
+  function _hideEmptySections($target=$form) {
     const $sects = $target.find('fieldset.section');
     $sects.addClass('hide');    // Hide all sections by default
 
@@ -468,7 +468,7 @@ $(function () {
   /**
    * Hide all sections with no visible items.
    */
-  function hideEmptySections(hasterms, $target=$formdiv) {
+  function hideEmptySections(hasterms, $target=$form) {
     const count = _hideEmptySections($target);
     $('#zero-box').removeClass('show');
     if (count > 0)
@@ -498,11 +498,47 @@ $(function () {
     }
   }
 
+  // Refresh nav buttons for the form's unfiltered sections
+  // TODO: Preserve selection if the section is still visible
+  //       and only then stay on ALL. Then show() all sections
+  //       so the ".hide" class can take precedence.
+  function refreshNavButtons($inform=$form) {
+    const $nav = $('#left-nav');
+    $nav.empty();
+    const $sects = $inform.find('fieldset.section:not(.hide)');
+
+    // All button shows all the sections with direct styling.
+    const $allbutton = $('<button class="active">👀 ALL</button>')
+    $allbutton.click((e) => {
+      $(e.target).addClass('active').siblings().removeClass('active');
+      $sects.show();
+    });
+    $nav.append($allbutton);
+
+    // Other buttons one section, with direct styling.
+    for (const sect of $sects) {
+      const $sect = $(sect),
+            title = $sect.find('legend span.section-title').text(),
+            $button = $(`<button>${title}</button>`);
+
+      const sectid = $sect[0].classList[1];
+
+      // Bind the button on click to hide all other sections but its own.
+      $button.click((e) => {
+        $(e.target).addClass('active').siblings().removeClass('active');
+        $sects.hide();
+        $sect.show();
+        setSectionCollapsed(sectid, false);
+      });
+      $nav.append($button);
+    }
+  }
+
   /**
    * Apply the filter terms by hiding non-matching items.
    * Hide any sections with no visible items.
    */
-  function applyFilter(terms, $target=$formdiv) {
+  function applyFilter(terms, $target=$form) {
     $('#zero-box').removeClass('show');
     $('#filter-count').text('');
     var $lines = $target.find(`div.line`);
@@ -523,10 +559,11 @@ $(function () {
   }
 
   // Apply a new filter from the filter field.
-  function applyNewFilter(terms, $target=$formdiv) {
+  function applyNewFilter(terms, $target=$form) {
     config_filter.terms = terms;
-    saveWebViewState();
     applyFilter(terms, $target);
+    refreshNavButtons();
+    saveWebViewState();
   }
 
   // Save the filter in the window. Unless flagged, also set the filter fields.
@@ -538,7 +575,7 @@ $(function () {
   }
 
   // Apply the "show comments" checkbox filter by hiding/showing comments.
-  function showComments(show, $target=$formdiv) {
+  function showComments(show, $target=$form) {
     $target.toggleClass('hide-comments', !show);
   }
   function applyShowComments(show) {
@@ -548,7 +585,7 @@ $(function () {
   }
 
   // Apply the "show disabled" checkbox filter by hiding/showing disabled options.
-  function showDisabled(show, $target=$formdiv) {
+  function showDisabled(show, $target=$form) {
     $target.toggleClass('hide-disabled', !show);
     // Hide sections with no visible items.
     hideEmptySections(false);
@@ -556,6 +593,7 @@ $(function () {
   function applyShowDisabled(show) {
     config_filter.show_disabled = show;
     showDisabled(show);
+    refreshNavButtons();
     saveWebViewState();
   }
 
@@ -689,12 +727,26 @@ $(function () {
       config_filter.collapsed = [];
       if (hide)
         for (let sect in schema.data)
-          config_filter.collapsed.push(sect);
+          config_filter.collapsed.push(sect.sectID());
     }
     else
       config_filter.collapsed.toggle(sect_class, hide);
 
     saveWebViewState();
+  }
+
+  function setSectionCollapsed(sectid, ns=true) {
+    const $fs = $(`fieldset.section.${sectid}`);
+    $fs.toggleClass('collapsed', ns);
+    saveSectionCollapsed(sectid, ns);
+  }
+
+  function toggleCollapsed(sectid, altkey=false) {
+    const fs = `fieldset.section.${sectid}`,
+          ns = !$(fs).hasClass('collapsed'),
+          $fs = $(altkey ? "fieldset" : fs);
+    $fs.toggleClass('collapsed', ns);
+    saveSectionCollapsed(altkey ? 'all' : sectid, ns);
   }
 
   /**
@@ -703,18 +755,12 @@ $(function () {
    */
   function buildConfigForm() {
     const data = schema.data;
-    // Bind click event to the revealer
-    const do_collapse = (e, sectid) => {
-      // Check if the alt/option key is pressed
-      const fs = `fieldset.section.${sectid}`,
-            ns = !$(fs).hasClass('collapsed'),
-            $fs = $(e.altKey ? "fieldset" : fs);
-      $fs.toggleClass('collapsed', ns);
-      saveSectionCollapsed(e.altKey ? 'all' : sectid, ns);
-    };
+
+    // Legend titles can collapse and reveal their sections.
+    const do_collapse = (e, sectid) => { toggleCollapsed(sectid, e.altKey); };
 
     // Iterate over the config data and create a form
-    const $form = $('<form>');
+    $form = $('<form>');
     for (let [sect, dict] of Object.entries(data)) {
       if (sect == '_') continue;
       const sectid = sect.sectID();
@@ -746,7 +792,10 @@ $(function () {
     showDisabled(config_filter.show_disabled, $form);
     applyFilter($filter.val(), $form);
 
-    $formdiv.html('').append($form);
+    // Refresh nav buttons for the form's unfiltered sections
+    refreshNavButtons($form);
+
+    $('#config-form').empty().append($form);
   }
 
   /**
