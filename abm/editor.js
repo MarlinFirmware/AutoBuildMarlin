@@ -388,8 +388,8 @@ class ConfigEditorProvider {
 <body id="abm-conf">
   <form id="filter-form">
     <label for="filter">Filter:</label><input type="search" id="filter" name="filter" />
-    <label for="show-comments"><input type="checkbox" id="show-comments" name="show-comments" checked="checked" />Show Comments</label>
-    <label for="show-disabled"><input type="checkbox" id="show-disabled" name="show-disabled" checked="checked" />Show Disabled</label>
+    <label class="iconcb" for="show-comments" title="Show Comments"><input type="checkbox" id="show-comments" name="show-comments" checked="checked" /><span>💬</span></label>
+    <label class="iconcb" for="show-disabled" title="Show Disabled"><input type="checkbox" id="show-disabled" name="show-disabled" checked="checked" /><span>🚫</span></label>
     <span id="filter-count"></span>
   </form>
   <div id="config-form"></div>

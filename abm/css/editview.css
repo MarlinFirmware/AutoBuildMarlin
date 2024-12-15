@@ -94,7 +94,14 @@ h1 {
   z-index: 100;
   text-align: center;
   }
+
 #filter-form input[type = "checkbox"] { margin-left: 2em; }
+
+/* Emojis in place of checkboxes */
+.iconcb input[type="checkbox"] { display: none; }
+.iconcb span { margin-left: 1em; cursor: pointer; opacity: 0.25; }
+.iconcb input[type="checkbox"]:checked + span { opacity: 1; }
+
 #filter { margin-left: 0.25em; padding: 2px 0.5em; border-radius: 1em; }
 #filter-count {
   float: right;
