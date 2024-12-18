@@ -145,6 +145,7 @@ class ConfigSchema {
     'motion control': '🏃',
 
     'endstops': '🛑',
+    'filament runout sensors': '🚨',
     'probe type': '🛰',
     'probes': '🛰',
     'bltouch': '☝️',
@@ -153,16 +154,22 @@ class ConfigSchema {
     'temperature': '🌡',
     'hotend temp': '🌡',
     'mpctemp': '🌡',
+    'pid temp': '🌡',
     'mpc temp': '🌡',
     'bed temp': '🌡',
     'chamber temp': '🌡',
-    'fans': '💨',
+    'fans': '❄️',
 
     'tool change': '🔧',
     'advanced pause': '⏯',
     'calibrate': '🔍',
+    'calibration': '🔍',
+
+    'media': '💾',
 
     'lcd': '🖥',
+    'lights': '💡',
+    'caselight': '💡',
     'interface': '⌨️',
     'custom main menu': '🔧',
     'custom config menu': '🔧',
@@ -175,17 +182,21 @@ class ConfigSchema {
     'scara': '🦄',
     'tpara': '🦄',
     'polar': '🐧',
+    'polargraph': '📈',
     'cnc': '🪚',
 
-    'filament width': '📏',
+    'nozzle park': '🚗',
+    'nozzle clean': '🚿',
+
     'gcode': '🎱',
 
+    'serial': '🥣',
     'host': '🐙',
 
+    'filament width': '📏',
     'i2c encoders': '👀',
     'i2cbus': '🧪',
     'joystick': '🕹',
-    'lights': '💡',
     'multi-material': '🍔',
     'nanodlp': '🦤',
     'network': '🕸',
@@ -195,7 +206,6 @@ class ConfigSchema {
     'reporting': '📢',
     'safety': '🚧',
     'security': '🔒',
-    'serial': '🥣',
     'servos': '🦾',
     'stats': '📊',
 
