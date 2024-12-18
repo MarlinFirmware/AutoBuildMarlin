@@ -508,7 +508,7 @@ $(function () {
     const $sects = $inform.find('fieldset.section:not(.hide)');
 
     // All button shows all the sections with direct styling.
-    const $allbutton = $('<button class="active">👀 ALL</button>')
+    const $allbutton = $('<button class="active">⭐️ ALL</button>')
     $allbutton.click((e) => {
       $(e.target).addClass('active').siblings().removeClass('active');
       $sects.show();

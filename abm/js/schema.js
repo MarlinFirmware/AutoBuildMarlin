@@ -129,7 +129,7 @@ class ConfigSchema {
     'test': '🧪',
     'custom': '❓',
 
-    'info': 'ℹ︎',
+    'info': 'ℹ️',
     'machine': '🤖',
     'eeprom': '💾',
 
@@ -141,29 +141,36 @@ class ConfigSchema {
     'geometry': '📐',
     'homing': '🏠',
     'kinematics': '⚙️',
-    'motion': '🏃',
-    'motion control': '🏃',
+    'motion': '🏃‍♂️‍➡️',
+    'motion control': '🏃‍♂️‍➡️',
 
     'endstops': '🛑',
+    'filament runout sensors': '🚨',
     'probe type': '🛰',
     'probes': '🛰',
-    'bltouch': '☝️',
-    'leveling': '🧩',
+    'bltouch': '🇰🇷',
+    'leveling': '🫓',
 
     'temperature': '🌡',
     'hotend temp': '🌡',
     'mpctemp': '🌡',
+    'pid temp': '🌡',
     'mpc temp': '🌡',
     'bed temp': '🌡',
     'chamber temp': '🌡',
-    'fans': '💨',
+    'fans': '❄️',
 
     'tool change': '🔧',
-    'advanced pause': '⏯',
+    'advanced pause': '⏯️',
     'calibrate': '🔍',
+    'calibration': '🔍',
+
+    'media': '💾',
 
     'lcd': '🖥',
-    'interface': '⌨️',
+    'lights': '💡',
+    'caselight': '💡',
+    'interface': '🎛️',
     'custom main menu': '🔧',
     'custom config menu': '🔧',
     'custom buttons': '🔘',
@@ -171,31 +178,34 @@ class ConfigSchema {
     'develop': '🛠',
     'debug matrix': '🪲',
 
-    'delta': '∆',
+    'delta': '✈️',
     'scara': '🦄',
     'tpara': '🦄',
     'polar': '🐧',
+    'polargraph': '📈',
     'cnc': '🪚',
 
-    'filament width': '📏',
+    'nozzle park': '🚗',
+    'nozzle clean': '🚿',
+
     'gcode': '🎱',
 
+    'serial': '🥣',
     'host': '🐙',
 
+    'filament width': '📏',
     'i2c encoders': '👀',
-    'i2cbus': '🧪',
+    'i2cbus': '🚌',
     'joystick': '🕹',
-    'lights': '💡',
     'multi-material': '🍔',
     'nanodlp': '🦤',
     'network': '🕸',
     'photo': '📷',
     'power': '⚡️',
     'psu control': '🔌',
-    'reporting': '📢',
+    'reporting': '💬',
     'safety': '🚧',
-    'security': '🔒',
-    'serial': '🥣',
+    'security': '🔑',
     'servos': '🦾',
     'stats': '📊',
 
@@ -212,7 +222,7 @@ class ConfigSchema {
     'units': '🇺🇳',
     'volumetrics': '🎚',
 
-    'extras': '🔍'
+    'extras': '👽'
   };
 
   /**
