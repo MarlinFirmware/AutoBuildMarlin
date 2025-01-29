@@ -1183,18 +1183,32 @@ class ConfigSchema {
 
         // Combine adjacent conditions where possible
         function combine_conditions(condarr) {
+
+          const removeRedundantParens = (expr) => {
+            // Pre-replace function-like constructs with placeholders
+            expr = expr.replace(/(\w+\s*\([^()]+\))/g, (_, match) =>
+              match.replace(/\(/g, '%').replace(/\)/g, '%')
+            );
+
+            // Remove redundant parentheses
+            for (let prevExpr; prevExpr !== expr;)
+              prevExpr = expr, expr = expr.replace(/\(([^()]+)\)/g, (_, inner) => inner);
+
+            // Restore placeholders back to function-like constructs
+            return expr.replace(/(\w+)\s*%([^%]+)%/g, (_, func, inner) =>
+              `${func}(${inner})`
+            );
+          };
+
           let cond = '(' + condarr.flat().join(') && (') + ')';
           while (true) {
             const old_cond = '' + cond;
-            cond = cond.replace('!ENABLED', 'DISABLED').replace('!DISABLED', 'ENABLED')
-              .replace(/ENABLED\s*\(\s*([A-Z0-9_]+)\s*\)\s*&&\s*ENABLED\s*\(\s*/g, 'ALL($1, ')
-              .replace(/(ALL|BOTH)\s*\(\s*([^()]+?)\s*\)\s*&&\s*ENABLED\s*\(\s*/g, 'ALL($2, ')
-              .replace(/ENABLED\s*\(\s*([A-Z0-9_]+)\s*\)\s*&&\s*(ALL|BOTH)\s*\(\s*/g, 'ALL($1, ')
-              .replace(/ENABLED\s*\(\s*([A-Z0-9_]+)\s*\)\s*\|\|\s*ENABLED\s*\(\s*/g, 'ANY($1, ')
-              .replace(/(ANY|EITHER)\s*\(\s*([^()]+?)\s*\)\s*\|\|\s*ENABLED\s*\(\s*/g, 'ANY($2, ')
+            cond = removeRedundantParens(cond)
+              .replaceAll('!ENABLED', 'DISABLED').replaceAll('!DISABLED', 'ENABLED')
+              .replace(/(DISABLED|!ALL|!BOTH)\s*\(\s*([^()]+?)\s*\)\s*\|\|\s*(DISABLED|!ALL|!BOTH)\s*\(\s*/g, '!ALL($2, ')
+              .replace(/(ENABLED|ALL|BOTH)\s*\(\s*([A-Z0-9_]+)\s*\)\s*&&\s*(ENABLED|ALL|BOTH)\s*\(\s*/g, 'ALL($2, ')
+              .replace(/(ENABLED|ANY|EITHER)\s*\(\s*([A-Z0-9_]+)\s*\)\s*\|\|\s*(ENABLED|ANY|EITHER)\s*\(\s*/g, 'ANY($2, ')
               .replace(/(NONE|DISABLED)\s*\(\s*([^()]+?)\s*\)\s*&&\s*(NONE|DISABLED)\s*\(\s*/g, 'NONE($2, ')
-              .replace(/DISABLED\s*\(\s*([A-Z0-9_]+)\s*\)\s*\|\|\s*DISABLED\s*\(\s*/g, '!ALL($1, ')
-              .replace(/!(ALL|BOTH)\s*\(\s*([^()]+?)\s*\)\s*\|\|\s*(DISABLED|!ALL|!BOTH)\s*\(\s*/g, '!ALL($2, ')
               .replace(/^\((!?[A-Z]+\([^()]+?\))\)$/, '$1');
             if (old_cond == cond) break;
           }
