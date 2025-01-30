@@ -2,6 +2,12 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.63
+- Improve Config Editor section pre-ordering and icons
+- Better ConfigSchema consolidation of define 'requires' conditions
+- Fix Config Editor handling of underscores in the Filter field
+- Show E Sensor IDs in the Auto Build Panel
+
 ## 2.1.62
 - Config Editor:
   - Table of Contents navigation
