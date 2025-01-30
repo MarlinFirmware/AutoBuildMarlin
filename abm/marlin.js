@@ -215,7 +215,7 @@ function extractTempSensors() {
 // - If the board isn't found, look for a rename alert.
 // - Get the status of environment builds.
 //
-// Return hashed array { mb, pins_file, archs, archs_arr, envs, (has_debug), (error) }
+// Return hashed array { mb, pins_file, archs, archs_arr, envs, short, description, (has_debug), (error) }
 //
 var board_info;
 function extractBoardInfo(mb) {
@@ -312,7 +312,7 @@ function getMachineSettings() {
   out.heated_bed = !!(1 * bed_sensor);
   if (out.heated_bed) {
     out.bed_sensor = bed_sensor;
-    out.description += ` with Heated Bed (${bed_sensor})`;
+    out.description += ` with Heated Bed [ ${bed_sensor} ]`;
   }
   else
     out.description += ' (no Heated Bed)';
@@ -387,6 +387,8 @@ function getExtruderSettings() {
     else
       out.description = out.fancy;
   }
+
+  out.description += " [ " + out.sensors.join(', ') + " ]";
 
   extruder_info = out;
   return extruder_info;
