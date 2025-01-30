@@ -304,7 +304,7 @@ class ConfigSchema {
   getItems(fn, before, limit) {
     let results = [];
     for (const sect in this.bysec) {
-      results.concat(this.getItemsInSection(sect, fn, before, limit));
+      results.push(...this.getItemsInSection(sect, fn, before, limit));
       limit -= results.length;
       if (limit <= 0) break;
     }
@@ -1206,8 +1206,8 @@ class ConfigSchema {
             cond = removeRedundantParens(cond)
               .replaceAll('!ENABLED', 'DISABLED').replaceAll('!DISABLED', 'ENABLED')
               .replace(/(DISABLED|!ALL|!BOTH)\s*\(\s*([^()]+?)\s*\)\s*\|\|\s*(DISABLED|!ALL|!BOTH)\s*\(\s*/g, '!ALL($2, ')
-              .replace(/(ENABLED|ALL|BOTH)\s*\(\s*([A-Z0-9_]+)\s*\)\s*&&\s*(ENABLED|ALL|BOTH)\s*\(\s*/g, 'ALL($2, ')
-              .replace(/(ENABLED|ANY|EITHER)\s*\(\s*([A-Z0-9_]+)\s*\)\s*\|\|\s*(ENABLED|ANY|EITHER)\s*\(\s*/g, 'ANY($2, ')
+              .replace(/(ENABLED|ALL|BOTH)\s*\(\s*([A-Za-z_][A-Za-z0-9_]+)\s*\)\s*&&\s*(ENABLED|ALL|BOTH)\s*\(\s*/g, 'ALL($2, ')
+              .replace(/(ENABLED|ANY|EITHER)\s*\(\s*([A-Za-z_][A-Za-z0-9_]+)\s*\)\s*\|\|\s*(ENABLED|ANY|EITHER)\s*\(\s*/g, 'ANY($2, ')
               .replace(/(NONE|DISABLED)\s*\(\s*([^()]+?)\s*\)\s*&&\s*(NONE|DISABLED)\s*\(\s*/g, 'NONE($2, ')
               .replace(/^\((!?[a-z_][a-z0-9_]+\([^()]+?\))\)$/i, '$1');
             if (old_cond == cond) break;
