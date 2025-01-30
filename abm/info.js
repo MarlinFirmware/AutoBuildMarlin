@@ -65,6 +65,8 @@ class InfoPanelProvider {
     function updateWebview() {
       wv.postMessage({ type: 'say', text: "hello" }); // infoview.js:handleMessageToUI
     }
+
+    // Update the view now that the pane has been revealed.
     updateWebview();
   }
 
@@ -82,6 +84,7 @@ class InfoPanelProvider {
     // Local path to script and css for the webview
     const nonce = abm.getNonce(), // Use a nonce to whitelist which scripts can be run
       jqueryUri = this.jsUri(webview, 'jquery-3.6.0.min.js'),
+      vsviewUri = this.jsUri(webview, 'vsview.js'),
       scriptUri = this.jsUri(webview, 'infoview.js'),
          cssUri = this.resourceUri(webview, 'css', 'infoview.css');
 
@@ -92,6 +95,7 @@ class InfoPanelProvider {
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}'; ">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="${cssUri}" rel="stylesheet" />
+  <script nonce="${nonce}" src="${vsviewUri}"></script>
   <script nonce="${nonce}" src="${jqueryUri}"></script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
   <title>Marlin Info</title>

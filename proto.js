@@ -10,24 +10,22 @@ function init() {
   //
   // Extend String, Number, and Date with extras
   //
-  String.prototype.lpad = function(len, chr) {
+  String.prototype.lpad = function(len, chr=' ') {
     if (!len) return this;
-    if (chr === undefined) chr = ' ';
     var s = this+'', need = len - s.length;
     if (need > 0) s = new Array(need+1).join(chr) + s;
     return s;
   };
 
-  String.prototype.rpad = function(len, chr) {
+  String.prototype.rpad = function(len, chr=' ') {
     if (!len) return this;
-    if (chr === undefined) chr = ' ';
     var s = this+'', need = len - s.length;
     if (need > 0) s += new Array(need+1).join(chr);
     return s;
   };
 
   String.prototype.dequote = function()        { return this.replace(/^\s*"|"\s*$/g, '').replace(/\\/g, ''); };
-  String.prototype.prePad = function(len, chr) { return len ? this.lpad(len, chr) : this; };
+  String.prototype.prePad = function(len, chr=' ') { return len ? this.lpad(len, chr) : this; };
   String.prototype.zeroPad = function(len)     { return this.prePad(len, '0'); };
   String.prototype.toHTML = function()         { return jQuery('<div>').text(this).html(); };
   String.prototype.regEsc = function()         { return this.replace(/[.?*+^$[\]\\(){}|-]/g, "\\$&"); }

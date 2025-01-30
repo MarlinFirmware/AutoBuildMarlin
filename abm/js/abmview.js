@@ -98,7 +98,7 @@ var ABM = (function(){
               const $a = $('<a>').attr('href', '#').text(m.val);
               $a.click((e) => {
                 e.preventDefault();
-                vscode.postMessage({ command:'openfile', uri:m.uri });
+                _msg({ command:'openfile', uri:m.uri });
               });
               $dest.append($a);
             }

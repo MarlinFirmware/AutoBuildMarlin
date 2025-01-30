@@ -136,17 +136,17 @@ function combinedSchema() {
   /**
    * Create two schemas for use in editor interaction, since we need to know if a change
    * was made in Configuration.h that affects Configuration_adv.h directly or indirectly.
-   * s1 : Configuration.h schema
-   * s2 : Configuration_adv.h schema with Configuration.h + Conditionals_LCD.h precursor
+   * bas : Configuration.h schema
+   * adv : Configuration_adv.h schema with Configuration.h + Conditionals_LCD.h precursor
    */
-  const s1 = ConfigSchema.newSchemaFromText(config1),
-        s2 = ConfigSchema.newSchemaFromText(adv_combo, -prefix_lines);
+  const bas = ConfigSchema.newSchemaFromText(config1),
+        adv = ConfigSchema.newSchemaFromText(adv_combo, -prefix_lines);
 
-  return { basic: s1, advanced: s2 };
+  return { basic: bas, advanced: adv };
 }
 
 const schemas = combinedSchema();
-abm.log("abmeditor.js", schemas);
+abm.log("abm/editor.js", ConfigSchema.schemas);
 
 // Utility function to get the name of a document from a full path.
 const document_name = document => document.uri.fsPath.split(path.sep).pop();
@@ -193,14 +193,14 @@ class ConfigEditorProvider {
      */
     function initWebview() {
       // Get the name of the document.
-      abm.log(`initWebview: ${name}`);
+      abm.log(`ConfigEditorProvider.initWebview: ${name}`);
 
       // Send the pre-parsed data to the web view.
-      wv.postMessage({ type: 'update', schema: myschema.bysec }); // editview.js:handleMessageToUI
+      wv.postMessage({ type: 'update', bysec: myschema.bysec }); // editview.js:handleMessageToUI
 
       // Parse the text and send it to the webview.
       //sch.importText(document.getText());
-      //wv.postMessage({ type: 'update', schema: sch.bysec });
+      //wv.postMessage({ type: 'update', bysec: sch.bysec });
 
       // Originally the webview received the raw text.
       //wv.postMessage({ type: 'update', text: document.getText() });
@@ -212,16 +212,16 @@ class ConfigEditorProvider {
      */
     function updateWebview(external=false) {
       // Get the name of the document.
-      abm.log(`updateWebview: ${name}`);
+      abm.log(`ConfigEditorProvider.updateWebview: ${name}`);
 
       // Send the parsed data to the web view.
       if (external)
-        wv.postMessage({ type: 'update', schema: myschema.bysec }); // editview.js:handleMessageToUI
+        wv.postMessage({ type: 'update', bysec: myschema.bysec }); // editview.js:handleMessageToUI
 
       // If the second config file is also open, update it as well.
       if (!is_adv && 'Configuration_adv.h' in webviews) {
         abm.log("updateWebview >> Configuration_adv.h");
-        webviews['Configuration_adv.h'].postMessage({ type: 'update', schema: schemas.advanced.bysec });
+        webviews['Configuration_adv.h'].postMessage({ type: 'update', bysec: schemas.advanced.bysec });
       }
     }
 
@@ -327,16 +327,16 @@ class ConfigEditorProvider {
 
     // Receive message from the webview via vscode.postMessage.
     // The webview sends changes to apply to the underlying document.
-    function handleMessageFromUI(e) {
-      abm.log("(ConfigEditorProvider) handleMessageFromUI", e);
-      switch (e.type) {
+    function handleMessageFromUI(m) {
+      abm.log("ConfigEditorProvider.handleMessageFromUI", e);
+      switch (m.type) {
         case 'change':
-          applyConfigChange(document, e.data); // Update the document text using the given data.
+          applyConfigChange(document, m.data); // Update the document text using the given data.
           break;
 
         case 'multi-change':
           const edit = new vscode.WorkspaceEdit();
-          e.changes.forEach(d => {
+          m.changes.forEach(d => {
             applyConfigChange(document, d.data, edit);
           });
           ws.applyEdit(edit);
@@ -367,6 +367,7 @@ class ConfigEditorProvider {
     // Local path to script and css for the webview
     const nonce = (0, abm.getNonce)(), // Use a nonce to whitelist which scripts can be run
       jqueryUri = this.jsUri(webview, 'jquery-3.6.0.min.js'),
+      vsviewUri = this.jsUri(webview, 'vsview.js'),
       schemaUri = this.jsUri(webview, 'schema.js'),
       scriptUri = this.jsUri(webview, 'editview.js'),
         gridUri = this.jsUri(webview, 'grid.js'),
@@ -380,6 +381,7 @@ class ConfigEditorProvider {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="${cssUri}" rel="stylesheet" />
   <script nonce="${nonce}" src="${jqueryUri}"></script>
+  <script nonce="${nonce}" src="${vsviewUri}"></script>
   <script nonce="${nonce}" src="${schemaUri}"></script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
   <script nonce="${nonce}" src="${gridUri}"></script>

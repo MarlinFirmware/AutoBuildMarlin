@@ -29,7 +29,8 @@ $(function () {
     // Set up the webview with options and basic html.
   }
 
-  // Update state from the stored data structure and filter.
+  // Save the current view state.
+  // Use this to restore the view when it is revealed.
   function saveWebViewState() {
     const data = { data: {} };
     log('saveWebViewState', data);
@@ -42,21 +43,21 @@ $(function () {
    * @param {object} message - The message object.
    */
   var ignore_update = false;  // Ignore the next update message.
-  function handleMessageToUI(message) {
-    log("handleMessageToUI", message);
-    switch (message.type) {
+  function handleMessageToUI(m) {
+    log("infoview.js : handleMessageToUI", m);
+    switch (m.type) {
       // Update the whole form in response to an external change.
       case 'info':
         if (ignore_update) {
           ignore_update = false;
           return;
         }
-        //drawInfo(message.data);
+        //drawInfo(m.data);
         break;
 
       // Display an error message
       case 'error':
-        $('#error').text(message.text).show().click(() => { $('#error').hide(); });
+        $('#error').text(m.text).show().click(() => { $('#error').hide(); });
         break;
     }
   }
@@ -73,7 +74,7 @@ $(function () {
   initInfoView();
 
   //
-  // Tab Revealed
+  // Info Panel Revealed
   //
   // If there is state data then we can skip the parser and build the form.
   const state = vscode.getState();

@@ -23,26 +23,28 @@ function log(message, line = 0) {
  * ConfigSchema encapsulates a single configuration file schema, imported
  * from C/C++ header files with #define directives and custom macros.
  *
- * - The schema is stored in a 'data' dictionary keyed by section, then by option name.
- * - The 'bysid' dictionary is keyed by sid and references the same data.
+ * - The schema is stored in a 'bysec' dictionary keyed by section, then by option name.
+ *   - This order is chosen for convenience in generating the form, but could mess with
+ *     multiple items with the same name within the same config section.
+ * - The 'bysid' dictionary is keyed by sid and is created to reference the same data.
  * - Each item in the schema is a dictionary with information about a single #define.
  *   See the description at importText() below for the #define info structure.
  *
- * - The first import pass:
+ * - The import pass:
  *   - Gathers an exhaustive list of all #define items, both enabled and disabled.
  *   - Captures the nested #if structure indirectly:
  *     - Each item has a 'requires' field with the block conditions translated into Javascript.
  *     - The 'requires' Javascript can only run inside of evaluateRequires.
  *   - The 'evaled' result on an item is set by calling evaluateRequires(item).
  *   - Deleting the 'evaled' field and calling evaluateRequires(item) forces re-evaluation.
- *     Since every item afterward needs re-evaluation, call updateEditedItem(changes).
+ *     When every item afterward needs re-evaluation, call updateEditedItem(changes, true).
  *
  */
 class ConfigSchema {
 
   // Debugging and logging
   static verbose = false;
-  debug() { console.dir(this.bysec); }
+  debug() { console.dir(this); }
   debug_sections() { console.log(Object.keys(this.bysec)); }
 
   // Populate a new schema from text, numbering lines starting from an index.
@@ -51,6 +53,7 @@ class ConfigSchema {
     this.bysid = {};  // { sid1: { ... }, ... }
     if (text) this.importText(text, numstart);
   }
+
   // Factory method to create a new uninitialized schema.
   static newSchema() {
     return new ConfigSchema();
@@ -71,9 +74,9 @@ class ConfigSchema {
     instance.refreshAllRequires();
     return instance;
   }
-  static getIndexBySID(data) {
+  static getIndexBySID(bysec) {
     let bysid = {};
-    for (const [_, foo] of Object.entries(data)) {
+    for (const [_, foo] of Object.entries(bysec)) {
       if (foo instanceof Array) {
         for (const item of foo) bysid[item.sid] = item;
       }
@@ -128,6 +131,7 @@ class ConfigSchema {
     '_': '❓',
     'test': '🧪',
     'custom': '❓',
+    'none': '❓',
 
     'info': 'ℹ️',
     'machine': '🤖',
@@ -255,12 +259,12 @@ class ConfigSchema {
    * @param {int}    before  The sid it must precede.
    * @return True if the item is fully defined before the given sid.
    */
-  definedBefore(item, before) {
-    if (!before) return true;
-    if (item.sid >= before) return false;
+  static definedBefore(item, sid_before) {
+    if (!sid_before) return true;
+    if (item.sid >= sid_before) return false;
     if (item.enabled !== undefined && !item.enabled) return false;
     if (item.evaled !== undefined && !item.evaled) return false;
-    if (item.undef !== undefined && item.undef < before) return false;
+    if (item.undef !== undefined && item.undef < sid_before) return false;
     return true;
   }
 
@@ -279,13 +283,13 @@ class ConfigSchema {
     for (const [_name, foo] of Object.entries(this.bysec[sect])) {
       if (foo instanceof Array) {
         for (const item of foo) {
-          if (this.definedBefore(item, before) && fn(item)) {
+          if (ConfigSchema.definedBefore(item, before) && fn(item)) {
             results.push(item);
             if (limit && results.length >= limit) return results;
           }
         }
       }
-      else if (this.definedBefore(foo, before) && fn(foo)) {
+      else if (ConfigSchema.definedBefore(foo, before) && fn(foo)) {
         results.push(foo);
         if (limit && results.length >= limit) return results;
       }
@@ -308,7 +312,6 @@ class ConfigSchema {
       limit -= results.length;
       if (limit <= 0) break;
     }
-
     return results;
   }
 
@@ -326,9 +329,9 @@ class ConfigSchema {
       if (name in opts) {
         const foo = opts[name];
         if (foo instanceof Array) {
-          for (const item of foo) if (this.definedBefore(item, before)) return item;
+          for (const item of foo) if (ConfigSchema.definedBefore(item, before)) return item;
         }
-        else if (this.definedBefore(foo, before)) return foo;
+        else if (ConfigSchema.definedBefore(foo, before)) return foo;
       }
     }
     return null;
@@ -348,9 +351,9 @@ class ConfigSchema {
       if (name in opts) {
         const foo = opts[name];
         if (foo instanceof Array) {
-          for (const item of foo) if (this.definedBefore(item, before)) outitem = item;
+          for (const item of foo) if (ConfigSchema.definedBefore(item, before)) outitem = item;
         }
-        else if (this.definedBefore(foo, before)) outitem = foo;
+        else if (ConfigSchema.definedBefore(foo, before)) outitem = foo;
       }
     }
     return outitem;
@@ -1585,12 +1588,9 @@ class ConfigSchema {
                 if (name in opts) {
                   const foo = opts[name];
                   if (foo instanceof Array)
-                    for (const item of foo) {
-                      if (item.undef === undefined) item.undef = sid;
-                    }
-                  else {
-                    if (foo.undef === undefined) foo.undef = sid;
-                  }
+                    for (const item of foo) item.undef ??= sid;
+                  else
+                    foo.undef ??= sid;
                 }
               }
             }
@@ -1610,40 +1610,6 @@ class ConfigSchema {
   }
 
 } // end class ConfigSchema
-
-/**
- * MultiSchema encapsulates the complete configuration schema so
- * requirements in the second configuration can be evaluated.
- */
-class MultiSchema {
-  constructor(schemas) {
-    fromSchemas(schemas);
-  }
-
-  fromSchemas(schemas) {
-    this.schemas = schemas;
-    refresh();
-  }
-
-  // Return all schemas merged together in the instantiated order
-  refresh() {
-    let data = {};
-    for (const schema of this.schemas) {
-      for (const [sect, opts] of Object.entries(schema.bysec)) {
-        if (!(sect in data)) data[sect] = {};
-        for (const [name, info] of Object.entries(opts)) {
-          if (!(name in data[sect])) data[sect][name] = {};
-          for (const [key, val] of Object.entries(info)) {
-            data[sect][name][key] = val;
-          }
-        }
-      }
-    }
-    this.combo = ConfigSchema.newSchemaFromDataBySection(data);
-  }
-
-  schema() { return this.combo; }
-}
 
 try {
   // Export the class as a module

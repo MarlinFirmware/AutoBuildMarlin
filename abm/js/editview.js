@@ -140,14 +140,9 @@ $(function () {
   String.prototype.camelToID   = function () { return this.unbrace().replace(/([a-z])([A-Z0-9_])/g, '$1_$2').replace(/_/g, '-').toLowerCase(); }
 
   Array.prototype.toggle = function (val, tf) {
-    const hv = this.includes(val);
-    if (tf && !hv)
-      this.push(val);
-    else if (!tf && hv) {
-      // Remove the value from the array
-      for (let i = this.length - 1; i >= 0; i--)
-        if (this[i] === val) this.splice(i, 1);
-    }
+    const idx = this.indexOf(val);
+    if (tf && idx === -1) this.push(val);
+    else if (!tf && idx !== -1) this.splice(idx, 1);
     return this;
   };
 
@@ -164,13 +159,17 @@ $(function () {
     verbose = oldverbose;
   }
 
-  // A copy of ConfigSchema for local usage
-  var schema = ConfigSchema.newSchema(),
-      config_filter = { terms: '', show_comments: true, show_disabled: true, collapsed: [] },
-      result_index = 0;
+  /**
+   * A new empty ConfigSchema for local usage
+   * Initialized using either:
+   * - Serialized 'bysec' data sent from the provider, or
+   * - Data for the revealed view restored using vscode.getState().
+   */
+  var schema = ConfigSchema.newSchema();
 
-  // We need getState, setState, and postMessage.
-  const vscode = acquireVsCodeApi();
+  // The current filter state
+  var config_filter = { terms: '', show_comments: true, show_disabled: true, collapsed: [] },
+      result_index = 0;
 
   // Ignore the next update message.
   var ignore_update = false;
@@ -184,7 +183,7 @@ $(function () {
   function end_multi_update() {
     multi_update = false;
     ignore_update = true;
-    vscode.postMessage({ type:'multi-change', changes }); // editor.js:handleMessageFromUI
+    _msg({ type:'multi-change', changes }); // editor.js:handleMessageFromUI
   }
 
   // A filter text box to filter the list of options.
@@ -204,7 +203,7 @@ $(function () {
   // Global for the form.
   var $form;
 
-  // Set up event handlers on the header form fields.
+  // Bind event handlers to the header form fields.
   function initConfigFilterForm() {
     // Make sure no forms are able to submit.
     $('form').bind('submit', (e) => { return false; });
@@ -232,7 +231,7 @@ $(function () {
     // A button to test sending messages to the extension.
     const $button = $('#hello-button');
     $button.find('button').bind('click', () => {
-      vscode.postMessage({ type: 'hello' }); // editor.js:handleMessageFromUI
+      _msg({ type: 'hello' }); // editor.js:handleMessageFromUI
     });
   }
 
@@ -292,7 +291,7 @@ $(function () {
       changes.push(msg);
     else {
       ignore_update = true;
-      vscode.postMessage(msg); // editor.js:handleMessageFromUI
+      _msg(msg); // editor.js:handleMessageFromUI
     }
   }
 
@@ -722,13 +721,12 @@ $(function () {
   function saveSectionCollapsed(sect_class, hide) {
     log("saveSectionCollapsed", {sect_class, hide});
 
-    if (!('collapsed' in config_filter)) config_filter.collapsed = [];
+    config_filter.collapsed ??= [];
 
-    if (sect_class == 'all') {
-      config_filter.collapsed = [];
-      if (hide)
-        for (let sect in schema.bysec)
-          config_filter.collapsed.push(sect.sectID());
+    if (sect_class === 'all') {
+      config_filter.collapsed = hide
+        ? Object.keys(schema.bysec).map(sect => sect.sectID())
+        : [];
     }
     else
       config_filter.collapsed.toggle(sect_class, hide);
@@ -845,7 +843,7 @@ $(function () {
         if (ignore_update)  // This view caused the update? Ignore it.
           ignore_update = false;
         else
-          buildConfigFormWithData(message.schema);  // Use the provided data to rebuild the form.
+          buildConfigFormWithData(message.bysec);  // Use the provided data to rebuild the form.
         break;
 
       case 'text-update':
