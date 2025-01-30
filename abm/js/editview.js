@@ -205,7 +205,7 @@ $(function () {
   var $form;
 
   // Set up event handlers on the header form fields.
-  function initConfigForm() {
+  function initConfigFilterForm() {
     // Make sure no forms are able to submit.
     $('form').bind('submit', (e) => { return false; });
 
@@ -543,7 +543,8 @@ $(function () {
     $('#filter-count').text('');
     var $lines = $target.find(`div.line`);
 
-    const hasterms = terms.trim().length >= 3;
+    terms = terms.replace(/  +|_+/g, ' ').trim();
+    const hasterms = terms.length >= 3;
     if (hasterms) {
       $lines.addClass('hide');                                  // Hide all lines by default
       const words = terms.toLowerCase().split(' ');             // Split up the filter terms into words
@@ -870,7 +871,7 @@ $(function () {
   //
 
   // Add handlers to the filter form, comment checkbox, etc.
-  initConfigForm();
+  initConfigFilterForm();
 
   // If there is state data then the tab is being re-shown
   // we can just build the form using the saved data.
