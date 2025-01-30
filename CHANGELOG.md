@@ -2,9 +2,15 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.64
+- Fix and improve cleanup for JS evaluation of conditionals
+- Clarify that `ConfigSchema` data is grouped by section
+- Fix `ConfigSchema.getItems` returning 0 results
+- Fix evaluation of mixed-case options (e.g., `DEFAULT_Kp`)
+
 ## 2.1.63
 - Improve Config Editor section pre-ordering and icons
-- Better ConfigSchema consolidation of define 'requires' conditions
+- Better `ConfigSchema` consolidation of define `requires` conditions
 - Fix Config Editor handling of underscores in the Filter field
 - Show E Sensor IDs in the Auto Build Panel
 

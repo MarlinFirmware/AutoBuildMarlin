@@ -35,7 +35,7 @@ function log(message, line = 0) {
  *     - The 'requires' Javascript can only run inside of evaluateRequires.
  *   - The 'evaled' result on an item is set by calling evaluateRequires(item).
  *   - Deleting the 'evaled' field and calling evaluateRequires(item) forces re-evaluation.
- *     Since every item afterward needs re-evaluation, call updateEditedItem(item).
+ *     Since every item afterward needs re-evaluation, call updateEditedItem(changes).
  *
  */
 class ConfigSchema {
@@ -756,7 +756,18 @@ class ConfigSchema {
     function OTHER(cond) {
       // See if the item is enabled in the schema and use its value.
       const found = self.getItems(it => it.name == cond && it.evaled && it.enabled, initem.sid, 1);
-      if (found.length > 0) return found[0].value;
+      //console.log(`OTHER("${cond}") Found ${found.length} before ${initem.sid}`);
+      if (found.length > 0) {
+        const it = found[0];
+        if (it.type == 'macro') {
+          const match = it.value.match(/(\w+)\s*\(([^()]+?)\)/),
+                parms = match[2].replace(/(\w+)/g, "'$1'"),
+                macro = `${match[1]}(${parms})`;
+          //console.log(`Evaluating macro ${it.name} == ${macro}`);
+          return eval(macro);
+        }
+        return it.value;
+      }
 
       // Do custom handling for items not found in the schema.
       switch (cond) {
@@ -784,6 +795,42 @@ class ConfigSchema {
           return true;
       }
       return false;
+    }
+
+    // Concatenate literal comma-separated parts and return
+    // the OTHER() evaluation of the resulting symbol.
+    // Example:
+    //   #define ALICE 123
+    //   #define DOCAT_(V) _CAT(_,V)
+    //   #define DIDCAT DOCAT_(ALICE) // DIDCAT => _ALICE
+    function _CAT(...parts) {
+      //console.log("ABM => _CAT", parts);
+      return OTHER(parts.join(''));
+    }
+
+    // Concatenate the solved values of comma-separated parts
+    // and return the OTHER() evaluation of the resulting symbol.
+    // Example:
+    //   #define ALICE MY_ENUM
+    //   #define BOB ALICE
+    //   #define DOCAT(V) CAT(_,V)
+    //   #define DIDCAT DOCAT(BOB) // DIDCAT == _MY_ENUM
+    function CAT(...parts) {
+      //console.log("ABM => CAT", parts);
+      // Evaluate each part before concatenation
+      const solved = [];
+      for (const part of parts) {
+        let priorValue = part,                      // Assume the literal part
+            prior = priorItemNamed(part);           // Get the prior named item, if any
+        while (prior) {                             // If the symbol is defined...
+          priorValue = prior.value;                 // ...use its value.
+          if (prior.type != 'enum') break;          // Is it the name of an enum?
+          prior = priorItemNamed(priorValue);       // Keep going down the rabbit hole
+        }
+        solved.push(priorValue);
+      }
+
+      return OTHER(solved.join(''));
     }
 
     const before_mangle = cond;
@@ -954,9 +1001,7 @@ class ConfigSchema {
     // Init the schema data with the preferred section order.
     const sdict = ConfigSchema.emptyOrderedData();
     // Regex for #define NAME [VALUE] [COMMENT] with sanitized line
-    const defgrep = /^(\/\/)?\s*(#define)\s+([A-Za-z0-9_]+)\s*(.*?)\s*(\/\/.+)?$/;
-    // Regex for #define MACRONAME() [VALUE] [COMMENT] with sanitized line
-    const macrogrep = /^(\/\/)?\s*(#define)\s+([A-Za-z0-9_]+)(\(.*?\)\s*(.*?))\s*(\/\/.+)?$/;
+    const defgrep = /^(\/\/)?\s*(#define)\s+([A-Za-z_][A-Za-z0-9_]+)\s*(.*?)\s*(\/\/.+)?$/;
     // Defines to ignore
     const ignore = ['CONFIGURATION_H_VERSION', 'CONFIGURATION_ADV_H_VERSION', 'CONFIG_EXAMPLES_DIR', 'LCD_HEIGHT'];
     // Start with unknown state
@@ -1313,7 +1358,7 @@ class ConfigSchema {
             value_type = 'float'
             val = val.replace('f', '') * 1;
           }
-          else if (macrogrep.test(line)) {
+          else if (/^([A-Za-z_][A-Za-z0-9_]+)\s*(\([^()]*?\))$/.test(val)) {
             value_type = 'macro';
           }
           else {
