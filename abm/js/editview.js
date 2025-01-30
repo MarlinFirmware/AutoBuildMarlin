@@ -239,7 +239,7 @@ $(function () {
   // Update state from the stored data structure and filter.
   // TODO: Use the state in the provider instead.
   function saveWebViewState() {
-    const data = { data: schema.data, filter: config_filter };
+    const data = { bysec: schema.bysec, filter: config_filter };
     log('saveWebViewState', data);
     vscode.setState(data);
   }
@@ -254,9 +254,9 @@ $(function () {
     // containing the serial ID for the option.
     $('#config-form div.line').each((i, div) => {
       // Direct access to the schema data structure
-      const data = div.inforef;
+      const info = div.inforef;
       // Set .nope on options that are disabled based on other options
-      $(div).toggleClass('nope', data.evaled !== undefined && !data.evaled);
+      $(div).toggleClass('nope', info.evaled !== undefined && !info.evaled);
     });
     hideEmptySections(true);
   }
@@ -727,7 +727,7 @@ $(function () {
     if (sect_class == 'all') {
       config_filter.collapsed = [];
       if (hide)
-        for (let sect in schema.data)
+        for (let sect in schema.bysec)
           config_filter.collapsed.push(sect.sectID());
     }
     else
@@ -755,14 +755,14 @@ $(function () {
    * This is called to refresh the form once structured data is ready.
    */
   function buildConfigForm() {
-    const data = schema.data;
+    const sdict = schema.bysec;
 
     // Legend titles can collapse and reveal their sections.
     const do_collapse = (e, sectid) => { toggleCollapsed(sectid, e.altKey); };
 
     // Iterate over the config data and create a form
     $form = $('<form>');
-    for (let [sect, dict] of Object.entries(data)) {
+    for (let [sect, dict] of Object.entries(sdict)) {
       if (sect == '_') continue;
       const sectid = sect.sectID();
       const collapsed = config_filter.collapsed.includes(sectid) ? ' collapsed' : '';
@@ -822,9 +822,9 @@ $(function () {
    *              and when the app detects an external change in the file.
    * @param {string} text - The text of the document.
    */
-  function buildConfigFormWithData(data) {
-    log("buildConfigFormWithData", data);
-    schema.data = data;
+  function buildConfigFormWithData(bysec) {
+    log("buildConfigFormWithData", bysec);
+    schema.bysec = bysec;
     saveWebViewState();
     buildConfigForm();
   }
@@ -879,7 +879,7 @@ $(function () {
   if (state) {
     log("Got VSCode state", state);
     initFilter(state.filter);
-    schema = ConfigSchema.newSchemaFromData(state.data);
+    schema = ConfigSchema.newSchemaFromDataBySection(state.bysec);
     buildConfigForm();
   }
 

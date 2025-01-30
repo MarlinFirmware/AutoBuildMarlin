@@ -42,12 +42,12 @@ class ConfigSchema {
 
   // Debugging and logging
   static verbose = false;
-  debug() { console.dir(this.data); }
-  debug_sections() { console.log(Object.keys(this.data)); }
+  debug() { console.dir(this.bysec); }
+  debug_sections() { console.log(Object.keys(this.bysec)); }
 
   // Populate a new schema from text, numbering lines starting from an index.
   constructor(text, numstart=0) {
-    this.data = {};   // { sec1: { nam1: { ... }, ... }, ... }
+    this.bysec = {};  // { sec1: { nam1: { ... }, ... }, ... }
     this.bysid = {};  // { sid1: { ... }, ... }
     if (text) this.importText(text, numstart);
   }
@@ -63,10 +63,10 @@ class ConfigSchema {
   // Factory method to create a schema from a data reference.
   // Used to recreate the schema from the state saved with vscode.setState()
   // when re-showing the editor.
-  static newSchemaFromData(data) {
-    //console.log("newSchemaFromData", data);
+  static newSchemaFromDataBySection(data) {
+    //console.log("newSchemaFromDataBySection", data);
     const instance = new ConfigSchema();
-    instance.data = data;
+    instance.bysec = data;
     instance.bysid = ConfigSchema.getIndexBySID(data);
     instance.refreshAllRequires();
     return instance;
@@ -276,7 +276,7 @@ class ConfigSchema {
   getItemsInSection(sect, fn, before, limit) {
     log(`getItemsInSection(${sect}, ..., ${before}, ${limit})`);
     let results = [];
-    for (const [_name, foo] of Object.entries(this.data[sect])) {
+    for (const [_name, foo] of Object.entries(this.bysec[sect])) {
       if (foo instanceof Array) {
         for (const item of foo) {
           if (this.definedBefore(item, before) && fn(item)) {
@@ -303,7 +303,7 @@ class ConfigSchema {
    */
   getItems(fn, before, limit) {
     let results = [];
-    for (const sect in this.data) {
+    for (const sect in this.bysec) {
       results.concat(this.getItemsInSection(sect, fn, before, limit));
       limit -= results.length;
       if (limit <= 0) break;
@@ -322,7 +322,7 @@ class ConfigSchema {
    */
   firstItemWithName(name, before=99999) {
     log(`firstItemWithName(${name}, ${before})`);
-    for (const [_sect, opts] of Object.entries(this.data)) {
+    for (const [_sect, opts] of Object.entries(this.bysec)) {
       if (name in opts) {
         const foo = opts[name];
         if (foo instanceof Array) {
@@ -344,7 +344,7 @@ class ConfigSchema {
   lastItemWithName(name, before=99999) {
     log(`lastItemWithName(${name}, ${before})`);
     let outitem = null;
-    for (const [_sect, opts] of Object.entries(this.data)) {
+    for (const [_sect, opts] of Object.entries(this.bysec)) {
       if (name in opts) {
         const foo = opts[name];
         if (foo instanceof Array) {
@@ -573,7 +573,7 @@ class ConfigSchema {
     //log("evaluateRequires"); if (verbose) console.dir(initem);
 
     // Convenience accessors for this scope
-    const self = this, sdict = this.data;
+    const self = this, sdict = this.bysec;
 
     // Last item, by name, before the evaluated item.
     function priorItemNamed(name, before=initem.sid) { return self.lastItemWithName(name, before); }
@@ -837,7 +837,7 @@ class ConfigSchema {
   // is ruled out by its presence in a conditional block.
   // Called at the end of importText to parse all 'requires'.
   refreshAllRequires() {
-    const sdict = this.data; // { "section": { "OPTION1": { item ... }, "OPTION2": { item ... } }, ... }
+    const sdict = this.bysec; // { "section": { "OPTION1": { item ... }, "OPTION2": { item ... } }, ... }
 
     // Clear the specified evaluation results first.
     for (const sect in sdict) {
@@ -862,7 +862,7 @@ class ConfigSchema {
 
   // Refresh all requires that follow a changed item.
   refreshRequiresAfter(after) {
-    const sdict = this.data; // { "section": { "OPTION1": { item ... }, "OPTION2": { item ... } }, ... }
+    const sdict = this.bysec; // { "section": { "OPTION1": { item ... }, "OPTION2": { item ... } }, ... }
 
     // Clear the specified evaluation results first.
     for (const sect in sdict) {
@@ -888,7 +888,7 @@ class ConfigSchema {
   // Remove all empty sections from the schema.
   // This followup step is needed as part of imposing our key order.
   removeUnusedSections() {
-    const sdict = this.data;
+    const sdict = this.bysec;
     for (const sect of Object.keys(sdict))
       if (Object.keys(sdict[sect]).length === 0) delete sdict[sect];
   }
@@ -1555,7 +1555,7 @@ class ConfigSchema {
     } // loop lines
 
     // Replace the data with the new schema
-    this.data = sdict;
+    this.bysec = sdict;
 
     // Clear out empty sections added to ensure the section order.
     this.removeUnusedSections();
@@ -1584,7 +1584,7 @@ class MultiSchema {
   refresh() {
     let data = {};
     for (const schema of this.schemas) {
-      for (const [sect, opts] of Object.entries(schema.data)) {
+      for (const [sect, opts] of Object.entries(schema.bysec)) {
         if (!(sect in data)) data[sect] = {};
         for (const [name, info] of Object.entries(opts)) {
           if (!(name in data[sect])) data[sect][name] = {};
@@ -1594,7 +1594,7 @@ class MultiSchema {
         }
       }
     }
-    this.combo = ConfigSchema.newSchemaFromData(data);
+    this.combo = ConfigSchema.newSchemaFromDataBySection(data);
   }
 
   schema() { return this.combo; }

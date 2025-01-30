@@ -196,11 +196,11 @@ class ConfigEditorProvider {
       abm.log(`initWebview: ${name}`);
 
       // Send the pre-parsed data to the web view.
-      wv.postMessage({ type: 'update', schema: myschema.data }); // editview.js:handleMessageToUI
+      wv.postMessage({ type: 'update', schema: myschema.bysec }); // editview.js:handleMessageToUI
 
       // Parse the text and send it to the webview.
       //sch.importText(document.getText());
-      //wv.postMessage({ type: 'update', schema: sch.data });
+      //wv.postMessage({ type: 'update', schema: sch.bysec });
 
       // Originally the webview received the raw text.
       //wv.postMessage({ type: 'update', text: document.getText() });
@@ -216,12 +216,12 @@ class ConfigEditorProvider {
 
       // Send the parsed data to the web view.
       if (external)
-        wv.postMessage({ type: 'update', schema: myschema.data }); // editview.js:handleMessageToUI
+        wv.postMessage({ type: 'update', schema: myschema.bysec }); // editview.js:handleMessageToUI
 
       // If the second config file is also open, update it as well.
       if (!is_adv && 'Configuration_adv.h' in webviews) {
         abm.log("updateWebview >> Configuration_adv.h");
-        webviews['Configuration_adv.h'].postMessage({ type: 'update', schema: schemas.advanced.data });
+        webviews['Configuration_adv.h'].postMessage({ type: 'update', schema: schemas.advanced.bysec });
       }
     }
 
