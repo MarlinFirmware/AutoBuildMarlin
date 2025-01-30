@@ -813,11 +813,11 @@ class ConfigSchema {
     // Convert Marlin macros into JavaScript function calls:
     cond = cond
       .replace(/(AXIS_DRIVER_TYPE)_(\w+)\((.+?)\)/g, '$1($2,$3)')         // AXIS_DRIVER_TYPE_X(A4988)     => AXIS_DRIVER_TYPE(X,A4988)
-      .replace(/\b([A-Z][A-Z0-9_]*)\b(\s*([^(,]|$))/g, 'OTHER($1)$2')     // LOOSE_SYMBOL                  => OTHER(LOOSE_SYMBOL)
-      .replace(/([A-Z0-9_]\s*\(|,\s*)OTHER\(([^)]+)\)/g, '$1$2')          // ANYCALL(OTHER(LOOSE_SYMBOL)   => ANYCALL(LOOSE_SYMBOL
-      .replace(/(\bdefined\b)\s*\(?\s*OTHER\s*\(\s*([^)]+)\s*\)\s*\)?/g, '$1($2)') // defined(OTHER(ABCD)) => defined(ABCD)
+      .replace(/\b([A-Z_][A-Z0-9_]*)\b(\s*([^(,]|$))/g, 'OTHER($1)$2')    // LOOSE_SYMBOL                  => OTHER(LOOSE_SYMBOL)
+      .replace(/([A-Z0-9_]+\s*\(|,\s*)OTHER\(([^()]+)\)/g, '$1$2')        // ANYCALL(OTHER(LOOSE_SYMBOL)   => ANYCALL(LOOSE_SYMBOL
+      .replace(/(\bdefined\b)\s*\(?\s*OTHER\s*\(\s*([^()]+)\s*\)\s*\)?/g, '$1($2)') // defined(OTHER(ABCD)) => defined(ABCD)
       .replace(/(\b[A-Z0-9_]+\b)([^(])/gi, '"$1"$2')                      // LOOSE_SYMBOL[^(]              => "LOOSE_SYMBOL"
-      .replace(/(\b[A-Z][A-Z0-9_]+\b)\(([^)]+?,[^)]+)\)/g, '$1([$2])')    // Wrap simple macro args into an [array]
+      .replace(/(\b[A-Z][A-Z0-9_]+\b)\(([^()]+?,[^()]+)\)/g, '$1([$2])')  // Wrap simple macro args into an [array]
       ;
 
     try {
@@ -1187,7 +1187,7 @@ class ConfigSchema {
           const removeRedundantParens = (expr) => {
             // Pre-replace function-like constructs with placeholders
             expr = expr.replace(/(\w+\s*\([^()]+\))/g, (_, match) =>
-              match.replace(/\(/g, '%').replace(/\)/g, '%')
+              match.replace(/\(/g, '@').replace(/\)/g, '@')
             );
 
             // Remove redundant parentheses
@@ -1195,7 +1195,7 @@ class ConfigSchema {
               prevExpr = expr, expr = expr.replace(/\(([^()]+)\)/g, (_, inner) => inner);
 
             // Restore placeholders back to function-like constructs
-            return expr.replace(/(\w+)\s*%([^%]+)%/g, (_, func, inner) =>
+            return expr.replace(/(\w+)\s*@([^@]+)@/g, (_, func, inner) =>
               `${func}(${inner})`
             );
           };
@@ -1209,7 +1209,7 @@ class ConfigSchema {
               .replace(/(ENABLED|ALL|BOTH)\s*\(\s*([A-Z0-9_]+)\s*\)\s*&&\s*(ENABLED|ALL|BOTH)\s*\(\s*/g, 'ALL($2, ')
               .replace(/(ENABLED|ANY|EITHER)\s*\(\s*([A-Z0-9_]+)\s*\)\s*\|\|\s*(ENABLED|ANY|EITHER)\s*\(\s*/g, 'ANY($2, ')
               .replace(/(NONE|DISABLED)\s*\(\s*([^()]+?)\s*\)\s*&&\s*(NONE|DISABLED)\s*\(\s*/g, 'NONE($2, ')
-              .replace(/^\((!?[A-Z]+\([^()]+?\))\)$/, '$1');
+              .replace(/^\((!?[a-z_][a-z0-9_]+\([^()]+?\))\)$/i, '$1');
             if (old_cond == cond) break;
           }
           return cond;
