@@ -27,6 +27,8 @@ function log(message, line = 0) {
  *   - This order is chosen for convenience in generating the form, but could mess with
  *     multiple items with the same name within the same config section.
  * - The 'bysid' dictionary is keyed by sid and is created to reference the same data.
+ *   - If 'bysec' is created from text, restored from state, or unserialized, the 'bysid'
+ *     index must be regenerated, so always use the setter setDataBySection(bysec).
  * - Each item in the schema is a dictionary with information about a single #define.
  *   See the description at importText() below for the #define info structure.
  *
@@ -50,8 +52,70 @@ class ConfigSchema {
   // Populate a new schema from text, numbering lines starting from an index.
   constructor(text, numstart=0) {
     this.bysec = {};  // { sec1: { nam1: { ... }, ... }, ... }
-    this.bysid = {};  // { sid1: { ... }, ... }
+    this.bysid = [];  // { sid1: { ... }, ... }
     if (text) this.importText(text, numstart);
+  }
+
+  // Iterate the items in a section dictionary
+  *iterateSectionItems(items) {
+    // items: { name1: [ {*}, {*}, ... ], name2: {*}, ... }
+    for (const [_name, item] of Object.entries(items)) {
+      if (Array.isArray(item))
+        yield* item; //  [ {*}, {*}, ... ] Spread array elements
+      else
+        yield item; // {*} Yield single values directly
+    }
+  }
+
+  // Iterate items in sections order
+  *iterateDataBySection() {
+    // bysec: { sect1: { ... }, sect2: { ... }, ... }
+    for (const [_sect, items] of Object.entries(this.bysec))
+      yield* this.iterateSectionItems(items);
+  }
+
+  // Iterate items in SID order (skipping index 0)
+  *iterateDataBySID() {
+    for (let i = 1; i < this.bysid.length; i++)
+      if (this.bysid[i] != null) // Skip undefined or null (should never occur)
+        yield this.bysid[i];
+  }
+
+  // Return the first item (lowest SID) passing the given test function.
+  firstItem(fn) {
+    for (const item of this.iterateDataBySID())
+      if (fn(item)) return item;
+  }
+
+  // Return the last item (highest SID) passing the given test function.
+  lastItem(fn) {
+    let outitem = null;
+    for (const item of this.iterateDataBySID())
+      if (fn(item)) outitem = item;
+    return outitem;
+  }
+
+  // Refresh the bysid index from the data stored in sections
+  refreshDataBySID() {
+    this.bysid = [];
+    for (const item of this.iterateDataBySection()) this.bysid[item.sid] = item;
+  }
+
+  // Setter for the data, collated into the form { sec1: { nam1: { ... }, name2: [ { ... }, { ... } ], ... }
+  setDataBySection(bysec) {
+    this.bysec = bysec;
+    this.refreshDataBySID();
+  }
+
+  countPriorItems(fn, before, limit=0) {
+    let count = 0;
+    for (const item of this.iterateDataBySID()) {
+      if (ConfigSchema.definedBefore(item, before) && fn(item)) {
+        count++;
+        if (count >= limit) break;
+      }
+    }
+    return count;
   }
 
   // Factory method to create a new uninitialized schema.
@@ -69,20 +133,9 @@ class ConfigSchema {
   static newSchemaFromDataBySection(data) {
     //console.log("newSchemaFromDataBySection", data);
     const instance = new ConfigSchema();
-    instance.bysec = data;
-    instance.bysid = ConfigSchema.getIndexBySID(data);
+    instance.setDataBySection(data);
     instance.refreshAllRequires();
     return instance;
-  }
-  static getIndexBySID(bysec) {
-    let bysid = {};
-    for (const [_, foo] of Object.entries(bysec)) {
-      if (foo instanceof Array) {
-        for (const item of foo) bysid[item.sid] = item;
-      }
-      else bysid[foo.sid] = foo;
-    }
-    return bysid;
   }
 
   // Utility method to fix up an options string so it can be JSON parsed.
@@ -93,9 +146,9 @@ class ConfigSchema {
   }
 
   /**
-   * Utility method to reduce the given config text down to
-   * just preprocessor directive lines, removing all block
-   * comments. This makes the text much faster to parse.
+   * Utility method to reduce the given config text down to just
+   * preprocessor directive lines, removing all block comments.
+   * This makes the text much faster to parse.
    * Don't apply if you need to preserve comments and line numbers.
    * Return an object with the stripped text and the number of lines.
    */
@@ -277,21 +330,13 @@ class ConfigSchema {
    * @param {int}      limit   The maximum number of items to return. (optional)
    * @return Array of item references.
    */
-  getItemsInSection(sect, fn, before, limit) {
+  getItemsInSection(sect, fn, before, limit=0) {
     log(`getItemsInSection(${sect}, ..., ${before}, ${limit})`);
     let results = [];
-    for (const [_name, foo] of Object.entries(this.bysec[sect])) {
-      if (foo instanceof Array) {
-        for (const item of foo) {
-          if (ConfigSchema.definedBefore(item, before) && fn(item)) {
-            results.push(item);
-            if (limit && results.length >= limit) return results;
-          }
-        }
-      }
-      else if (ConfigSchema.definedBefore(foo, before) && fn(foo)) {
-        results.push(foo);
-        if (limit && results.length >= limit) return results;
+    for (const item of this.iterateSectionItems(this.bysec[sect])) {
+      if (ConfigSchema.definedBefore(item, before) && fn(item)) {
+        results.push(item);
+        if (limit && results.length >= limit) break;
       }
     }
     return results;
@@ -305,12 +350,13 @@ class ConfigSchema {
    * @param {int} limit The maximum number of items to return. (optional)
    * @return Array of item references.
    */
-  getItems(fn, before, limit) {
+  getItems(fn, before, limit=0) {
     let results = [];
-    for (const sect in this.bysec) {
-      results.push(...this.getItemsInSection(sect, fn, before, limit));
-      limit -= results.length;
-      if (limit <= 0) break;
+    for (const item of this.iterateDataBySID()) {
+      if (this.definedBefore(item, before) && fn(item)) {
+        results.push(item);
+        if (limit && results.length >= limit) break;
+      }
     }
     return results;
   }
@@ -325,16 +371,7 @@ class ConfigSchema {
    */
   firstItemWithName(name, before=99999) {
     log(`firstItemWithName(${name}, ${before})`);
-    for (const [_sect, opts] of Object.entries(this.bysec)) {
-      if (name in opts) {
-        const foo = opts[name];
-        if (foo instanceof Array) {
-          for (const item of foo) if (ConfigSchema.definedBefore(item, before)) return item;
-        }
-        else if (ConfigSchema.definedBefore(foo, before)) return foo;
-      }
-    }
-    return null;
+    return this.firstItem(it => it.name == name && ConfigSchema.definedBefore(it, before));
   }
 
   /**
@@ -346,17 +383,7 @@ class ConfigSchema {
    */
   lastItemWithName(name, before=99999) {
     log(`lastItemWithName(${name}, ${before})`);
-    let outitem = null;
-    for (const [_sect, opts] of Object.entries(this.bysec)) {
-      if (name in opts) {
-        const foo = opts[name];
-        if (foo instanceof Array) {
-          for (const item of foo) if (ConfigSchema.definedBefore(item, before)) outitem = item;
-        }
-        else if (ConfigSchema.definedBefore(foo, before)) outitem = foo;
-      }
-    }
-    return outitem;
+    return this.lastItem(it => it.name == name && ConfigSchema.definedBefore(it, before));
   }
 
   /**
@@ -887,27 +914,9 @@ class ConfigSchema {
   // is ruled out by its presence in a conditional block.
   // Called at the end of importText to parse all 'requires'.
   refreshAllRequires() {
-    const sdict = this.bysec; // { "section": { "OPTION1": { item ... }, "OPTION2": { item ... } }, ... }
-
-    // Clear the specified evaluation results first.
-    for (const sect in sdict) {
-      for (const [_name, foo] of Object.entries(sdict[sect])) {
-        if (foo instanceof Array)
-          for (const item of foo) delete item.evaled;
-        else
-          delete foo.evaled;
-      }
-    }
-
-    // Update the evaluation results for each item in sequence.
-    for (const sect in sdict) {
-      for (const [_name, foo] of Object.entries(sdict[sect])) {
-        if (foo instanceof Array)
-          for (const item of foo) this.evaluateRequires(item);
-        else
-          this.evaluateRequires(foo);
-      }
-    }
+    // Clear all 'evaled' then re-evaluate all 'requires'.
+    for (const item of this.iterateDataBySID()) delete item.evaled;
+    for (const item of this.iterateDataBySID()) this.evaluateRequires(item);
   }
 
   // Refresh all requires that follow a changed item.

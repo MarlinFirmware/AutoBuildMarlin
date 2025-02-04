@@ -822,7 +822,7 @@ $(function () {
    */
   function buildConfigFormWithData(bysec) {
     log("buildConfigFormWithData", bysec);
-    schema.bysec = bysec;
+    schema.setDataBySection(bysec);
     saveWebViewState();
     buildConfigForm();
   }

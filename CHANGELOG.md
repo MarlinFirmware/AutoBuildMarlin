@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.65
+- Use iterators to simplify config data traversal
+- Create serial id index on form creation
+
 ## 2.1.64
 - Fix and improve cleanup for JS evaluation of conditionals
 - Clarify that `ConfigSchema` data is grouped by section
