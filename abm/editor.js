@@ -328,7 +328,7 @@ class ConfigEditorProvider {
     // Receive message from the webview via vscode.postMessage.
     // The webview sends changes to apply to the underlying document.
     function handleMessageFromUI(m) {
-      abm.log("ConfigEditorProvider.handleMessageFromUI", e);
+      abm.log("ConfigEditorProvider.handleMessageFromUI", m);
       switch (m.type) {
         case 'change':
           applyConfigChange(document, m.data); // Update the document text using the given data.

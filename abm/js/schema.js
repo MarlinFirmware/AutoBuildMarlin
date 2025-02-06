@@ -353,7 +353,7 @@ class ConfigSchema {
   getItems(fn, before, limit=0) {
     let results = [];
     for (const item of this.iterateDataBySID()) {
-      if (this.definedBefore(item, before) && fn(item)) {
+      if (ConfigSchema.definedBefore(item, before) && fn(item)) {
         results.push(item);
         if (limit && results.length >= limit) break;
       }
@@ -731,7 +731,7 @@ class ConfigSchema {
     const HAS_SENSOR = name => _nonzero(`TEMP_SENSOR_${name}`);
 
     function HAS_SERIAL(sindex) {
-      return priorItemNamed(sindex == '0' ? 'SERIAL_PORT' : `SERIAL_PORT_${sindex}`) !== null;
+      return priorItemNamed(sindex == '0' ? 'SERIAL_PORT' : `SERIAL_PORT_${sindex}`) != null;
     }
 
     ////// Other macros appearing in #if conditions //////
@@ -756,7 +756,9 @@ class ConfigSchema {
 
     // Some enabled driver matches the given enum.
     function _has_driver(type) {
-      return self.getItems(it => it.evaled && it.value == type, initem.sid).length > 0;
+      return self.getItems(
+        it => it.name.endsWith('_DRIVER_TYPE') && it.value == type, initem.sid, 1
+      ).length > 0;
     }
     function HAS_DRIVER(type) {
       if (!(type instanceof Array)) return _has_driver(type);
@@ -796,7 +798,7 @@ class ConfigSchema {
           //console.log(`Evaluating macro ${it.name} == ${macro}`);
           return eval(macro);
         }
-        return it.value;
+        return (['int', 'float'].includes(it.type)) ? it.value * 1 : it.value;
       }
 
       // Do custom handling for items not found in the schema.
