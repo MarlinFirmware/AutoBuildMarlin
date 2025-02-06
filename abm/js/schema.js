@@ -59,24 +59,30 @@ class ConfigSchema {
   // Iterate the items in a section dictionary
   *iterateSectionItems(items) {
     // items: { name1: [ {*}, {*}, ... ], name2: {*}, ... }
-    for (const [_name, item] of Object.entries(items)) {
-      if (Array.isArray(item))
-        yield* item; //  [ {*}, {*}, ... ] Spread array elements
-      else
-        yield item; // {*} Yield single values directly
-    }
+    for (const [_name, item] of Object.entries(items))
+      yield* Array.isArray(item) ? item : [item];
   }
 
   // Iterate items in sections order
-  *iterateDataBySection() {
+  *iterateDataBySection(bysec=this.bysec) {
     // bysec: { sect1: { ... }, sect2: { ... }, ... }
-    for (const [_sect, items] of Object.entries(this.bysec))
+    for (const [_sect, items] of Object.entries(bysec))
       yield* this.iterateSectionItems(items);
   }
 
+  // Iterate items in sections order, only those with the given name
+  *iterateItemsWithName(name, bysec=this.bysec) {
+    // bysec: { sect1: { name1: [ {*}, {*}, ... ], name2: {*}, ... }, sect2: { ... }, ... }
+    for (const [sect, items] of Object.entries(bysec)) {
+      if (!(name in items)) continue;
+      const item = bysec[sect][name];
+      yield* Array.isArray(item) ? item : [item];
+    }
+  }
+
   // Iterate items in SID order (skipping index 0)
-  *iterateDataBySID() {
-    for (let i = 1; i < this.bysid.length; i++)
+  *iterateDataBySID(start=1) {
+    for (let i = start; i < this.bysid.length; i++)
       if (this.bysid[i] != null) // Skip undefined or null (should never occur)
         yield this.bysid[i];
   }
@@ -602,15 +608,15 @@ class ConfigSchema {
 
     //log("evaluateRequires"); if (verbose) console.dir(initem);
 
-    // Convenience accessors for this scope
-    const self = this, sdict = this.bysec;
+    // Convenience accessor for this instance
+    const self = this;
 
     // Last item, by name, before the evaluated item.
     function priorItemNamed(name, before=initem.sid) { return self.lastItemWithName(name, before); }
 
     // Is a single item defined before the current line?
     function _defined(item) {
-      //log(`_defined(${item.name})`)
+      //log(`_defined(${item.name})`);
       if (!item.enabled) return false;
       if (item.sid >= initem.sid) return false;
       if (item.undef !== undefined ) return false;
@@ -619,71 +625,59 @@ class ConfigSchema {
 
     // Is a single item enabled? (defined and has no value, 1, or true)
     function _enabled(item) {
-      //log(`_enabled(${item.name})`)
+      //log(`_enabled(${item.name})`);
       if (!_defined(item)) return false;
       if (item.value === undefined) return true;
       return istrue.includes(item.value);
     }
 
     // Does the given define exist and is it enabled?
+    // Also supports an array to allow for a multi-item alias.
     function defined(foo) {
       //if (foo === true) return true;
-      if (foo instanceof Array) {
-        //log(`defined(array)`)
-        const len = foo.length;
-        for (const f of foo) if (!defined(f)) return false;
+      if (Array.isArray(foo)) {
+        //log('defined(array)');
+        for (const name of foo) if (!defined(name)) return false;
         return true;
       }
-      //log(`defined({foo})`)
-      for (const [sect, opts] of Object.entries(sdict)) {
-        if (foo in opts) {
-          const baz = sdict[sect][foo];
-          if (baz instanceof Array) {
-            for (const item of baz) if (_defined(item)) return true;
-          }
-          else if (_defined(baz)) return true;
-        }
-      }
+      //log(`defined(${foo})`);
+      for (const item of self.iterateItemsWithName(foo)) if (_defined(item)) return true;
       return false;
     }
 
-    // Are the given items all enabled or all disabled?
-    function _enatest(foo, state) {
-      //log(`_enatest(${foo}, ${state})`);
-      // For an array, loop and call _enatest on each item
-      if (foo instanceof Array) {
-        //log('...an array of names');
-        const len = foo.length;
-        for (var i = 0; i < len; i++)
-          if (!_enatest(foo[i], state)) return false;
+    // Are the given items all enabled?
+    function ENABLED(foo) {
+      // For an array, loop and call ENABLED on each item
+      if (Array.isArray(foo)) {
+        //log('ENABLED(array)');
+        for (const name of foo) if (!ENABLED(name)) return false;
         return true;
       }
-      //log('...a single name');
-      for (const [sect, opts] of Object.entries(sdict)) {
-        if (foo in opts) {
-          const baz = sdict[sect][foo];
-          //log(`Found ${foo}`); console.dir(baz);
-          if (baz instanceof Array) {
-            //log(`...an array of items`); console.dir(baz);
-            for (const item of baz)
-              if (item.sid < initem.sid && _enabled(item) != state) return false;
-          }
-          else return _enabled(baz) == state;
-        }
+      //log(`ENABLED(${foo})`);
+      for (const item of self.iterateItemsWithName(foo))
+        if (item.sid < initem.sid && _enabled(item)) return true;
+      return false;
+    }
+
+    // Are the given items all disabled?
+    function DISABLED(foo) {
+      // For an array, loop and call DISABLED on each item
+      if (Array.isArray(foo)) {
+        //log('DISABLED(array)');
+        for (const name of foo) if (!DISABLED(name)) return false;
+      }
+      else {
+        //log(`DISABLED(${foo})`);
+        for (const item of self.iterateItemsWithName(foo))
+          if (item.sid < initem.sid && _enabled(item)) return false;
       }
       return true;
     }
 
-    // Are all given items enabled / disabled?
-    const ENABLED = foo => _enatest(foo, true),
-         DISABLED = foo => _enatest(foo, false);
-
     // Are any of the given items enabled?
     function ANY(foo) {
-      if (!(foo instanceof Array)) return ENABLED(foo) // should always be an array
-      const len = foo.length;
-      for (var i = 0; i < len; i++)
-        if (ENABLED(foo[i])) return true;
+      if (!Array.isArray(foo)) return ENABLED(foo) // should always be an array
+      if (foo.find(name => ENABLED(name))) return true;
       return false;
     }
     const NONE = DISABLED, BOTH = ENABLED, ALL = ENABLED, EITHER = ANY;
@@ -694,12 +688,18 @@ class ConfigSchema {
       return count;
     }
 
+    const MANY = names => COUNT_ENABLED(names) > 1;
+
+    // Produce an adjacent integer
+    const INCREMENT = val => val * 1 + 1,
+          DECREMENT = val => val * 1 - (val * 1 > 0);
+
     // Is MOTHERBOARD any one of the boards provided?
     function MB(foo) {
       const item = priorItemNamed('MOTHERBOARD');
       if (!item) return false;
       const mb = item.value.replace(/^BOARD_/, '');
-      if (foo instanceof Array) return foo.includes(mb);
+      if (Array.isArray(foo)) return foo.includes(mb);
       return foo == mb;
     }
 
@@ -730,6 +730,7 @@ class ConfigSchema {
     // The item is enabled by TEMP_SENSOR_[NAME] != 0.
     const HAS_SENSOR = name => _nonzero(`TEMP_SENSOR_${name}`);
 
+    // The serial port was defined. (deprecated)
     function HAS_SERIAL(sindex) {
       return priorItemNamed(sindex == '0' ? 'SERIAL_PORT' : `SERIAL_PORT_${sindex}`) != null;
     }
@@ -761,12 +762,13 @@ class ConfigSchema {
       ).length > 0;
     }
     function HAS_DRIVER(type) {
-      if (!(type instanceof Array)) return _has_driver(type);
+      if (!Array.isArray(type)) return _has_driver(type);
       const len = type.length;
       for (var i = 0; i < len; i++) if (_has_driver(type[i])) return true;
       return false;
     }
 
+    // The given axis is a Trinamic driver.
     function AXIS_IS_TMC_CONFIG(axis) {
       const driver = priorItemNamed(`${axis}_DRIVER_TYPE`);
       return driver && ['TMC2130','TMC2160','TMC2208','TMC2209','TMC2660','TMC5130','TMC5160'].includes(driver.value);
@@ -778,19 +780,17 @@ class ConfigSchema {
       return lcd && (lcd.value == dgus);
     }
     function DGUS_UI_IS(dgus) {
-      if (!(dgus instanceof Array)) return _dgus_ui_is(dgus);
+      if (!Array.isArray(dgus)) return _dgus_ui_is(dgus);
       const len = dgus.length;
       for (var i = 0; i < len; i++) if (_dgus_ui_is(dgus[i])) return true;
       return false;
     }
 
     // Loose names may be in the schema or be defined by Conditionals-2-LCD.h
-    function OTHER(cond) {
+    function OTHER(name) {
       // See if the item is enabled in the schema and use its value.
-      const found = self.getItems(it => it.name == cond && it.evaled && it.enabled, initem.sid, 1);
-      //console.log(`OTHER("${cond}") Found ${found.length} before ${initem.sid}`);
-      if (found.length > 0) {
-        const it = found[0];
+      const it = self.firstItem(it => ConfigSchema.definedBefore(it, initem.sid) && it.name == name);
+      if (it) {
         if (it.type == 'macro') {
           const match = it.value.match(/(\w+)\s*\(([^()]+?)\)/),
                 parms = match[2].replace(/(\w+)/g, "'$1'"),
@@ -802,7 +802,7 @@ class ConfigSchema {
       }
 
       // Do custom handling for items not found in the schema.
-      switch (cond) {
+      switch (name) {
         case 'HAS_E_TEMP_SENSOR':
           const extruders = priorItemNamed('EXTRUDERS');
           if (extruders && extruders.value > 0) {
@@ -820,33 +820,37 @@ class ConfigSchema {
           return HAS_DRIVER(['TMC2130','TMC2160','TMC2208','TMC2209','TMC2660','TMC5130','TMC5160']);
 
         default:
-          if (cond.startsWith('TEMP_SENSOR_'))
-            return HAS_SENSOR(cond.slice(9));
+          if (name.startsWith('TEMP_SENSOR_'))
+            return HAS_SENSOR(name.slice(9));
 
-          //console.warn(`OTHER Unknown: ${cond}`);
-          return true;
+          //console.warn(`OTHER Unknown: ${name}`);
+          //return true;
       }
       return false;
     }
 
-    // Concatenate literal comma-separated parts and return
-    // the OTHER() evaluation of the resulting symbol.
-    // Example:
-    //   #define ALICE 123
-    //   #define DOCAT_(V) _CAT(_,V)
-    //   #define DIDCAT DOCAT_(ALICE) // DIDCAT => _ALICE
+    /**
+     * Concatenate literal comma-separated parts and return
+     * the OTHER() evaluation of the resulting symbol.
+     * Example:
+     *   #define ALICE 123
+     *   #define DOCAT_(V) _CAT(_,V)
+     *   #define DIDCAT DOCAT_(ALICE) // DIDCAT => _ALICE
+     */
     function _CAT(...parts) {
       //console.log("ABM => _CAT", parts);
       return OTHER(parts.join(''));
     }
 
-    // Concatenate the solved values of comma-separated parts
-    // and return the OTHER() evaluation of the resulting symbol.
-    // Example:
-    //   #define ALICE MY_ENUM
-    //   #define BOB ALICE
-    //   #define DOCAT(V) CAT(_,V)
-    //   #define DIDCAT DOCAT(BOB) // DIDCAT == _MY_ENUM
+    /**
+     * Concatenate the solved values of comma-separated parts
+     * and return the OTHER() evaluation of the resulting symbol.
+     * Example:
+     *   #define ALICE MY_ENUM
+     *   #define BOB ALICE
+     *   #define DOCAT(V) CAT(_,V)
+     *   #define DIDCAT DOCAT(BOB) // DIDCAT == _MY_ENUM
+     */
     function CAT(...parts) {
       //console.log("ABM => CAT", parts);
       // Evaluate each part before concatenation
@@ -865,38 +869,110 @@ class ConfigSchema {
       return OTHER(solved.join(''));
     }
 
+    /**
+     * Find MAP(...) macros and expand them
+     * Example:
+     *      #define CB(N) (BLAH(N) && HAS_## N ##_AXIS) ||
+     *      #if MAP(CB, X, Y, Z) 0
+     *   => #if (BLAH(X) && HAS_X_AXIS) || (BLAH(Y) && HAS_Y_AXIS) || (BLAH(Z) && HAS_Z_AXIS) || 0
+     */
+    function expand_MAP(cond) {
+      const mappatt = /(MAP\((([^)]+))\))/g;
+      let res;
+      while (res = mappatt.exec(cond)) {
+        const maparr = res[2].split(/\s*,\s*/),
+              fn = maparr.shift(),
+              fninfo = priorItemNamed(fn),
+              fnpar = fninfo.value.match(/^\(([^)]+)\)\s*(.*)/),
+              fnarg = fnpar[1], fntpl = fnpar[2],
+              regp = new RegExp(`(##\\s*${fnarg}\\s*##|##\\s*${fnarg}\\b|\\b${fnarg}\\s*##)`, 'g');
+        let exp = '';
+        for (let n of maparr) exp += fntpl.replace(regp, n);
+        cond = cond.replace(res[0], exp);
+        //console.log("Map", { maparr, fn, fninfo, fnarg, fntpl, exp });
+      }
+      return cond;
+    }
+
+    /**
+     * Find REPEAT(...) macros and expand them
+     * Example:
+     *      #define EXTRUDERS 3
+     *      . . .
+     *      #define _TODO(N,T) && ((N) < (T) * 2)
+     *      #define _ALSO(N) && ((N) < 10)
+     *      #if 1 REPEAT(EXTRUDERS, _ALSO)
+     *   => #if 1 && ((0) < 10) && ((1) < 10) && ((2) < 10)
+     *
+     *  - R?REPEAT_S(2,5,_ALSO) ........  && ((2) < 10) && ((3) < 10) && ((4) < 10)
+     *  - R?REPEAT(3,_ALSO) ............  && ((0) < 10) && ((1) < 10) && ((2) < 10)
+     *  - R?REPEAT_1(3,_ALSO) ..........  && ((1) < 10) && ((2) < 10) && ((3) < 10)
+     *  - R?REPEAT2_S(2,4,_TODO,4) .....  && ((2) < (4) * 2) && ((3) < (4) * 2)
+     *  - R?REPEAT2(2,_TODO,4) .........  && ((0) < (4) * 2) && ((1) < (4) * 2)
+     */
+    function expand_REPEAT(cond) {
+      const reppatt = /\bR?REPEAT(|_1|_S|2|2_S)\(((\w+\s*\([^()]+\)|[^()]+)(\s*,\s*(\w+\([^()]+\)|[^()]+))*)\)/g;
+      let res;
+      while (res = reppatt.exec(cond)) {
+        const reptype = res[1],
+              rargs = res[2].split(/\s*,\s*/);
+        let low = 0, high = 0, less = 1, args = false;
+        switch (reptype) {
+          case '2':   args = true;            // REPEAT2(N,FN,...)
+          case '':    high = rargs.shift();   // REPEAT(N,FN)
+                      break;
+          case '_1':  low = 1;                // REPEAT_1(N,FN)
+                      high = rargs.shift();
+                      less = 0;
+                      break;
+          case '2_S': args = true;            // REPEAT2_S(S,N,FN,...)
+          case '_S':  low = rargs.shift();    // REPEAT_S(S,N,FN)
+                      high = rargs.shift();
+                      break;
+        }
+        // If 'low' is a SYMBOL_NAME_123_STR string, get its value
+        if (typeof low == 'string' && low.match(/^[A-Z_][A-Z0-9_]*$/)) {
+          const lowitem = priorItemNamed(low);
+          low = lowitem ? lowitem.value : 0;
+        }
+        if (typeof high == 'string' && high.match(/^[A-Z_][A-Z0-9_]*$/)) {
+          const highitem = priorItemNamed(high);
+          high = highitem ? highitem.value : 0;
+        }
+        const fn = rargs.shift(),           // After this, rargs[] contains the extra args
+              fninfo = priorItemNamed(fn),  // May take more than one argument
+              fnpar = fninfo.value.match(/^\(([^)]+)\)\s*(.*)/),
+              fnargs = fnpar[1].split(/\s*,\s*/), fntpl = fnpar[2];
+
+        let exp = [];
+        low = Number(low); high = Number(high) - less;
+        for (let n = low; n <= high; ++n) {
+          let args = [n, ...rargs], part = fntpl;
+          for (let a of fnargs) {
+            const regp = new RegExp(`(##\\s*${a}\\s*##|##\\s*${a}\\b|\\b${a}\\s*##)`, 'g');
+            part = part.replace(regp, args.shift());
+          }
+          exp.push(part);
+        }
+        cond = cond.replace(res[0], exp.join(' '));
+        //console.log("Repeat", { rargs, fn, fninfo, fnarg, fntpl, exp });
+      }
+      return cond;
+    }
+
     const before_mangle = cond;
 
-    //
-    // Find MAP(...) macros and expand them
-    // Example:
-    //      #define CB(N) || (BLAH(N) && HAS_## N ##_AXIS)
-    //      #if 0 MAP(CB, X, Y, Z)
-    //   => #if 0 || (BLAH(X) && HAS_X_AXIS) || (BLAH(Y) && HAS_Y_AXIS) || (BLAH(Z) && HAS_Z_AXIS)
-    //
-    const mappatt = /(MAP\((([^)]+))\))/g;
-    let res;
-    while (res = mappatt.exec(cond)) {
-      const maparr = res[2].split(/\s*,\s*/),
-            fun = maparr.shift(),
-            funcinfo = priorItemNamed(fun),
-            funcpar = funcinfo.value.match(/^\(([^)]+)\)\s*(.*)/),
-            funcarg = funcpar[1], functpl = funcpar[2],
-            regp = new RegExp(`(##\\s*${funcarg}\\s*##|##\\s*${funcarg}\\b|\\b${funcarg}\\s*##)`, 'g');
-      let newmap = '';
-      for (let n of maparr) newmap += functpl.replace(regp, n);
-      cond = cond.replace(res[0], newmap);
-      //console.log("mapInfo", { maparr, fun, funcinfo, funcarg, functpl, newmap });
-    }
+    cond = expand_MAP(cond);
+    cond = expand_REPEAT(cond);
 
     // Convert Marlin macros into JavaScript function calls:
     cond = cond
-      .replace(/(AXIS_DRIVER_TYPE)_(\w+)\((.+?)\)/g, '$1($2,$3)')         // AXIS_DRIVER_TYPE_X(A4988)     => AXIS_DRIVER_TYPE(X,A4988)
-      .replace(/\b([A-Z_][A-Z0-9_]*)\b(\s*([^(,]|$))/g, 'OTHER($1)$2')    // LOOSE_SYMBOL                  => OTHER(LOOSE_SYMBOL)
-      .replace(/([A-Z0-9_]+\s*\(|,\s*)OTHER\(([^()]+)\)/g, '$1$2')        // ANYCALL(OTHER(LOOSE_SYMBOL)   => ANYCALL(LOOSE_SYMBOL
-      .replace(/(\bdefined\b)\s*\(?\s*OTHER\s*\(\s*([^()]+)\s*\)\s*\)?/g, '$1($2)') // defined(OTHER(ABCD)) => defined(ABCD)
-      .replace(/(\b[A-Z0-9_]+\b)([^(])/gi, '"$1"$2')                      // LOOSE_SYMBOL[^(]              => "LOOSE_SYMBOL"
-      .replace(/(\b[A-Z][A-Z0-9_]+\b)\(([^()]+?,[^()]+)\)/g, '$1([$2])')  // Wrap simple macro args into an [array]
+      .replace(/(AXIS_DRIVER_TYPE)_(\w+)\((.+?)\)/g, '$1($2,$3)')                   // AXIS_DRIVER_TYPE_X(A4988)     => AXIS_DRIVER_TYPE(X,A4988)
+      .replace(/\b([A-Z_][A-Z0-9_]*)\b(\s*([^(,]|$))/g, 'OTHER($1)$2')              // LOOSE_SYMBOL                  => OTHER(LOOSE_SYMBOL)
+      .replace(/([A-Z_][A-Z0-9_]+\s*\(|,\s*)OTHER\(([^()]+)\)/g, '$1$2')            // ANYCALL(OTHER(LOOSE_SYMBOL)   => ANYCALL(LOOSE_SYMBOL
+      .replace(/\b(defined)\b\s*\(?\s*OTHER\s*\(\s*([^()]+)\s*\)\s*\)?/g, '$1($2)') // defined(OTHER(ABCD))          => defined(ABCD)
+      .replace(/\b([A-Z_][A-Z0-9_]*)\b([^(])/gi, '"$1"$2')                          // LOOSE_SYMBOL[^(]              => "LOOSE_SYMBOL"
+      .replace(/\b([A-Z_][A-Z0-9_]*)\b\(([^()]+?,[^()]+)\)/g, '$1([$2])')           // Wrap simple macro args into an [array]
       ;
 
     try {
@@ -923,27 +999,8 @@ class ConfigSchema {
 
   // Refresh all requires that follow a changed item.
   refreshRequiresAfter(after) {
-    const sdict = this.bysec; // { "section": { "OPTION1": { item ... }, "OPTION2": { item ... } }, ... }
-
-    // Clear the specified evaluation results first.
-    for (const sect in sdict) {
-      for (const [_name, foo] of Object.entries(sdict[sect])) {
-        if (foo instanceof Array) {
-          for (const item of foo) if (item.sid >= after) delete item.evaled;
-        }
-        else if (foo.sid >= after) delete foo.evaled;
-      }
-    }
-
-    // Update the evaluation results for each item in sequence.
-    for (const sect in sdict) {
-      for (const [_name, foo] of Object.entries(sdict[sect])) {
-        if (foo instanceof Array) {
-          for (const item of foo) if (item.sid >= after) this.evaluateRequires(item);
-        }
-        else if (foo.sid >= after) this.evaluateRequires(foo);
-      }
-    }
+    for (const item of this.iterateDataBySID(after + 1)) delete item.evaled;
+    for (const item of this.iterateDataBySID(after + 1)) this.evaluateRequires(item);
   }
 
   // Remove all empty sections from the schema.
@@ -1014,6 +1071,7 @@ class ConfigSchema {
 
     // Init the schema data with the preferred section order.
     const sdict = ConfigSchema.emptyOrderedData();
+    this.bysec = sdict;
     // Regex for #define NAME [VALUE] [COMMENT] with sanitized line
     const defgrep = /^(\/\/)?\s*(#define)\s+([A-Za-z_][A-Za-z0-9_]+)\s*(.*?)\s*(\/\/.+)?$/;
     // Defines to ignore
@@ -1548,15 +1606,17 @@ class ConfigSchema {
           // Create section dict if it doesn't exist yet
           if (!(section in sdict)) sdict[section] = {};
 
+          // The previously defined item or array
+          const info = sdict[section][define_name];
+
           // If define has already been seen it becomes an array.
           // Done non-destructively to preserve old references.
-          if (define_name in sdict[section]) {
-            // The previously defined item or array
-            const info = sdict[section][define_name];
-            if (info instanceof Array)
+          if (info !== undefined) {
+            // Ensure the existing value is an array and log a duplicate entry
+            if (Array.isArray(info))
               info.push(define_info);
             else
-              sdict[section][define_name] = [info, define_info];
+              sdict[section][define_name] = [ info, define_info ];
             log(`Duplicate #define ${define_name} (${sid})`, line_number);
           }
           else {
@@ -1564,6 +1624,7 @@ class ConfigSchema {
             sdict[section][define_name] = define_info;
             log(`Added #define ${define_name} (${sid}) to section '${section}'`, line_number);
           }
+
           // Keep an index by SID
           this.bysid[sid] = define_info;
 
@@ -1595,23 +1656,13 @@ class ConfigSchema {
               isactive = define_info.evaled;
             }
             if (isactive) {
-              for (const [_sect, opts] of Object.entries(sdict)) {
-                if (name in opts) {
-                  const foo = opts[name];
-                  if (foo instanceof Array)
-                    for (const item of foo) item.undef ??= sid;
-                  else
-                    foo.undef ??= sid;
-                }
-              }
+              for (const item of this.iterateItemsWithName(name))
+                item.undef ??= sid;
             }
           }
         }
       } // end NORMAL
     } // loop lines
-
-    // Replace the data with the new schema
-    this.bysec = sdict;
 
     // Clear out empty sections added to ensure the section order.
     this.removeUnusedSections();

@@ -110,7 +110,7 @@ $(function () {
               // Title Case
               .toTitleCase()
               // Uppercase Words
-              .replace(/\b(..?|adc|azsmz|beez|biqu|btt|cnc|ctc|elb|led|lin|mpe|psu|ptc|rts|sav|soc|spi|ubl|usb|utf)\b/gi, (m) => { return m.toUpperCase(); })
+              .replace(/\b(..?|adc|azsmz|beez|biqu|btt|cnc|ctc|elb|idex|led|lin|mpe|psu|ptc|rts|sav|soc|spi|tmc|ubl|usb|utf)\b/gi, (m) => { return m.toUpperCase(); })
               // Uppercase Anywhere Sequences
               .replace(/xyuv|g?lcd|yhcb|dgus|dwin|eeprom|ftdi|gfx|lvgl|mks|pid|pwm|ssd|tft|wyh|rgbw?|oled|pca\d+|uuid|HD44\d+|(sc|tp)ara|cr\d+/gi, (m) => { return m.toUpperCase(); })
               // Uppercase Beginning Sequences
@@ -280,8 +280,8 @@ $(function () {
     $(`div.line.sid-${optref.sid}`).toggleClass('dirty', dirty);
 
     // Refresh UI and state
-    schema.refreshAllRequires();
-    //schema.refreshRequiresAfter(optref.name == 'EXTRUDERS' ? 1 : optref.sid);
+    //schema.refreshAllRequires();
+    schema.refreshRequiresAfter(optref.sid);
     refreshVisibleItems();
     saveWebViewState();
 
@@ -659,7 +659,7 @@ $(function () {
 
         const $select = $("<select>", { name });
         let options; eval(`options = ${opts}`);
-        if (options instanceof Array) {
+        if (Array.isArray(options)) {
           for (const opt of options) {
             // If the opt is a single char, not a number, then wrap in single ' quotes
             const optval = /^\D$/.test(opt.toString()) ? `'${opt}'` : opt;

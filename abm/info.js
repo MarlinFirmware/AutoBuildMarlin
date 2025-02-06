@@ -51,9 +51,9 @@ class InfoPanelProvider {
     });
 
     // Receive message from the webview.
-    function handleMessageFromUI(e) {
-      //console.log('InfoPanelProvider::handleMessageFromUI'); console.dir(e);
-      switch (e.type) {
+    function handleMessageFromUI(m) {
+      //console.log('InfoPanelProvider::handleMessageFromUI'); console.dir(m);
+      switch (m.type) {
         case 'hello':
           vw.showInformationMessage('Hello from the webview!');
           break;

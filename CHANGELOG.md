@@ -2,6 +2,12 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.66
+- Fix Config Editor changes propagation
+- Fix schema evaluation of `ENABLED`/`DISABLED`
+- Add schema simple evaluation of `REPEAT` macros
+- Add some useful schema iterator parameters
+
 ## 2.1.65
 - Use iterators to simplify config data traversal
 - Create serial id index on form creation
