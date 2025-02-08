@@ -32,7 +32,7 @@ var files = {
 // TODO: Use config data from Schema object
 
 // Get whether a setting is enabled (defined) in a blob of text
-function _confEnabled(text, optname) {
+function _confDefined(text, optname) {
   const find = new RegExp(`^\\s*#define\\s+${optname}\\b`, 'gm'),
         r = find.exec(text);
   if (bugme) console.log(`${optname} is ${r?'ENABLED':'unset'}`);
@@ -40,11 +40,11 @@ function _confEnabled(text, optname) {
 }
 
 // Get whether a setting is enabled (defined) in one or both config files
-function confEnabled(fileid, optname) { return _confEnabled(files[fileid].text, optname); }
-function configEnabled(optname)       { return confEnabled('config',     optname); }
-function configAdvEnabled(optname)    { return confEnabled('config_adv', optname); }
-function configAnyEnabled(optname) {
-  return configEnabled(optname) ? true : configAdvEnabled(optname);
+function confDefined(fileid, optname) { return _confDefined(files[fileid].text, optname); }
+function configDefined(optname)       { return confDefined('config',     optname); }
+function configAdvDefined(optname)    { return confDefined('config_adv', optname); }
+function configAnyDefined(optname) {
+  return configDefined(optname) ? true : configAdvDefined(optname);
 }
 
 // Get a single config value by scraping the given text
@@ -61,8 +61,8 @@ function confValue(fileid, optname) { return _confValue(files[fileid].text, optn
 function configValue(optname)       { return confValue('config',     optname); }
 function configAdvValue(optname)    { return confValue('config_adv', optname); }
 function configAnyValue(optname) {
-  if (configEnabled(optname))    return configValue(optname)
-  if (configAdvEnabled(optname)) return configAdvValue(optname);
+  if (configDefined(optname))    return configValue(optname)
+  if (configAdvDefined(optname)) return configAdvValue(optname);
 }
 
 //
@@ -299,7 +299,7 @@ function getMachineSettings() {
 
   let s = 'Cartesian';
   mtypes.every((v,i) => {
-    if (!configEnabled(v)) return true;
+    if (!configDefined(v)) return true;
     s = mpretty[i]; return false;
   });
   out.style = s;
@@ -339,7 +339,7 @@ function getExtruderSettings() {
     if (!(out.sensors[i] = configValue(`TEMP_SENSOR_${i}`)))
       out.sensor_err = true;
 
-  if (extruders == 1 && configEnabled('TEMP_SENSOR_1_AS_REDUNDANT'))
+  if (extruders == 1 && configDefined('TEMP_SENSOR_1_AS_REDUNDANT'))
     out.sensors[1] = configValue('TEMP_SENSOR_1');
 
   // Only one of these types is allowed at a time
@@ -352,14 +352,14 @@ function getExtruderSettings() {
                    'ELECTROMAGNETIC_SWITCHING_TOOLHEAD' ];
        epretty = [ 'Single Nozzle' ];
   etypes.every((v,i) => {
-    if (!configEnabled(v)) return true;
+    if (!configDefined(v)) return true;
     out.type = epretty[i] ? epretty[i] : v.toLabel(); return false;
   });
 
   // These are mutually-exclusive
   const efancy = [ 'MIXING_EXTRUDER', 'SWITCHING_EXTRUDER', 'SWITCHING_NOZZLE', 'MK2_MULTIPLEXER', 'PRUSA_MMU2' ];
   efancy.every((v) => {
-    if (!configEnabled(v)) return true;
+    if (!configDefined(v)) return true;
     out.fancy = v == 'PRUSA_MMU2' ? 'Prusa MMU2' : v.toLabel();
   });
 
@@ -421,7 +421,7 @@ module.exports = {
 
   watchConfigurations, watchAndValidate,
 
-  configEnabled,
+  configDefined,
   configValue, confValue, _confValue,
 
   extractVersionInfo, extractTempSensors, extractBoardInfo,

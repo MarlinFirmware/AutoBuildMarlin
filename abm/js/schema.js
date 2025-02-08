@@ -377,7 +377,7 @@ class ConfigSchema {
    */
   firstItemWithName(name, before=99999) {
     log(`firstItemWithName(${name}, ${before})`);
-    return this.firstItem(it => it.name == name && ConfigSchema.definedBefore(it, before));
+    return this.firstItem(it => it.name === name && ConfigSchema.definedBefore(it, before));
   }
 
   /**
@@ -389,7 +389,7 @@ class ConfigSchema {
    */
   lastItemWithName(name, before=99999) {
     log(`lastItemWithName(${name}, ${before})`);
-    return this.lastItem(it => it.name == name && ConfigSchema.definedBefore(it, before));
+    return this.lastItem(it => it.name === name && ConfigSchema.definedBefore(it, before));
   }
 
   /**
@@ -404,7 +404,7 @@ class ConfigSchema {
    */
   itemGroup(item) {
     // U8GLIB
-    const u8glib = [ 'U8GLIB_SSD1306', 'U8GLIB_SH1106' ];
+    const u8glib = ['U8GLIB_SSD1306', 'U8GLIB_SH1106'];
     if (u8glib.includes(item.name))
       return item?.depth ? 'sav-u8glib' : 'lcd';
 
@@ -486,27 +486,27 @@ class ConfigSchema {
       return item?.depth ? null : 'lcd';
 
     // TFT Interfaces
-    const tft_if = [ 'TFT_INTERFACE_FSMC', 'TFT_INTERFACE_SPI' ];
+    const tft_if = ['TFT_INTERFACE_FSMC', 'TFT_INTERFACE_SPI'];
     if (tft_if.includes(item.name)) return 'tft-if';
 
     // TFT Resolutions
-    const tft_res = [ 'TFT_RES_320x240', 'TFT_RES_480x272', 'TFT_RES_480x320', 'TFT_RES_1024x600' ];
+    const tft_res = ['TFT_RES_320x240', 'TFT_RES_480x272', 'TFT_RES_480x320', 'TFT_RES_1024x600'];
     if (tft_res.includes(item.name)) return 'tft-res';
 
     // TFT UIs
-    const tft_ui = [ 'TFT_COLOR_UI', 'TFT_CLASSIC_UI', 'TFT_LVGL_UI' ];
+    const tft_ui = ['TFT_COLOR_UI', 'TFT_CLASSIC_UI', 'TFT_LVGL_UI'];
     if (tft_ui.includes(item.name)) return 'tft-ui';
 
     // Chiron TFTs
-    const tft_chiron = [ 'CHIRON_TFT_STANDARD', 'CHIRON_TFT_NEW' ];
+    const tft_chiron = ['CHIRON_TFT_STANDARD', 'CHIRON_TFT_NEW'];
     if (tft_chiron.includes(item.name)) return 'tft-chiron';
 
     // RGB or RGBW
-    const rgbled = [ 'RGB_LED', 'RGBW_LED' ];
+    const rgbled = ['RGB_LED', 'RGBW_LED'];
     if (rgbled.includes(item.name)) return 'rgbled';
 
     // Hotend temperature control methods
-    const temp_control = [ 'PIDTEMP', 'MPCTEMP' ];
+    const temp_control = ['PIDTEMP', 'MPCTEMP'];
     if (temp_control.includes(item.name)) return 'temp-control';
 
     // Probe types
@@ -545,10 +545,10 @@ class ConfigSchema {
     if (kinematics.includes(item.name)) return 'kinematics';
 
     // Extruder/Toolhead Types
-    const nozzle = [ 'SWITCHING_NOZZLE', 'MECHANICAL_SWITCHING_NOZZLE' ];
+    const nozzle = ['SWITCHING_NOZZLE', 'MECHANICAL_SWITCHING_NOZZLE'];
     if (nozzle.includes(item.name)) return 'nozzles';
 
-    const switching = [ 'SWITCHING_EXTRUDER', 'MECHANICAL_SWITCHING_EXTRUDER' ];
+    const switching = ['SWITCHING_EXTRUDER', 'MECHANICAL_SWITCHING_EXTRUDER'];
     if (switching.includes(item.name)) return 'switching';
 
     const toolhead = [
@@ -560,11 +560,11 @@ class ConfigSchema {
     if (toolhead.includes(item.name)) return 'toolhead';
 
     // Axis Homing Submenus
-    const lcd_homing = [ 'INDIVIDUAL_AXIS_HOMING_MENU', 'INDIVIDUAL_AXIS_HOMING_SUBMENU' ];
+    const lcd_homing = ['INDIVIDUAL_AXIS_HOMING_MENU', 'INDIVIDUAL_AXIS_HOMING_SUBMENU'];
     if (lcd_homing.includes(item.name)) return 'lcd-homing';
 
     // Digital Potentiometers
-    const digipot = [ 'DIGIPOT_MCP4018', 'DIGIPOT_MCP4451' ];
+    const digipot = ['DIGIPOT_MCP4018', 'DIGIPOT_MCP4451'];
     if (digipot.includes(item.name)) return 'digipot';
 
     // Return null for all other items.
@@ -619,7 +619,7 @@ class ConfigSchema {
       //log(`_defined(${item.name})`);
       if (!item.enabled) return false;
       if (item.sid >= initem.sid) return false;
-      if (item.undef !== undefined ) return false;
+      if (item.undef !== undefined) return false;
       return self.evaluateRequires(item);
     }
 
@@ -631,64 +631,38 @@ class ConfigSchema {
       return istrue.includes(item.value);
     }
 
-    // Does the given define exist and is it enabled?
-    // Also supports an array to allow for a multi-item alias.
-    function defined(foo) {
-      //if (foo === true) return true;
-      if (Array.isArray(foo)) {
-        //log('defined(array)');
-        for (const name of foo) if (!defined(name)) return false;
-        return true;
-      }
-      //log(`defined(${foo})`);
-      for (const item of self.iterateItemsWithName(foo)) if (_defined(item)) return true;
-      return false;
+    // Are all given defines existing and enabled?
+    function defined() {
+      return [...arguments].every(
+        name => [...self.iterateItemsWithName(name)].some(
+          item => _defined(item)
+        )
+      );
     }
 
     // Are the given items all enabled?
-    function ENABLED(foo) {
-      // For an array, loop and call ENABLED on each item
-      if (Array.isArray(foo)) {
-        //log('ENABLED(array)');
-        for (const name of foo) if (!ENABLED(name)) return false;
-        return true;
-      }
-      //log(`ENABLED(${foo})`);
-      for (const item of self.iterateItemsWithName(foo))
-        if (item.sid < initem.sid && _enabled(item)) return true;
-      return false;
+    function ENABLED() {
+      return [...arguments].every(                          // Every name has
+        name => [...self.iterateItemsWithName(name)].some(  // Some item
+          item => _enabled(item)                            // enabled
+        )
+      );
     }
 
     // Are the given items all disabled?
-    function DISABLED(foo) {
-      // For an array, loop and call DISABLED on each item
-      if (Array.isArray(foo)) {
-        //log('DISABLED(array)');
-        for (const name of foo) if (!DISABLED(name)) return false;
-      }
-      else {
-        //log(`DISABLED(${foo})`);
-        for (const item of self.iterateItemsWithName(foo))
-          if (item.sid < initem.sid && _enabled(item)) return false;
-      }
-      return true;
+    function DISABLED() {
+      return [...arguments].every(                          // Every name has
+        name => [...self.iterateItemsWithName(name)].every( // Every item
+          item => !_enabled(item)                           // Not enabled
+        )
+      );
     }
 
     // Are any of the given items enabled?
-    function ANY(foo) {
-      if (!Array.isArray(foo)) return ENABLED(foo) // should always be an array
-      if (foo.find(name => ENABLED(name))) return true;
-      return false;
-    }
-    const NONE = DISABLED, BOTH = ENABLED, ALL = ENABLED, EITHER = ANY;
-
-    function COUNT_ENABLED(names) {
-      let count = 0;
-      for (const name of names) if (ENABLED(name)) count++;
-      return count;
-    }
-
-    const MANY = names => COUNT_ENABLED(names) > 1;
+    const ANY = (...V) => V.some(name => ENABLED(name));
+    const COUNT_ENABLED = (...V) => V.reduce((count, name) => count + ENABLED(name), 0);
+    const MANY = (...V) => COUNT_ENABLED(...V) > 1;
+    const NONE = DISABLED, ALL = ENABLED, BOTH = ENABLED, EITHER = ANY;
 
     // Produce an adjacent integer
     const INCREMENT = val => val * 1 + 1,
@@ -699,8 +673,7 @@ class ConfigSchema {
       const item = priorItemNamed('MOTHERBOARD');
       if (!item) return false;
       const mb = item.value.replace(/^BOARD_/, '');
-      if (Array.isArray(foo)) return foo.includes(mb);
-      return foo == mb;
+      return Array.isArray(foo) ? foo.includes(mb) : foo === mb;
     }
 
     ///// Conditions based on other criteria, e.g., item.name /////
@@ -732,7 +705,7 @@ class ConfigSchema {
 
     // The serial port was defined. (deprecated)
     function HAS_SERIAL(sindex) {
-      return priorItemNamed(sindex == '0' ? 'SERIAL_PORT' : `SERIAL_PORT_${sindex}`) != null;
+      return priorItemNamed(sindex === '0' ? 'SERIAL_PORT' : `SERIAL_PORT_${sindex}`) != null;
     }
 
     ////// Other macros appearing in #if conditions //////
@@ -746,7 +719,7 @@ class ConfigSchema {
         if (axis.slice(1) >= extruders.value) return false;
       }
       const driver = priorItemNamed(`${axis}_DRIVER_TYPE`);
-      return driver && (driver.value == type);
+      return driver && (driver.value === type);
     }
 
     // The temp sensor for the given heater/cooler is a thermocouple.
@@ -757,41 +730,33 @@ class ConfigSchema {
 
     // Some enabled driver matches the given enum.
     function _has_driver(type) {
-      return self.getItems(
-        it => it.name.endsWith('_DRIVER_TYPE') && it.value == type, initem.sid, 1
-      ).length > 0;
+      return 0 < self.countPriorItems(
+        it => it.name.endsWith('_DRIVER_TYPE') && it.value === type, initem.sid, 1
+      );
     }
-    function HAS_DRIVER(type) {
-      if (!Array.isArray(type)) return _has_driver(type);
-      const len = type.length;
-      for (var i = 0; i < len; i++) if (_has_driver(type[i])) return true;
-      return false;
-    }
+    const HAS_DRIVER = (...V) => [...V].some(type => _has_driver(type));
 
     // The given axis is a Trinamic driver.
     function AXIS_IS_TMC_CONFIG(axis) {
       const driver = priorItemNamed(`${axis}_DRIVER_TYPE`);
-      return driver && ['TMC2130','TMC2160','TMC2208','TMC2209','TMC2660','TMC5130','TMC5160'].includes(driver.value);
+      return driver && ['TMC2130', 'TMC2160', 'TMC2208', 'TMC2209', 'TMC2660', 'TMC5130', 'TMC5160'].includes(driver.value);
     }
 
     // DGUS_UI_IS for DGUS_LCD_UI
     function _dgus_ui_is(dgus) {
       const lcd = priorItemNamed('DGUS_LCD_UI');
-      return lcd && (lcd.value == dgus);
+      return lcd && (lcd.value === dgus);
     }
-    function DGUS_UI_IS(dgus) {
-      if (!Array.isArray(dgus)) return _dgus_ui_is(dgus);
-      const len = dgus.length;
-      for (var i = 0; i < len; i++) if (_dgus_ui_is(dgus[i])) return true;
-      return false;
+    function DGUS_UI_IS() {
+      return [...arguments].some(name => _dgus_ui_is(dgus));
     }
 
     // Loose names may be in the schema or be defined by Conditionals-2-LCD.h
     function OTHER(name) {
       // See if the item is enabled in the schema and use its value.
-      const it = self.firstItem(it => ConfigSchema.definedBefore(it, initem.sid) && it.name == name);
+      const it = self.firstItem(it => ConfigSchema.definedBefore(it, initem.sid) && it.name === name);
       if (it) {
-        if (it.type == 'macro') {
+        if (it.type === 'macro') {
           const match = it.value.match(/(\w+)\s*\(([^()]+?)\)/),
                 parms = match[2].replace(/(\w+)/g, "'$1'"),
                 macro = `${match[1]}(${parms})`;
@@ -817,7 +782,7 @@ class ConfigSchema {
         case 'XYZ': return 3;
 
         case 'HAS_TRINAMIC_CONFIG':
-          return HAS_DRIVER(['TMC2130','TMC2160','TMC2208','TMC2209','TMC2660','TMC5130','TMC5160']);
+          return HAS_DRIVER(['TMC2130', 'TMC2160', 'TMC2208', 'TMC2209', 'TMC2660', 'TMC5130', 'TMC5160']);
 
         default:
           if (name.startsWith('TEMP_SENSOR_'))
@@ -860,7 +825,7 @@ class ConfigSchema {
             prior = priorItemNamed(part);           // Get the prior named item, if any
         while (prior) {                             // If the symbol is defined...
           priorValue = prior.value;                 // ...use its value.
-          if (prior.type != 'enum') break;          // Is it the name of an enum?
+          if (prior.type !== 'enum') break;          // Is it the name of an enum?
           prior = priorItemNamed(priorValue);       // Keep going down the rabbit hole
         }
         solved.push(priorValue);
@@ -931,11 +896,11 @@ class ConfigSchema {
                       break;
         }
         // If 'low' is a SYMBOL_NAME_123_STR string, get its value
-        if (typeof low == 'string' && low.match(/^[A-Z_][A-Z0-9_]*$/)) {
+        if (typeof low === 'string' && low.match(/^[A-Z_][A-Z0-9_]*$/)) {
           const lowitem = priorItemNamed(low);
           low = lowitem ? lowitem.value : 0;
         }
-        if (typeof high == 'string' && high.match(/^[A-Z_][A-Z0-9_]*$/)) {
+        if (typeof high === 'string' && high.match(/^[A-Z_][A-Z0-9_]*$/)) {
           const highitem = priorItemNamed(high);
           high = highitem ? highitem.value : 0;
         }
@@ -967,12 +932,11 @@ class ConfigSchema {
 
     // Convert Marlin macros into JavaScript function calls:
     cond = cond
-      .replace(/(AXIS_DRIVER_TYPE)_(\w+)\((.+?)\)/g, '$1($2,$3)')                   // AXIS_DRIVER_TYPE_X(A4988)     => AXIS_DRIVER_TYPE(X,A4988)
-      .replace(/\b([A-Z_][A-Z0-9_]*)\b(\s*([^(,]|$))/g, 'OTHER($1)$2')              // LOOSE_SYMBOL                  => OTHER(LOOSE_SYMBOL)
-      .replace(/([A-Z_][A-Z0-9_]+\s*\(|,\s*)OTHER\(([^()]+)\)/g, '$1$2')            // ANYCALL(OTHER(LOOSE_SYMBOL)   => ANYCALL(LOOSE_SYMBOL
-      .replace(/\b(defined)\b\s*\(?\s*OTHER\s*\(\s*([^()]+)\s*\)\s*\)?/g, '$1($2)') // defined(OTHER(ABCD))          => defined(ABCD)
-      .replace(/\b([A-Z_][A-Z0-9_]*)\b([^(])/gi, '"$1"$2')                          // LOOSE_SYMBOL[^(]              => "LOOSE_SYMBOL"
-      .replace(/\b([A-Z_][A-Z0-9_]*)\b\(([^()]+?,[^()]+)\)/g, '$1([$2])')           // Wrap simple macro args into an [array]
+      .replace(/(AXIS_DRIVER_TYPE)_(\w+)\((.+?)\)/g, '$1($2,$3)')                   // AXIS_DRIVER_TYPE_X(A4988)  => AXIS_DRIVER_TYPE(X,A4988)
+      .replace(/\b([A-Z_][A-Z0-9_]*)\b(\s*([^(,]|$))/g, 'OTHER($1)$2')              // LOOSE_SYMBOL               => OTHER(LOOSE_SYMBOL)
+      .replace(/([A-Z_][A-Z0-9_]+\s*\(|,\s*)OTHER\(([^()]+)\)/g, '$1$2')            // ANYCALL(OTHER(ABCD)        => ANYCALL(ABCD    ... , OTHER(ABCD) => , ABCD
+      .replace(/\b(defined)\b\s*\(?\s*OTHER\s*\(\s*([^()]+)\s*\)\s*\)?/g, '$1($2)') // defined.OTHER(ABCD).       => defined(ABCD)
+      .replace(/\b([A-Z_][A-Z0-9_]*)\b([^(])/gi, '"$1"$2')                          // ABCD[^(]                   => "ABCD"
       ;
 
     try {
@@ -992,7 +956,6 @@ class ConfigSchema {
   // is ruled out by its presence in a conditional block.
   // Called at the end of importText to parse all 'requires'.
   refreshAllRequires() {
-    // Clear all 'evaled' then re-evaluate all 'requires'.
     for (const item of this.iterateDataBySID()) delete item.evaled;
     for (const item of this.iterateDataBySID()) this.evaluateRequires(item);
   }
@@ -1013,7 +976,7 @@ class ConfigSchema {
 
   // Update an item's fields from an (edited) item containing the sid and the fields to change.
   // Then re-run 'requires' on all items that follow the changed item to update 'evaled'.
-  // NOTE: Some fields are shown/hidden based on things that come later, so now we must refresh ALL requires.
+  // NOTE: If any items are still shown/hidden based on later things then refresh ALL instead.
   updateEditedItem(changes, refresh=false) {
     Object.assign(this.bysid[changes.sid], changes);
     if (refresh) this.refreshRequiresAfter(changes.sid);
@@ -1126,7 +1089,7 @@ class ConfigSchema {
       // Special handling for EOL comments after a #define.
       // At this point the #define is already digested and inserted,
       // so we have to extend it
-      if (state == Parse.EOL_COMMENT) {
+      if (state === Parse.EOL_COMMENT) {
         if (defmatch == null && the_line.startsWith('//')) {
           // Continue to add onto the comment. No JSON is expected.
           comment_buff.push(the_line.slice(2).trim());
@@ -1165,7 +1128,7 @@ class ConfigSchema {
           if (cbr) {
             options_json = d.slice(0, cbr).trim();
             const cmt = c.slice(cbr + 1).trim();
-            if (cmt != '') comment_buff.push(cmt);
+            if (cmt !== '') comment_buff.push(cmt);
           }
         }
         else if (c.startsWith('@section'))    // Start a new section
@@ -1176,7 +1139,7 @@ class ConfigSchema {
 
       // For slash comments, capture consecutive slash comments.
       // The comment will be applied to the next #define.
-      if (state == Parse.SLASH_COMMENT) {
+      if (state === Parse.SLASH_COMMENT) {
         if (defmatch == null && the_line.startsWith('//')) {
           use_comment(the_line.slice(2).trim());
           log("... Slash comment", line_number);
@@ -1201,7 +1164,7 @@ class ConfigSchema {
           line = line.slice(endpos + 2).trim();
 
           // Temperature sensors are done
-          if (state == Parse.GET_SENSORS) {
+          if (state === Parse.GET_SENSORS) {
             // Get up to the last 2 characters of the options_json string
             options_json = `{ ${options_json.slice(0, -2)} }`;
           }
@@ -1216,7 +1179,7 @@ class ConfigSchema {
         const tline = cline.trim();
 
         // Collect temperature sensors
-        if (state == Parse.GET_SENSORS) {
+        if (state === Parse.GET_SENSORS) {
           const sens = tline.match(/^(-?\d+)\s*:\s*(.+)$/);
           if (sens) {
             //log(`Sensor: ${sens[1]} = ${sens[2]}`, line_number);
@@ -1224,7 +1187,7 @@ class ConfigSchema {
             options_json += `'${sens[1]}':'${sens[1]} - ${s2}', `;
           }
         }
-        else if (state == Parse.BLOCK_COMMENT) {
+        else if (state === Parse.BLOCK_COMMENT) {
           // Look for temperature sensors
           if (tline.match(/temperature sensors.*:/i)) {
             state = Parse.GET_SENSORS;
@@ -1235,7 +1198,7 @@ class ConfigSchema {
         }
       } // end COMMENT, SENSORS
       // For the normal state we're looking for any non-blank line
-      else if (state == Parse.NORMAL) {
+      else if (state === Parse.NORMAL) {
         // Skip a commented define when evaluating comment opening
         const st = line.match(/^\/\/\s*#define/) ? 2 : 0,
           cpos1 = line.indexOf('/*'),      // Start a block comment on the line?
@@ -1243,13 +1206,13 @@ class ConfigSchema {
 
         // Only the first comment starter gets evaluated
         let cpos = -1;
-        if (cpos1 != -1 && (cpos1 < cpos2 || cpos2 == -1)) {
+        if (cpos1 !== -1 && (cpos1 < cpos2 || cpos2 === -1)) {
           cpos = cpos1;
           state = Parse.BLOCK_COMMENT;
           oneshot_opt = false;
           log("Begin block comment", line_number);
         }
-        else if (cpos2 != -1 && (cpos2 < cpos1 || cpos1 == -1)) {
+        else if (cpos2 !== -1 && (cpos2 < cpos1 || cpos1 === -1)) {
           cpos = cpos2;
           // Comment after a define may be continued on the following lines
           if (defmatch != null && cpos > 10) {
@@ -1265,12 +1228,12 @@ class ConfigSchema {
         }
 
         // Process the start of a new comment
-        if (cpos != -1) {
+        if (cpos !== -1) {
           comment_buff = [];
           cline = line.slice(cpos + 2).trim();
           line = line.slice(0, cpos).trim();
 
-          if (state == Parse.BLOCK_COMMENT) {
+          if (state === Parse.BLOCK_COMMENT) {
             // Strip leading '*' from block comments
             cline = cline.replace(/^\* ?/, '');
           }
@@ -1280,18 +1243,18 @@ class ConfigSchema {
           }
 
           // Buffer a non-empty comment start
-          if (cline != '') use_comment(cline);
+          if (cline !== '') use_comment(cline);
         }
 
         // If the line has nothing before the comment, go to the next line
-        if (line == '') {
+        if (line === '') {
           options_json = '';
           continue;
         }
 
         // Parenthesize the given expression if needed
         function atomize(s) {
-          if (s == ''
+          if (s === ''
             || /^[A-Za-z0-9_]*(\([^)]+\))?$/.test(s)
             || /^[A-Za-z0-9_]+ == \d+?$/.test(s)
           ) return s;
@@ -1327,7 +1290,7 @@ class ConfigSchema {
               .replace(/(ENABLED|ANY|EITHER)\s*\(\s*([A-Za-z_][A-Za-z0-9_]+)\s*\)\s*\|\|\s*(ENABLED|ANY|EITHER)\s*\(\s*/g, 'ANY($2, ')
               .replace(/(NONE|DISABLED)\s*\(\s*([^()]+?)\s*\)\s*&&\s*(NONE|DISABLED)\s*\(\s*/g, 'NONE($2, ')
               .replace(/^\((!?[a-z_][a-z0-9_]+\([^()]+?\))\)$/i, '$1');
-            if (old_cond == cond) break;
+            if (old_cond === cond) break;
           }
           return cond;
         }
@@ -1342,11 +1305,11 @@ class ConfigSchema {
         // ELSE/ELIF re-push the condition-array.
         //
         const drctv = line.split(/\s+/)[0],
-          iselif = drctv == '#elif',
-          iselse = drctv == '#else';
+              iselif = drctv === '#elif',
+              iselse = drctv === '#else';
 
-        if (iselif || iselse || drctv == '#endif') {
-          if (conditions.length == 0) {
+        if (iselif || iselse || drctv === '#endif') {
+          if (conditions.length === 0) {
             //raise Exception(f'no #if block at line {line_number}')
             // TODO: Revert the view back to plain text editing
           }
@@ -1365,17 +1328,17 @@ class ConfigSchema {
           else
             if_depth--;
         }
-        else if (drctv == '#if') {
+        else if (drctv === '#if') {
           conditions.push([atomize(line.slice(3).trim())]);
           if_depth++;
           log(`Level ${if_depth} #if`, line_number);
         }
-        else if (drctv == '#ifdef') {
+        else if (drctv === '#ifdef') {
           conditions.push([`defined(${line.slice(6).trim()})`]);
           if_depth++;
           log(`Level ${if_depth} #ifdef`, line_number);
         }
-        else if (drctv == '#ifndef') {
+        else if (drctv === '#ifndef') {
           conditions.push([`!defined(${line.slice(7).trim()})`]);
           if_depth++;
           log(`Level ${if_depth} #ifndef`, line_number);
@@ -1393,7 +1356,7 @@ class ConfigSchema {
 
           // Disabled conditionals can be left out entirely.
           // All others are retained since conditions can change.
-          if (!enabled && section == '_') continue;
+          if (!enabled && section === '_') continue;
 
           log(`Got #define ${define_name}`, line_number);
 
@@ -1404,7 +1367,7 @@ class ConfigSchema {
 
           // Type is based on the value
           let value_type, options;
-          if (val == '') {
+          if (val === '') {
             value_type = 'switch';
           }
           else if (/^[A-Z0-9_]+_PIN$/.test(define_name)) {
@@ -1412,7 +1375,7 @@ class ConfigSchema {
           }
           else if (/^(true|false)$/i.test(val)) {
             value_type = 'bool';
-            val = val == 'true';
+            val = val === 'true';
           }
           else if (/^.+_ENABLE_ON$/.test(define_name)) {
             value_type = 'state';
@@ -1435,14 +1398,14 @@ class ConfigSchema {
           }
           else {
             value_type = (
-                val[0] == '"' ? 'string'
-              : val[0] == "'" ? 'char'
+                val[0] === '"' ? 'string'
+              : val[0] === "'" ? 'char'
               : /^(LOW|HIGH)$/i.test(val) ? 'state'
               : /^[A-Z0-9_]{2,}$/i.test(val) ? 'enum'
               : /^{\s*(0x[A-F0-9]{2}\s*,?\s*){6}}$/i.test(val) ? 'mac'
               : /^{(\s*[-+]?\s*\d+\s*(,\s*)?)+}$/.test(val) ? 'int[]'
               : /^{(\s*[-+]?\s*(\d+\.|\d*\.\d+)([eE][-+]?\d+)?[fF]?\s*(,\s*)?)+}$/.test(val) ? 'float[]'
-              : val[0] == '{' ? 'array'
+              : val[0] === '{' ? 'array'
               : ''
             );
           }
@@ -1458,7 +1421,7 @@ class ConfigSchema {
           };
 
           if (val !== '') { define_info.value = val; define_info.orig.value = val; }
-          if (value_type != '') define_info.type = value_type;
+          if (value_type !== '') define_info.type = value_type;
           if (options !== undefined) define_info.options = options;
 
           if (conditions.length) {
@@ -1473,13 +1436,13 @@ class ConfigSchema {
           // Items that depend on TEMP_SENSOR_* to be enabled.
           function is_heater_item(name) {
             const m1 = name.match(/^(EXTRUDER|HOTEND|BED|CHAMBER|COOLER|PROBE)_(AUTO_FAN_(TEMPERATURE|SPEED)|BETA|M(AX|IN)TEMP|OVERSHOOT|PULLUP_RESISTOR_OHMS|RESISTANCE_25C_OHMS|SH_C_COEFF)$/);
-            if (m1) return [ 'EXTRUDER', 'HOTEND' ].includes(m1[1]) ? '0' : m1[1];
+            if (m1) return ['EXTRUDER', 'HOTEND'].includes(m1[1]) ? '0' : m1[1];
             const m2 = name.match(/^HOTEND(\d)_.+$/);
             if (m2) return m2[1];
             const m3 = name.match(/^HEATER_(\d)_M(AX|IN)TEMP$/);
             if (m3) return m3[1];
             const m4 = name.match(/^PREHEAT_\d_TEMP_(EXTRUDER|HOTEND|BED|CHAMBER|COOLER|PROBE)$/);
-            if (m4) return [ 'EXTRUDER', 'HOTEND' ].includes(m4[1]) ? '0' : m4[1];
+            if (m4) return ['EXTRUDER', 'HOTEND'].includes(m4[1]) ? '0' : m4[1];
             return '';
           }
 
@@ -1518,16 +1481,16 @@ class ConfigSchema {
             const m7 = name.match(/^ENDSTOPPULL(UP|DOWN)_(.+)M(AX|IN)$/);
             if (m7) return m7[2];
             const m8 = name.match(/^AXIS(\d)_(NAME|ROTATES)$/);
-            if (m8) return [ 'I', 'J', 'K', 'U', 'V', 'W' ][m8[1] - 4];
+            if (m8) return ['I', 'J', 'K', 'U', 'V', 'W'][m8[1] - 4];
             return '';
           }
 
           function is_serial_item(name) {
             const m1 = name.match(/^BAUDRATE(_(\d))?$/);
             if (m1) return m1[2] || '0';
-            if (name == 'BAUD_RATE_GCODE') return '0';
+            if (name === 'BAUD_RATE_GCODE') return '0';
             const m2 = name.match(/^SERIAL_PORT_(\d)$/);
-            if (m2) return m2[1] == '2' ? '0' : (m2[1] - 1).toString();
+            if (m2) return m2[1] === '2' ? '0' : (m2[1] - 1).toString();
             return '';
           }
 
@@ -1560,11 +1523,11 @@ class ConfigSchema {
 
           // If the comment_buff is not empty, add the comment to the info
           let full_comment = '';
-          if (prev_comment != '') {
+          if (prev_comment !== '') {
             full_comment = prev_comment;
             prev_comment = '';
           }
-          else if (comment_buff && state != Parse.EOL_COMMENT) {
+          else if (comment_buff && state !== Parse.EOL_COMMENT) {
             full_comment = comment_buff.join('\n');
             comment_buff = [];
           }
@@ -1572,10 +1535,10 @@ class ConfigSchema {
           set_units(full_comment); // If the comment specifies units, add that to the info
 
           // Set the options for the current #define
-          if (define_name == "MOTHERBOARD" && boards != '') {
+          if (define_name === "MOTHERBOARD" && boards !== '') {
             define_info.options = boards;
           }
-          else if (options_json != '') { // Options, thermistors, boards, etc.
+          else if (options_json !== '') { // Options, thermistors, boards, etc.
             const optstr = ConfigSchema.cleanOptions(options_json);
             let opts;
             try {
@@ -1631,11 +1594,11 @@ class ConfigSchema {
           // Sequential items with the same name go into a group together
           if (sid > 1) {
             const prev = this.bysid[sid - 1];
-            if (define_name == prev.name && define_info.group === undefined)
+            if (define_name === prev.name && define_info.group === undefined)
               define_info.group = prev.group = define_name.toLowerCase();
           }
 
-          if (state == Parse.EOL_COMMENT) last_added_ref = define_info;
+          if (state === Parse.EOL_COMMENT) last_added_ref = define_info;
         }
         else {
           // For an #undef mark all previous instances of the name disabled and
