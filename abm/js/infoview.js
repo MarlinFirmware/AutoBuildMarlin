@@ -18,9 +18,6 @@ $(function () {
     if (data !== undefined) console.dir(data);
   }
 
-  // We need getState, setState, and postMessage.
-  const vscode = acquireVsCodeApi();
-
   // References to elements in the webview.
   const $element = $('#element');
 

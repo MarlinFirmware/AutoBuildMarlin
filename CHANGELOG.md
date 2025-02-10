@@ -2,6 +2,9 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.68
+- Fix strict evaluation of empty array
+
 ## 2.1.67
 - Optimize Schema conditionals evaluation
 - Use more robust parentheses cleanup method

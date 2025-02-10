@@ -146,7 +146,7 @@ class ConfigSchema {
 
   // Utility method to fix up an options string so it can be JSON parsed.
   static cleanOptions(opts) {
-    if (opts.match(/\[\s*\d\s*:\s*[\'"]/))
+    if (/\[\s*\d\s*:\s*['"]/.test(opts))
       opts = opts.replace('[', '{').replace(']', '}');
     return opts;
   }
@@ -632,31 +632,19 @@ class ConfigSchema {
     }
 
     // Are all given defines existing and enabled?
-    function defined() {
-      return [...arguments].every(
-        name => [...self.iterateItemsWithName(name)].some(
-          item => _defined(item)
-        )
-      );
-    }
+    const defined = (...V) => V.every(
+      name => self.iterateItemsWithName(name).some(item => _defined(item))
+    );
 
     // Are the given items all enabled?
-    function ENABLED() {
-      return [...arguments].every(                          // Every name has
-        name => [...self.iterateItemsWithName(name)].some(  // Some item
-          item => _enabled(item)                            // enabled
-        )
-      );
-    }
+    const ENABLED = (...V) => V.every(
+      name => self.iterateItemsWithName(name).some(item => _enabled(item))
+    );
 
     // Are the given items all disabled?
-    function DISABLED() {
-      return [...arguments].every(                          // Every name has
-        name => [...self.iterateItemsWithName(name)].every( // Every item
-          item => !_enabled(item)                           // Not enabled
-        )
-      );
-    }
+    const DISABLED = (...V) => V.every(
+      name => self.iterateItemsWithName(name).every(item => !_enabled(item))
+    );
 
     // Are any of the given items enabled?
     const ANY = (...V) => V.some(name => ENABLED(name));
@@ -669,12 +657,7 @@ class ConfigSchema {
           DECREMENT = val => val * 1 - (val * 1 > 0);
 
     // Is MOTHERBOARD any one of the boards provided?
-    function MB(foo) {
-      const item = priorItemNamed('MOTHERBOARD');
-      if (!item) return false;
-      const mb = item.value.replace(/^BOARD_/, '');
-      return Array.isArray(foo) ? foo.includes(mb) : foo === mb;
-    }
+    const MB = (...V) => V.includes(priorItemNamed('MOTHERBOARD')?.value.replace(/^BOARD_/, '') ?? '');
 
     ///// Conditions based on other criteria, e.g., item.name /////
 
@@ -734,7 +717,7 @@ class ConfigSchema {
         it => it.name.endsWith('_DRIVER_TYPE') && it.value === type, initem.sid, 1
       );
     }
-    const HAS_DRIVER = (...V) => [...V].some(type => _has_driver(type));
+    const HAS_DRIVER = (...V) => V.some(type => _has_driver(type));
 
     // The given axis is a Trinamic driver.
     function AXIS_IS_TMC_CONFIG(axis) {
@@ -747,9 +730,7 @@ class ConfigSchema {
       const lcd = priorItemNamed('DGUS_LCD_UI');
       return lcd && (lcd.value === dgus);
     }
-    function DGUS_UI_IS() {
-      return [...arguments].some(name => _dgus_ui_is(dgus));
-    }
+    const DGUS_UI_IS = (...V) => V.some(name => _dgus_ui_is(name));
 
     // Loose names may be in the schema or be defined by Conditionals-2-LCD.h
     function OTHER(name) {
@@ -769,13 +750,8 @@ class ConfigSchema {
       // Do custom handling for items not found in the schema.
       switch (name) {
         case 'HAS_E_TEMP_SENSOR':
-          const extruders = priorItemNamed('EXTRUDERS');
-          if (extruders && extruders.value > 0) {
-            for (var i = 0; i < extruders.value; i++) {
-              const sensor = priorItemNamed(`TEMP_SENSOR_${i}`);
-              if (sensor && sensor.value) return true;
-            }
-          }
+          for (let i = 0; i < priorItemNamed('EXTRUDERS')?.value; i++)
+            if (priorItemNamed(`TEMP_SENSOR_${i}`)?.value) return true;
           return false;
 
         case 'XY': return 2;
@@ -788,8 +764,8 @@ class ConfigSchema {
           if (name.startsWith('TEMP_SENSOR_'))
             return HAS_SENSOR(name.slice(9));
 
-          //console.warn(`OTHER Unknown: ${name}`);
-          //return true;
+          //console.warn(`Unknown: OTHER("${name}")`);
+          break;
       }
       return false;
     }
@@ -802,10 +778,7 @@ class ConfigSchema {
      *   #define DOCAT_(V) _CAT(_,V)
      *   #define DIDCAT DOCAT_(ALICE) // DIDCAT => _ALICE
      */
-    function _CAT(...parts) {
-      //console.log("ABM => _CAT", parts);
-      return OTHER(parts.join(''));
-    }
+    const _CAT = (...V) => OTHER(V.join(''));
 
     /**
      * Concatenate the solved values of comma-separated parts
@@ -1477,7 +1450,7 @@ class ConfigSchema {
 
           if (val !== '') { define_info.value = val; define_info.orig.value = val; }
           if (value_type !== '') define_info.type = value_type;
-          if (options !== undefined) define_info.options = options;
+          if (options) define_info.options = options;
 
           if (conditions.length) {
             define_info.requires = combine_conditions(conditions);
@@ -1590,7 +1563,7 @@ class ConfigSchema {
           set_units(full_comment); // If the comment specifies units, add that to the info
 
           // Set the options for the current #define
-          if (define_name === "MOTHERBOARD" && boards !== '') {
+          if (define_name === "MOTHERBOARD" && boards?.length) {
             define_info.options = boards;
           }
           else if (options_json !== '') { // Options, thermistors, boards, etc.
