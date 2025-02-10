@@ -925,6 +925,76 @@ class ConfigSchema {
       return cond;
     }
 
+    function findRedundantParentheses(code) {
+
+      // Check if parentheses belong to a function call
+      function isFunctionCall(code, openIndex) {
+        let i = openIndex - 1;
+        // Skip spaces to find the preceding character
+        while (i >= 0 && /\s/.test(code[i])) i--;
+        return i >= 0 && /\w/.test(code[i]); // If a word character precedes '(', it's a function call
+      }
+
+      // Check if a pair of parentheses is redundant
+      function isRedundant(code, openIndex, closeIndex) {
+        let inner = code.slice(openIndex + 1, closeIndex).trim();
+
+        // Single identifier or number (e.g., `(x)`, `(42)`)
+        if (/^[a-zA-Z0-9_]+$/.test(inner)) return true;
+
+        // Function call (e.g., `(defined("mysymbol"))`)
+        if (/^[a-zA-Z_][a-zA-Z0-9_]*\s*\(.*\)$/.test(inner)) return true;
+
+        // If it's a nested set of parentheses like ((EXPR)), check the inside
+        if (inner.startsWith('(') && inner.endsWith(')')) {
+          let depth = 0;
+          for (let i = 0; i < inner.length; i++) {
+            if (inner[i] === '(') depth++;
+            if (inner[i] === ')') depth--;
+            if (depth === 0 && i < inner.length - 1) return false; // There’s more content outside
+          }
+          return true; // The whole thing is wrapped again => redundant
+        }
+        return false;
+      }
+
+      let inQuote = '', stack = [], redundant = new Set();
+      for (let i = 0; i < code.length; i++) {
+        let char = code[i];
+
+        // Handle characters in a string
+        if (inQuote) {
+          // Handle escaping within strings
+          if (char === "\\" && i + 1 < code.length) i++; // Skip escaped character
+          else if (char === inQuote) inQuote = null;
+          continue;
+        }
+
+        if (char === '"' || char === "'") {
+          inQuote = char;
+        } else if (char === '(') {
+          // Store the char index as belonging to a function unit or wrapper
+          stack.push({ index: i, type: isFunctionCall(code, i) ? 'unit' : 'normal' });
+        } else if (char === ')' && stack.length > 0) {
+          let { index: openIndex, type } = stack.pop();
+          if (type === 'normal' && isRedundant(code, openIndex, i)) {
+            redundant.add(openIndex);
+            redundant.add(i);
+          }
+        }
+      }
+
+      return Array.from(redundant).sort((a, b) => a - b);
+    }
+
+    function removeRedundantParentheses(code) {
+      let redundantSet = new Set(findRedundantParentheses(code)); // Set for quick lookup
+      let result = "";
+      for (let i = 0; i < code.length; i++)
+        if (!redundantSet.has(i)) result += code[i]; // Append char if it's not in redundant indices
+      return result;
+    }
+
     const before_mangle = cond;
 
     cond = expand_MAP(cond);
@@ -938,6 +1008,8 @@ class ConfigSchema {
       .replace(/\b(defined)\b\s*\(?\s*OTHER\s*\(\s*([^()]+)\s*\)\s*\)?/g, '$1($2)') // defined.OTHER(ABCD).       => defined(ABCD)
       .replace(/\b([A-Z_][A-Z0-9_]*)\b([^(])/gi, '"$1"$2')                          // ABCD[^(]                   => "ABCD"
       ;
+
+    cond = removeRedundantParentheses(cond);
 
     try {
       initem.evaled = eval(cond);
@@ -1263,27 +1335,10 @@ class ConfigSchema {
 
         // Combine adjacent conditions where possible
         function combine_conditions(condarr) {
-
-          const removeRedundantParens = (expr) => {
-            // Pre-replace function-like constructs with placeholders
-            expr = expr.replace(/(\w+\s*\([^()]+\))/g, (_, match) =>
-              match.replace(/\(/g, '@').replace(/\)/g, '@')
-            );
-
-            // Remove redundant parentheses
-            for (let prevExpr; prevExpr !== expr;)
-              prevExpr = expr, expr = expr.replace(/\(([^()]+)\)/g, (_, inner) => inner);
-
-            // Restore placeholders back to function-like constructs
-            return expr.replace(/(\w+)\s*@([^@]+)@/g, (_, func, inner) =>
-              `${func}(${inner})`
-            );
-          };
-
           let cond = '(' + condarr.flat().join(') && (') + ')';
           while (true) {
             const old_cond = '' + cond;
-            cond = removeRedundantParens(cond)
+            cond = cond
               .replaceAll('!ENABLED', 'DISABLED').replaceAll('!DISABLED', 'ENABLED')
               .replace(/(DISABLED|!ALL|!BOTH)\s*\(\s*([^()]+?)\s*\)\s*\|\|\s*(DISABLED|!ALL|!BOTH)\s*\(\s*/g, '!ALL($2, ')
               .replace(/(ENABLED|ALL|BOTH)\s*\(\s*([A-Za-z_][A-Za-z0-9_]+)\s*\)\s*&&\s*(ENABLED|ALL|BOTH)\s*\(\s*/g, 'ALL($2, ')

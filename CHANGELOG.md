@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.67
+- Optimize Schema conditionals evaluation
+- Use more robust parentheses cleanup method
+
 ## 2.1.66
 - Fix Config Editor changes propagation
 - Fix schema evaluation of `ENABLED`/`DISABLED`
