@@ -168,6 +168,15 @@
     "commands": [
       {
         "category": "Auto Build Marlin",
+        "command": "abm.show",
+        "title": "Show ABM Panel",
+        "icon": {
+          "light": "resources/AB.svg",
+          "dark": "resources/AB_dark.svg"
+        }
+      },
+      {
+        "category": "Auto Build Marlin",
         "command": "abm.build",
         "title": "Build",
         "icon": {
@@ -245,32 +254,41 @@
     "menus": {
       "view/title": [
         {
-          "command": "abm.build",
+          "command": "abm.show",
           "group": "navigation@1",
-          "when": "abm.active && view == abm.welcomeView"
+          "when": "abm.active && (view == abm.welcomeView || view == abm.infoView)"
         },
         {
-          "command": "abm.upload",
+          "command": "abm.build",
           "group": "navigation@2",
           "when": "abm.active && view == abm.welcomeView"
         },
         {
-          "command": "abm.traceback",
+          "command": "abm.upload",
           "group": "navigation@3",
+          "when": "abm.active && view == abm.welcomeView"
+        },
+        {
+          "command": "abm.traceback",
+          "group": "navigation@4",
           "when": "abm.active && abm.has_debug && view == abm.welcomeView"
         },
         {
           "command": "abm.clean",
-          "group": "navigation@4",
+          "group": "navigation@5",
           "when": "abm.active && abm.cleanable && view == abm.welcomeView"
         },
         {
           "command": "abm.config",
-          "group": "navigation@5",
+          "group": "navigation@6",
           "when": "abm.active && (view == abm.welcomeView || view == abm.infoView)"
         }
       ],
       "commandPalette": [
+        {
+          "command": "abm.show",
+          "when": "abm.active"
+        },
         {
           "command": "abm.build",
           "when": "abm.active"

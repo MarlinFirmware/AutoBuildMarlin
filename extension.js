@@ -30,6 +30,7 @@ exports.activate = (context) => {
     vc.registerCommand('abm.sponsor',     () => { abm.sponsor();                }),
     vc.registerCommand('abm.codeformat',  () => { format.codeformat();          }),
     vc.registerCommand('abm.export.json', () => { abm.run_schema_py('json');    }),
+    vc.registerCommand('abm.export.yml',  () => { abm.run_schema_py('yml');     }),
     vc.registerCommand('abm.apply.ini',   () => { abm.run_configuration_py();   }),
 
     // Register a webview provider for the Info panel
@@ -52,6 +53,7 @@ exports.activate = (context) => {
 
   // Show the panel with no command
   if (prefs.show_on_startup()) abm.run_command();
-};
+
+}; // activate
 
 exports.deactivate = () => { abm.set_context('active', false); };

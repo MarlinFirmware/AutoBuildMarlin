@@ -853,31 +853,27 @@ function run_command(action) {
 function runSelectedAction() {
   var act = abm_action;
   abm_action = undefined;
-  if (act !== undefined) {
-    if (act == 'config')
-      postTool('config');
-    else {
-      postTool('build');
-      let env;
-      if (board_info.envs.length == 1) { // only 1 board is available
-        env = board_info.envs[0].name;
-      } else if (board_info.envs.length > 1 && board_info.envs.map(item => item.name).includes(prefs.default_env())) { // use default env
-        env = prefs.default_env();
-      } else if (act == 'clean') {
-        let cleanme, cnt = 0;
-        board_info.envs.forEach((v) => { if (v.exists) { cleanme = v.name; cnt++; } });
-        if (cnt == 0) {
-          postError('Nothing to clean.');
-          return;
-        }
-        if (cnt == 1) env = cleanme;
-      }
-      if (env)
-        pio_command(act, env);
-      else
-        postError(`Use a specific environment for ${nicer[act]}.`);
+  postTool(act == 'config' ? 'config' : 'build');
+  if (!act || ['config','show'].includes(act)) return;
+
+  let env;
+  if (board_info.envs.length == 1) { // only 1 board is available
+    env = board_info.envs[0].name;
+  } else if (board_info.envs.length > 1 && board_info.envs.map(item => item.name).includes(prefs.default_env())) { // use default env
+    env = prefs.default_env();
+  } else if (act == 'clean') {
+    let cleanme, cnt = 0;
+    board_info.envs.forEach((v) => { if (v.exists) { cleanme = v.name; cnt++; } });
+    if (cnt == 0) {
+      postError('Nothing to clean.');
+      return;
     }
+    if (cnt == 1) env = cleanme;
   }
+  if (env)
+    pio_command(act, env);
+  else
+    postError(`Use a specific environment for ${nicer[act]}.`);
 }
 
 /**
