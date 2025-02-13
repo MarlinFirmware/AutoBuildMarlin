@@ -255,7 +255,7 @@ $(function () {
       // Direct access to the schema data structure
       const info = div.inforef;
       // Set .nope on options that are disabled based on other options
-      $(div).toggleClass('nope', info.evaled !== undefined && !info.evaled);
+      $(div).toggleClass('nope', info?.evaled === false);
     });
     hideEmptySections(true);
   }
@@ -272,7 +272,7 @@ $(function () {
     Object.assign(optref, fields);
 
     // Is the value / enabled state different from the original?
-    const dirty = optref.orig.enabled != optref.enabled || (optref.value !== undefined && optref.orig.value != optref.value);
+    const dirty = optref.orig.enabled != optref.enabled || ('value' in optref && optref.orig.value != optref.value);
     optref.dirty = dirty;
 
     // Log and update UI
@@ -798,23 +798,6 @@ $(function () {
   }
 
   /**
-   * @brief Create a new schema from document text then build a new form.
-   * @description This may be called when the Custom Editor is first loaded, or
-   *              when the app detects an external change in the current config file.
-   * @param {string} text - The text of the document.
-   */
-  function buildConfigFormWithText(text) {
-    log("buildConfigFormWithText");
-    // Create a whole new schema and yeet the old one.
-    schema = ConfigSchema.newSchemaFromText(text);
-    //schema.debug_sections();
-    //schema.debug();
-
-    saveWebViewState();
-    buildConfigForm();
-  }
-
-  /**
    * @brief Use the given schema data index to rebuild the form.
    * @description This is called when the Custom Editor is first loaded,
    *              and when the app detects an external change in the file.
@@ -844,13 +827,6 @@ $(function () {
           ignore_update = false;
         else
           buildConfigFormWithData(message.bysec);  // Use the provided data to rebuild the form.
-        break;
-
-      case 'text-update':
-        if (ignore_update)  // This view caused the update? Ignore it.
-          ignore_update = false;
-        else
-          buildConfigFormWithText(message.text);  // Use the provided text to rebuild the form.
         break;
 
       // Display an error message

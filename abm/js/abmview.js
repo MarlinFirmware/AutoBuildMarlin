@@ -167,7 +167,7 @@ var ABM = (function(){
               $erows.addClass('exists');
               if (!v.busy) {
                 caption = 'Built ';
-                if (v.filename !== undefined)
+                if ('filename' in v)
                   caption += `"${v.filename}" `;
                 caption += v.stamp;
                 if (!v.completed) {

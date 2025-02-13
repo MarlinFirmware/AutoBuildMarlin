@@ -149,7 +149,7 @@ const schemas = combinedSchema();
 abm.log("abm/editor.js", ConfigSchema.schemas);
 
 // Utility function to get the name of a document from a full path.
-const document_name = document => document.uri.fsPath.split(path.sep).pop();
+const document_name = (document) => document.uri.fsPath.split(path.sep).pop();
 
 var webviews = [];
 
@@ -389,12 +389,12 @@ class ConfigEditorProvider {
 </head>
 <body id="abm-conf">
   <form id="filter-form">
+    <button id="hello-button">Hello!</button>
     <label for="filter">Filter:</label><input type="search" id="filter" name="filter" />
     <label class="iconcb" for="show-comments" title="Show Comments"><input type="checkbox" id="show-comments" name="show-comments" checked="checked" /><span>💬</span></label>
     <label class="iconcb" for="show-disabled" title="Show Disabled"><input type="checkbox" id="show-disabled" name="show-disabled" checked="checked" /><span>🚫</span></label>
     <span id="filter-count"></span>
   </form>
-  <div id="hello-button"><button>Hello!</button></div>
   <div id="left-nav-box"><div id="left-nav"></div></div>
   <div id="config-form"></div>
   <div id="zero-box">0 Results</div>

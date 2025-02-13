@@ -4,8 +4,6 @@
  * Styles for Info sidebar panel
  */
 
-/* #hello-button { display: none; } */
-
 * {
   --marlin-svg: url(marlin-b.svg);
   --abm-info-color: var(--vscode-editor-color);

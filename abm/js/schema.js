@@ -3,15 +3,16 @@
  * abm/js/schema.js
  *
  * The schema imports a configuration as a dictionary so it can be
- * used for the Custom Editor form or export to JSON, YML, and YML
- * tailored to Jekyll.
+ * used for the Custom Editor form or export to JSON, YML, or even
+ * YAML tailored to Jekyll.
  *
- * Loaded by the custom editor (see editor.js : getWebViewHtml) so
- * editview.js is able to have access to the schema.
+ * Loaded by custom views (e.g., editor.js) so they can use this class
+ * to do things with the unserialized schema data.
  *
- * Also loaded by editor.js so it can parse the complete configuration
- * and provide the model to the custom editor in place of the document
- * text, when needed.
+ * The same ConfigSchema class object is accessible from all view
+ * providers, so the data only needs to be loaded and updated in one
+ * place. View providers must do their own thing in sending data to
+ * their webviews via serialized messages.
  */
 'use strict';
 
@@ -167,7 +168,7 @@ class ConfigSchema {
       else if (!line.match(/^\s*(\/\/)?\s*#/))  // Only keep lines starting with '#' or '//#'
         continue;
       addnext = (/\\$/.test(line));             // New line ends with '\'?
-      text += line.replace(/ *\\$/, '');        // Add the line to the text, minus any '\'
+      text += line.replace(/\ *\\$/, '');       // Add the line to the text, minus trailing '\'
       if (!addnext) {
         text += '\n';                           // Terminate if it didn't end with '\'
         count++;                                // Count up the number of lines
@@ -321,9 +322,9 @@ class ConfigSchema {
   static definedBefore(item, sid_before) {
     if (!sid_before) return true;
     if (item.sid >= sid_before) return false;
-    if (item.enabled !== undefined && !item.enabled) return false;
-    if (item.evaled !== undefined && !item.evaled) return false;
-    if (item.undef !== undefined && item.undef < sid_before) return false;
+    if (item?.enabled === false) return false;
+    if (item?.evaled === false) return false;
+    if ((item.undef ?? Infinity) < sid_before) return false;
     return true;
   }
 
@@ -591,10 +592,10 @@ class ConfigSchema {
 
     // If already evaluated, return the last result.
     // To refresh the result, delete the 'evaled' key.
-    if (initem.evaled !== undefined) return initem.evaled;
+    if ('evaled' in initem) return initem.evaled;
 
     // If no conditions, return true.
-    if (initem.requires === undefined) return true;
+    if (!('requires' in initem)) return true;
 
     // Conditions are general C++ preprocessor macros.
     let cond = initem.requires;
@@ -619,7 +620,7 @@ class ConfigSchema {
       //log(`_defined(${item.name})`);
       if (!item.enabled) return false;
       if (item.sid >= initem.sid) return false;
-      if (item.undef !== undefined) return false;
+      if ('undef' in item) return false;
       return self.evaluateRequires(item);
     }
 
@@ -904,8 +905,8 @@ class ConfigSchema {
       function isFunctionCall(code, openIndex) {
         let i = openIndex - 1;
         // Skip spaces to find the preceding character
-        while (i >= 0 && /\s/.test(code[i])) i--;
-        return i >= 0 && /\w/.test(code[i]); // If a word character precedes '(', it's a function call
+        while (i >= 0 && (/\s/.test(code[i]))) i--;
+        return i >= 0 && (/\w/.test(code[i])); // If a word character precedes '(', it's a function call
       }
 
       // Check if a pair of parentheses is redundant
@@ -1141,7 +1142,7 @@ class ConfigSchema {
           log("... EOL comment", line_number);
         }
         else {
-          if (last_added_ref !== undefined) { // Ignore EOL comments before any #define
+          if (last_added_ref) { // Ignore EOL comments before any #define
             // If the line is not a comment, we're done with the EOL comment
             const cstring = comment_buff.join('\n');
             // If the comment property exists treat the extra comment as "notes"
@@ -1219,7 +1220,7 @@ class ConfigSchema {
         }
 
         // Strip the leading '*' from block comments
-        cline = cline.replace(/^\* ?/, '');
+        cline = cline.replace(/^\*\ ?/, '');
 
         const tline = cline.trim();
 
@@ -1234,7 +1235,7 @@ class ConfigSchema {
         }
         else if (state === Parse.BLOCK_COMMENT) {
           // Look for temperature sensors
-          if (tline.match(/temperature sensors.*:/i)) {
+          if (tline.match(/temperature\ sensors.*:/i)) {
             state = Parse.GET_SENSORS;
             cline = "Temperature Sensors";
             //log("Starting sensors list", line_number);
@@ -1280,7 +1281,7 @@ class ConfigSchema {
 
           if (state === Parse.BLOCK_COMMENT) {
             // Strip leading '*' from block comments
-            cline = cline.replace(/^\* ?/, '');
+            cline = cline.replace(/^\*\ ?/, '');
           }
           else {
             // Expire end-of-line options after first use
@@ -1300,8 +1301,8 @@ class ConfigSchema {
         // Parenthesize the given expression if needed
         function atomize(s) {
           if (s === ''
-            || /^[A-Za-z0-9_]*(\([^)]+\))?$/.test(s)
-            || /^[A-Za-z0-9_]+ == \d+?$/.test(s)
+            || (/^[A-Za-z0-9_]*(\([^)]+\))?$/.test(s))
+            || (/^[A-Za-z0-9_]+\ ==\ \d+?$/.test(s))
           ) return s;
           return `(${s})`;
         }
@@ -1413,11 +1414,11 @@ class ConfigSchema {
             value_type = 'dir';
             options = "{'-1':'Near', '0':'No Homing', '1':'Far'}";
           }
-          else if (/^[-+]?\s*\d+$/.test(val)) {
+          else if (/^[\-+]?\s*\d+$/.test(val)) {
             value_type = 'int';
             val = val * 1;
           }
-          else if (/^[-+]?\s*(\d+\.|\d*\.\d+)([eE][-+]?\d+)?[fF]?$/.test(val)) {
+          else if (/^[\-+]?\s*(\d+\.|\d*\.\d+)([eE][\-+]?\d+)?[fF]?$/.test(val)) {
             value_type = 'float'
             val = val.replace('f', '') * 1;
           }
@@ -1430,9 +1431,9 @@ class ConfigSchema {
               : val[0] === "'" ? 'char'
               : /^(LOW|HIGH)$/i.test(val) ? 'state'
               : /^[A-Z0-9_]{2,}$/i.test(val) ? 'enum'
-              : /^{\s*(0x[A-F0-9]{2}\s*,?\s*){6}}$/i.test(val) ? 'mac'
-              : /^{(\s*[-+]?\s*\d+\s*(,\s*)?)+}$/.test(val) ? 'int[]'
-              : /^{(\s*[-+]?\s*(\d+\.|\d*\.\d+)([eE][-+]?\d+)?[fF]?\s*(,\s*)?)+}$/.test(val) ? 'float[]'
+              : /^\{\s*(0x[A-F0-9]{2}\s*,?\s*){6}\}$/i.test(val) ? 'mac'
+              : /^\{(\s*[\-+]?\s*\d+\s*(,\s*)?)+\}$/.test(val) ? 'int[]'
+              : /^\{(\s*[\-+]?\s*(\d+\.|\d*\.\d+)([eE][\-+]?\d+)?[fF]?\s*(,\s*)?)+\}$/.test(val) ? 'float[]'
               : val[0] === '{' ? 'array'
               : ''
             );
@@ -1440,12 +1441,10 @@ class ConfigSchema {
 
           // Create a new dictionary for the current #define
           var define_info = {
-            'section': section,
+            sid, section, enabled,
             'name': define_name,
-            'enabled': enabled,
             'line': line_start,
-            'sid': sid,
-            'orig': { 'enabled': enabled },
+            'orig': { enabled },
           };
 
           if (val !== '') { define_info.value = val; define_info.orig.value = val; }
@@ -1494,9 +1493,9 @@ class ConfigSchema {
 
           // Items that depend on *_DRIVER_TYPE to be enabled.
           function is_axis_item(name) {
-            const m1 = name.match(/^([XYZIJKUVW]\d?)_(CHAIN_POS|CS_PIN|CURRENT(|_HOME)|ENABLE_ON|HOLD_MULTIPLIER|HOME_DIR|HYBRID_THRESHOLD|INTERPOLATE|MAX_CURRENT|M(AX|IN)_ENDSTOP_(INVERTING|HIT_STATE)|M(AX|IN)_POS|MICROSTEPS|RSENSE|SAFETY_STOP|SENSE_RESISTOR|SLAVE_ADDRESS|STALL_SENSITIVITY)$/);
+            const m1 = name.match(/^([XYZIJKUVW]\d?)_(CHAIN_POS|CS_PIN|CURRENT(_HOME)?|ENABLE_ON|HOLD_MULTIPLIER|HOME_DIR|HYBRID_THRESHOLD|INTERPOLATE|MAX_CURRENT|M(AX|IN)_ENDSTOP_(INVERTING|HIT_STATE)|M(AX|IN)_POS|MICROSTEPS|RSENSE|SAFETY_STOP|SENSE_RESISTOR|SLAVE_ADDRESS|STALL_SENSITIVITY)$/);
             if (m1) return m1[1];
-            const m2 = name.match(/^(CHOPPER_TIMING|DISABLE(|_INACTIVE|_IDLE)|M(AX|IN)_SOFTWARE_ENDSTOP|SAFE_BED_LEVELING_START|STEALTHCHOP|STEP_STATE)_([XYZIJKUVW]\d?)$/);
+            const m2 = name.match(/^(CHOPPER_TIMING|DISABLE(_INACTIVE|_IDLE)?|M(AX|IN)_SOFTWARE_ENDSTOP|SAFE_BED_LEVELING_START|STEALTHCHOP|STEP_STATE)_([XYZIJKUVW]\d?)$/);
             if (m2) return m2[4];
             const m3 = name.match(/^INVERT_(.+)_(DIR|STEP_PIN)$/);
             if (m3) return m3[1];
@@ -1529,7 +1528,7 @@ class ConfigSchema {
               sindex = is_serial_item(define_name);
 
           function extend_requires(cond) {
-            if (define_info.requires !== undefined)
+            if ('requires' in define_info)
               define_info.requires = `${cond} && (${define_info.requires})`;
             else
               define_info.requires = cond;
@@ -1578,7 +1577,7 @@ class ConfigSchema {
             }
 
             let isopt = false;
-            if (opts.includes !== undefined)
+            if ('includes' in opts)
               isopt = opts.includes(val);   // Array, probably
             else
               isopt = val in opts;          // Dictionary, probably
@@ -1602,7 +1601,7 @@ class ConfigSchema {
 
           // If define has already been seen it becomes an array.
           // Done non-destructively to preserve old references.
-          if (info !== undefined) {
+          if (info) {
             // Ensure the existing value is an array and log a duplicate entry
             if (Array.isArray(info))
               info.push(define_info);
@@ -1662,7 +1661,7 @@ class ConfigSchema {
     this.refreshAllRequires();
   }
 
-} // end class ConfigSchema
+}; // end class ConfigSchema
 
 try {
   // Export the class as a module

@@ -15,8 +15,6 @@
   // Template parameters are evaluated in the context of abm.js.
   // But this script is evaluated in the context of abmview.js.
 
-  const vscode = acquireVsCodeApi();
-
   // Select a tool tab in the web view (Build, Config, etc.)
   function abm_tool(tool) {
     $('.abm-tool').hide();
@@ -44,12 +42,13 @@
   function msg(m) {
     if (m.command == 'tool') abm_tool(m.tool); // Show the tool before alerting the controller
     if (m.command == 'pane') abm_pane(m.pane); // Show the pane before alerting the controller
-    vscode.postMessage(m);
+    _msg(m);
   }
 
 // ]]>
 </script>
 <script src="${ js_path('jquery-3.6.0.min.js') }"></script>
+<script src="${ js_path('vsview.js') }"></script>
 <script src="${ js_path('abmview.js') }"></script>
 <link nonce="${nonce}" rel="stylesheet" href="${ css_path('abmview.css') }" type="text/css" media="all" />
 </head>
@@ -121,7 +120,7 @@
     <a href="https://www.youtube.com/c/MarlinFirmware"><img src="${ img_path('social-yt.svg') }" /><span>Marlin on YouTube</span></a>
   </div>
 </div>
-<div id="abm-footer"><span>&copy; 2019-2024 MarlinFirmware</span></div>
+<div id="abm-footer"><span>&copy; 2019 MarlinFirmware</span></div>
 </div>
 </body>
 </html>

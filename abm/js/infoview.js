@@ -77,7 +77,7 @@ $(function () {
   const state = vscode.getState();
   if (state) {
     log("Got VSCode state", state);
-    if (state.data !== undefined) {
+    if ('data' in state) {
       log("Init Marlin Info Webview with stored data")
       initInfoView();
     }

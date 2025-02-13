@@ -19,12 +19,12 @@ require('../proto')
 function _codeformat(text) {
   // The current code attempts to indent PP directives and code
   // that was formatted by something other than Uncrustify:
-  var result = [],
+  let result = [],
       indent = 0,
       lines = text.split('\n');
   const len = lines.length;
-  for (var i = 0; i < len; i++) {
-    var line = lines[i];
+  for (let i = 0; i < len; i++) {
+    let line = lines[i];
     // Outdent for #else, #elif, #endif
     if (line.match(/^\s*#\s*(else|elif|endif)/) && indent) indent--;
     result.push(Array(indent + 1).join('  ') + line);
@@ -56,7 +56,7 @@ function _pinsformat(intext) {
 
   // Find the pin pattern so non-pin defines can be skipped
   function get_pin_pattern(txt) {
-    var r, m = 0, match_count = [ 0, 0, 0 ];
+    let r, m = 0, match_count = [ 0, 0, 0 ];
     definePatt.lastIndex = 0;
     while ((r = definePatt.exec(txt)) !== null) {
       let ind = -1;

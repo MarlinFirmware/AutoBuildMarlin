@@ -325,10 +325,8 @@
   ],
   "devDependencies": {
     "@types/vscode": "^1.34.0",
-    "typescript": "^3.5.1",
-    "tslint": "^5.16.0",
-    "@types/node": "^10.14.17",
-    "@types/mocha": "^2.2.42"
+    "jslint": "^0.12.1",
+    "@types/node": "^10.14.17"
   },
   "__metadata": {
     "id": "aeed6cc8-3e27-4932-8212-161d73cdee2d",

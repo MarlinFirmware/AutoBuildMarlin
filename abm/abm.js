@@ -3,7 +3,7 @@
  * abm/abm.js - Build Tool methods.
  */
 
-const marlin = require('./marlin'),
+const marlin = require('./js/marlin'),
        prefs = require('./prefs'),
         path = require('path'),
           fs = require('fs'),
@@ -92,12 +92,12 @@ function existingBuildPathOrNull(env, item) {
  * So instead of calling refreshNewData directly, put it on a timeout.
  */
 
-var timeouts = [];
+var timeouts = {};
 function onConfigFileChanged(e, fname) {
   log(`File changed (${fname}):`, e);
-  if (timeouts[fname] !== undefined) clearTimeout(timeouts[fname]);
+  if (fname in timeouts) clearTimeout(timeouts[fname]);
   timeouts[fname] = setTimeout(() => {
-    timeouts[fname] = undefined;
+    delete timeouts[fname];
     refreshNewData();
   }, 2000);
 }
@@ -389,7 +389,7 @@ function lastBuild(env) {
 function getBuildStatus(env) {
   const len = board_info.envs.length;
   for (let i = 0; i < len; i++)
-    if (board_info.envs[i].name == env)
+    if (board_info.envs[i].name === env)
       return board_info.envs[i];
   return null;
 }
@@ -402,7 +402,7 @@ function refreshBuildStatus(env) {
   log(`Refreshing Build: ${currentBuildEnv()}`, board_info);
   board_info.has_clean = false;
   board_info.envs.forEach((v) => {
-    if (!env || v.name == env) {
+    if (!env || v.name === env) {
       let b = lastBuild(v.name);
       v.exists    = b.exists;
       v.completed = b.completed;
