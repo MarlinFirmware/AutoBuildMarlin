@@ -1663,9 +1663,65 @@ class ConfigSchema {
 
 }; // end class ConfigSchema
 
+/**
+ * combinedSchema - aka "multiSchema" - organizes the content of all config files.
+ * Upon loading the extension, read and parse the first config, then conditionals,
+ * then the second config. The result is stored in the file scope 'schemas' object
+ * with keys 'basic' and 'advanced'.
+ * The 'advanced' schema depends on the basic config and conditionals, so these
+ * are included as a preface, both stripped down to save on serialization.
+ */
+function combinedSchema(marlin, fs) {
+  if ('combined' in ConfigSchema) return ConfigSchema.combined;
+
+  const con1 = marlin.pathFromArray(['Configuration.h']),
+        con2 = marlin.pathFromArray(['Configuration_adv.h']);
+
+  // Read configs into strings
+  const config1 = fs.readFileSync(con1, 'utf8'),
+        config2 = fs.readFileSync(con2, 'utf8');
+
+  // Read conditionals into a string
+  var configd;
+  const cond = marlin.pathFromArray(['src', 'inc', 'Conditionals_LCD.h']);
+  if (fs.existsSync(cond)) {
+    configd = fs.readFileSync(cond, 'utf8');
+  }
+  else {
+    const cond1 = marlin.pathFromArray(['src', 'inc', 'Conditionals-1-axes.h']),
+          cond2 = marlin.pathFromArray(['src', 'inc', 'Conditionals-2-LCD.h']),
+          cond3 = marlin.pathFromArray(['src', 'inc', 'Conditionals-3-etc.h']);
+    configd = fs.readFileSync(cond1, 'utf8') + fs.readFileSync(cond2, 'utf8') + fs.readFileSync(cond3, 'utf8');
+  }
+
+  // Strip down Configuration.h and Conditionals*.h files to just the
+  // preprocessor directives for faster parsing below.
+  const sch1 = ConfigSchema.strippedConfig(config1),
+        sch2 = ConfigSchema.strippedConfig(configd);
+
+  // Combine configs into one schema to use when editing the second config.
+  const adv_combo = '// @section _\n' + sch1.text + sch2.text + '// @section none\n' + config2;
+
+  // The number of lines to subtract in the second schema.
+  const prefix_lines = sch1.lines + sch2.lines + 2;
+
+  /**
+   * Create two schemas for use in editor interaction, since we need to know if a change
+   * was made in Configuration.h that affects Configuration_adv.h directly or indirectly.
+   * bas : Configuration.h schema
+   * adv : Configuration_adv.h schema with Configuration.h + Conditionals_LCD.h precursor
+   */
+  const bas = ConfigSchema.newSchemaFromText(config1),
+        adv = ConfigSchema.newSchemaFromText(adv_combo, -prefix_lines);
+
+  ConfigSchema.combined = { basic: bas, advanced: adv };
+  return ConfigSchema.combined;
+}
+
+//ConfigSchema.verbose = true;
 try {
-  // Export the class as a module
-  module.exports.ConfigSchema = ConfigSchema;
+  // Exports when loading this as a module
+  module.exports = { ConfigSchema, combinedSchema };
   log('ConfigSchema loaded as a module');
 }
 catch (e) {

@@ -8,12 +8,23 @@
  * - Sets up the initial webview for the Marlin Info sidebar.
  * - Handles commands sent by the Info webview.
  * - Sends messages to the Info webview when something changes.
+ *
+ * The Info Panel displays the same information as the Build Panel.
+ * Code developed for this panel may later be applied to all parts
+ * of ABM for display of configuration info.
  */
 'use strict';
 
 const vscode = require("vscode"),
+          fs = require('fs'),
          abm = require('./abm'),
+      marlin = require('./js/marlin'),
+      schema = require('./js/schema'),
           vw = vscode.window;
+
+// Get the schema for the display and manipulation of configuration info
+const ConfigSchema = schema.ConfigSchema;
+var schemas;
 
 class InfoPanelProvider {
 
@@ -66,6 +77,9 @@ class InfoPanelProvider {
       wv.postMessage({ type: 'say', text: "hello" }); // infoview.js:handleMessageToUI
     }
 
+    schemas = schema.combinedSchema(marlin, fs);
+    abm.log("abm/info.js", schemas);
+
     // Update the view now that the pane has been revealed.
     updateWebview();
   }
@@ -85,6 +99,7 @@ class InfoPanelProvider {
     const nonce = abm.getNonce(), // Use a nonce to whitelist which scripts can be run
       jqueryUri = this.jsUri(webview, 'jquery-3.6.0.min.js'),
       vsviewUri = this.jsUri(webview, 'vsview.js'),
+      schemaUri = this.jsUri(webview, 'schema.js'),
       scriptUri = this.jsUri(webview, 'infoview.js'),
          cssUri = this.resourceUri(webview, 'css', 'infoview.css');
 
@@ -96,6 +111,7 @@ class InfoPanelProvider {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="${cssUri}" rel="stylesheet" />
   <script nonce="${nonce}" src="${vsviewUri}"></script>
+  <script nonce="${nonce}" src="${schemaUri}"></script>
   <script nonce="${nonce}" src="${jqueryUri}"></script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
   <title>Marlin Info</title>
@@ -112,4 +128,4 @@ InfoPanelProvider.viewType = 'abm.infoView';
 // Export the provider
 exports.InfoPanelProvider = InfoPanelProvider;
 
-console.log("InfoPanelProvider.js loaded");
+console.log("InfoPanelProvider (info.js) loaded");

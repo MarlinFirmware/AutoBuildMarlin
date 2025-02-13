@@ -78,75 +78,23 @@
  */
 'use strict';
 
-const vscode = require("vscode"),
+const vscode = require('vscode'),
+          fs = require('fs'),
+        path = require('path'),
          abm = require('./abm'),
-      marlin = require('./marlin'),
-     _schema = require('./js/schema'),
-          vw = vscode.window,
-          ws = vscode.workspace,
-      wsRoot = (ws && ws.workspaceFolders && ws.workspaceFolders.length) ? ws.workspaceFolders[0].uri.fsPath : '';
+      marlin = require('./js/marlin'),
+      schema = require('./js/schema'),
+          vw = vscode.window;
 
-const ConfigSchema = _schema.ConfigSchema;
-const path = require('path'),
-        fs = require('fs'),
-        os = require('os');
+const     ws = vscode.workspace,
+      wsRoot = (ws && ws.workspaceFolders && ws.workspaceFolders.length) ? ws.workspaceFolders[0].uri.fsPath : '';
 
 // The boards list is sent to populate the MOTHERBOARD option.
 //const board_list = abm.get_boards_list();
 
-/**
- * Upon loading the extension, read and parse the entire config, with conditionals.
- * Later this may be available more globally, for all our panels and editors to use,
- * along with the boards list, pins details, etc.
- */
-function combinedSchema() {
-  //return ConfigSchema.newSchema();
-
-  const con1 = marlin.pathFromArray(['Configuration.h']),
-        con2 = marlin.pathFromArray(['Configuration_adv.h']),
-        cond = marlin.pathFromArray(['src', 'inc', 'Conditionals_LCD.h']);
-
-  // Read configs into strings
-  const config1 = fs.readFileSync(con1, 'utf8'),
-        config2 = fs.readFileSync(con2, 'utf8');
-
-  // Read conditionals into a string
-  var configd;
-  if (fs.existsSync(cond)) {
-    configd = fs.readFileSync(cond, 'utf8');
-  }
-  else {
-    const cond1 = marlin.pathFromArray(['src', 'inc', 'Conditionals-1-axes.h']),
-          cond2 = marlin.pathFromArray(['src', 'inc', 'Conditionals-2-LCD.h']),
-          cond3 = marlin.pathFromArray(['src', 'inc', 'Conditionals-3-etc.h']);
-    configd = fs.readFileSync(cond1, 'utf8') + fs.readFileSync(cond2, 'utf8') + fs.readFileSync(cond3, 'utf8');
-  }
-
-  // Strip down Configuration.h and Conditionals*.h files to just the
-  // preprocessor directives for faster parsing below.
-  const sch1 = ConfigSchema.strippedConfig(config1),
-        sch2 = ConfigSchema.strippedConfig(configd);
-
-  // Combine configs into one schema to use when editing the second config.
-  const adv_combo = '// @section _\n' + sch1.text + sch2.text + '// @section none\n' + config2;
-
-  // The number of lines to subtract in the second schema.
-  const prefix_lines = sch1.lines + sch2.lines + 2;
-
-  /**
-   * Create two schemas for use in editor interaction, since we need to know if a change
-   * was made in Configuration.h that affects Configuration_adv.h directly or indirectly.
-   * bas : Configuration.h schema
-   * adv : Configuration_adv.h schema with Configuration.h + Conditionals_LCD.h precursor
-   */
-  const bas = ConfigSchema.newSchemaFromText(config1),
-        adv = ConfigSchema.newSchemaFromText(adv_combo, -prefix_lines);
-
-  return { basic: bas, advanced: adv };
-}
-
-const schemas = combinedSchema();
-abm.log("abm/editor.js", ConfigSchema.schemas);
+// Get the schema for the display and manipulation of configuration info
+const ConfigSchema =  schema.ConfigSchema;
+var schemas;
 
 // Utility function to get the name of a document from a full path.
 const document_name = (document) => document.uri.fsPath.split(path.sep).pop();
@@ -173,6 +121,9 @@ class ConfigEditorProvider {
    */
   async resolveCustomTextEditor(document, panel, _token) {
     abm.log("ConfigEditorProvider.resolveCustomTextEditor", document.uri);
+
+    schemas = schema.combinedSchema(marlin, fs);
+    abm.log("abm/editor.js", schemas);
 
     // Set values for items in this closure to use
     const name = document_name(document),
@@ -410,4 +361,4 @@ ConfigEditorProvider.viewType = 'abm.configEditor';
 // Export the provider
 exports.ConfigEditorProvider = ConfigEditorProvider;
 
-abm.log("ConfigEditorProvider.js loaded");
+abm.log("ConfigEditorProvider (editor.js) loaded");
