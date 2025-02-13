@@ -4,7 +4,9 @@
 
 The **Auto Build** tool automatically detects the correct environments for your `MOTHERBOARD` and provides an interface to build them. No more editing `platformio.ini` or scanning a long list of environments in the PlatformIO IDE. Just press the **Build** button and go!
 
-The **Configuration Editor** provides an enhanced interface to locate and edit configuration options. The config editor includes a search filter to find the options you need and discover useful features. To use, right-click a file in the VSCode file explorer and select **Open With… > Config Editor**. ***This is only an alpha preview at this time and will probably have some issues.***
+The **Configuration Editor** provides an enhanced interface for editing configurations. This includes a search filter to find the options you need and to discover new and useful features. To use, right-click a file in the VSCode file explorer and select **Open With… &gt; Config Editor**. ***This is an alpha preview and will probably have some issues.***
+
+**Custom Commands** for formatting, building, and more.
 
 ## PlatformIO Required
 
@@ -18,20 +20,9 @@ When installing "Auto Build Marlin" you'll also be prompted to install the [Plat
 
   ![](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/Activity_bar.png)
 
-### Configuration Editor
-
-- Open the file `Configuration.h` or `Configuration_adv.h` to use the Configuration Editor. You may need to right-click on the window tab and choose "Reopen Editor with…" to activate the Config Editor. The Config Editor replaces the text view with a form divided up into sections.
-
-  - Use the "Filter" field to locate options by name.
-  - Click the "Show Comments" checkbox to show or hide comments.
-  - Click the title of a section to hide/show that section.
-  - Hold down `alt`/`option` and click on any title to hide/show all sections.
-
-- Configuration files are annotated to provide some hints to configuration tools. Edit the configuration file text to add your own `@section` markers, provide allowed values for options, or improve documentation. Please submit your improvements and suggestions to improve the configuration experience.
-
 ### Auto Build
 
-- Click the **Auto Build Marlin** icon ![AutoBuild Icon](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/AB_icon.png) in the Activity Bar (on the far side of the *Visual Studio Code* window) to activate the **Auto Build Marlin** sidebar panel.
+- Click the **Auto Build Marlin** icon ![AutoBuild Icon](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/AB_icon.png) in the Activity Bar (on the far side of the *Visual Studio Code* window) to open the **Auto Build Marlin** sidebar.
 
   ![ABM Menu](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/AB_menu.png)
 
@@ -49,11 +40,52 @@ When installing "Auto Build Marlin" you'll also be prompted to install the [Plat
 
   ![Environments](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/abm-envs.png)
 
+### Configuration Editor
+
+  ![](https://github.com/MarlinFirmware/AutoBuildMarlin/raw/master/img/config-editor.png)
+
+The Config Editor provides a form divided up into sections with search filtering. In the future we may make the Config Editor the default, but in the meantime there are a few ways to open the Editor.
+
+- Open Auto Build Marlin and reveal the Welcome Panel. Click on the **Edit Configuration.h** or **Edit Configuration_adv.h** button.
+- If `Configuration.h` or `Configuration_adv.h` is open as text, right-click on its tab title and choose "Reopen Editor with…" &gt; Config Editor to switch.
+- In the VSCode File Explorer right click on `Configuration.h` or `Configuration_adv.h` and choose "Open with…" to select the **Config Editor**.
+
+#### Editor Usage
+
+- Use the navigation sidebar to view a single isolated section, or all.
+- Use the "Filter" field to locate options by name.
+- Click the "Show/Hide Disabled" button to show or hide disabled options.
+- Click the "Show/Hide Comments" button to show or hide comments.
+- Click the title of a section to hide/show that section.
+- Hold down `alt`/`option` and click on any title to hide/show all sections.
+
+#### Config Annotations
+
+- Marlin's standard configuration files are annotated to provide hints to configuration tools. Edit the configuration file text to add your own `@section` markers, provide allowed values for options, or improve documentation. Please submit your [improvements](//github.com/MarlinFirmware/AutoBuildMarlin/pulls) and [suggestions](//github.com/MarlinFirmware/AutoBuildMarlin/issues) to enhance the configuration experience for users worldwide!
+
 ### Formatters
 
 - Open the Command Palette and choose "Format Marlin Code." The file will be formatted according to Marlin standards.
-- NOTE: The context menu item "Format Document With…" -> "Auto Build Marlin" doesn't work so ignore that menu command for now.
+- NOTE: The context menu item "Format Document With…" -&gt; "Auto Build Marlin" doesn't work so ignore that menu command for now.
 
 ## Internals
 
-The Auto Build Marlin extension for VSCode contributes a welcome panel, registered commands, a web view panel, a custom editor, and (soon) a tree view. It is built in Javascript so we don't have to learn TypeScript.
+The Auto Build Marlin extension for VSCode contributes sidebar panels, a web view, a custom editor, custom formatters, and other commands. This extension is written entirely in Javascript (so we don't have to learn TypeScript).
+
+### Bootstrapping
+
+When VSCode starts the extension it just loads `extension.js`. This file imports `abm.js` and `prefs.js` for utility functions, and `format.js`, `info.js`, and `editor.js` for our feature providers. These files import `js/marlin.js` and `js/schema.js` to process Marlin files, and node `fs` for file functions. Any top level code in these files runs as soon as `extension.js` does. This is when modules init their classes and export their symbols.
+
+With all that done, `extension.js` defines the code that will register ABM's commands and feature providers with VSCode upon activation.
+
+### ConfigSchema
+
+`ConfigSchema` is the most important class, providing a configuration parser and utility methods for use throughout the extension. Since views scripts also need access this class, `js/schema.js` is made to be loaded either as a module with `requires()` or as a typical HEAD script.
+
+The first time the extension needs to show a view that uses the schema it reads the configurations.
+
+### File Changes
+
+View providers and views don't share common memory, so data has to be sent between them with serialized messaging. Providers handle messages from the UI in `handleMessageFromUI` and their views receive messages in `handleMessageToUI`.
+
+Any external file changes cause the whole schema to be refreshed. Changes made in the Custom Editor (i.e., `editview.js`) are applied to a local copy of the schema before being sent in a message to the provider. The provider uses the message to update the shared schema and alert other views to update.
