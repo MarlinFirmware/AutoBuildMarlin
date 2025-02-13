@@ -2,6 +2,16 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.69
+- Fix strict evaluation of empty array
+- Fix non-matching SIDs
+- Add navigation buttons to show the ABM panel
+- Additional code refactoring and cleanup
+- Shared schema for Config Editors and Info view
+- Preserve basic clone disabled items
+- Optimize change messages
+- Optimize refresh after edit
+
 ## 2.1.68
 - Fix strict evaluation of empty array
 
