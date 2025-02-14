@@ -1024,7 +1024,7 @@ class ConfigSchema {
   // Update an item's fields from an (edited) item containing the sid and the fields to change.
   // Then re-run 'requires' on all items that follow the changed item to update 'evaled'.
   // NOTE: If any items are still shown/hidden based on later things then refresh ALL instead.
-  updateEditedItem(changes, refresh=false) {
+  updateEditedItem(changes, refresh=true) {
     Object.assign(this.bysid[changes.sid], changes);
     if (refresh) this.refreshRequiresAfter(changes.sid);
   }

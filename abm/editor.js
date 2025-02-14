@@ -162,8 +162,7 @@ class ConfigEditorProvider {
      * @description Send updated data to this instance's webview so it can rebuild the form.
      */
     function updateWebview(external=false) {
-      // Get the name of the document.
-      abm.log(`ConfigEditorProvider.updateWebview: ${name}`);
+      abm.log('ConfigEditorProvider.updateWebview: ' + document_name(document));
 
       // Send the parsed data to the web view.
       if (external)
@@ -213,22 +212,14 @@ class ConfigEditorProvider {
      *              By using edits they go into the undo/redo stack.
      */
     function applyConfigChange(document, changes, edit=null) {
-      //const name = document_name(document);
-      abm.log(`applyConfigChange (${name})`); console.dir(changes);
+      abm.log('ConfigEditorProvider.applyConfigChange: ' + document_name(document), changes);
 
       // Update the item in our local schema copy.
-      // try {
-        myschema.updateEditedItem({ sid:changes.sid, enabled:changes.enabled, value:changes.value });
-        myschema.refreshAllRequires();
-      // }
-      // catch (e) {
-      //   console.error(`applyConfigChange failed (${name})`);
-      // }
+      myschema.updateEditedItem({ sid:changes.sid, enabled:changes.enabled, value:changes.value });
 
-      if (!is_adv) {
+      // And for the basic config, update its clone.
+      if (!is_adv)
         schemas.advanced.updateEditedItem({ sid:changes.sid, enabled:changes.enabled, value:changes.value });
-        schemas.advanced.refreshAllRequires();
-      }
 
       // Get the line from the document.
       const line = changes.line - 1,
