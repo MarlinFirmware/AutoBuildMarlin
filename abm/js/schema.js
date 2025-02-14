@@ -1379,6 +1379,9 @@ class ConfigSchema {
           // Certain defines are always left out of the schema
           if (ignore.includes(define_name)) continue;
 
+          // Increment the serial ID
+          sid++;
+
           // "enabled" indicated it's not commented out
           const enabled = !defmatch[1];
 
@@ -1389,9 +1392,6 @@ class ConfigSchema {
           log(`Got #define ${define_name}`, line_number);
 
           let val = defmatch[4];
-
-          // Increment the serial ID
-          sid++;
 
           // Type is based on the value
           let value_type, options;
@@ -1620,7 +1620,7 @@ class ConfigSchema {
           this.bysid[sid] = define_info;
 
           // Sequential items with the same name go into a group together
-          if (sid > 1) {
+          if (sid > 1 && sid - 1 in this.bysid) {
             const prev = this.bysid[sid - 1];
             if (define_name === prev.name && define_info.group === undefined)
               define_info.group = prev.group = define_name.toLowerCase();
