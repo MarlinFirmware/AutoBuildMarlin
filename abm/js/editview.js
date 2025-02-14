@@ -286,7 +286,7 @@ $(function () {
     saveWebViewState();
 
     // This update should be ignored when it comes back from onDidChangeTextDocument -> updateWebview
-    const msg = { type: 'change', data: optref };
+    const msg = { type: 'change', data: { sid:optref.sid, enabled:optref.enabled, type:optref.type, value:optref.value, line:optref.line } };
     if (multi_update)
       changes.push(msg);
     else {
@@ -386,6 +386,8 @@ $(function () {
    */
   function handleEditField(e)   {
     const $e = $(e.target), val = $e.val();
+    if (val == $e[0].oldtext) return;
+    $e[0].oldtext = val;
     var newval = val;
     if ($e.hasClass('enum')) {
       // Allow anything but don't let it be empty.
@@ -677,6 +679,7 @@ $(function () {
       else {
         const $input = $("<input>", { type: "text", name: name, value: val }).bind("change keyup", handleEditField);
         if (tclass) $input.addClass(tclass);
+        $input[0].oldtext = val;
         $linediv.append($input);
       }
     }
