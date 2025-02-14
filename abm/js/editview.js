@@ -761,7 +761,7 @@ $(function () {
     // Iterate over the config data and create a form
     $form = $('<form>');
     for (let [sect, dict] of Object.entries(sdict)) {
-      if (sect == '_') continue;
+      if (['_', '__'].includes(sect)) continue;
       const sectid = sect.sectID();
       const collapsed = config_filter.collapsed.includes(sectid) ? ' collapsed' : '';
       log(`${sect} =====================`);

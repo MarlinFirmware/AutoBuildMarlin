@@ -174,6 +174,7 @@ class ConfigSchema {
         count++;                                // Count up the number of lines
       }
     }
+    text = text.replace('@section', '_section') // Remove @section markers
     return { text:text, lines:count };
   }
 
@@ -1700,10 +1701,10 @@ function combinedSchema(marlin, fs) {
         sch2 = ConfigSchema.strippedConfig(configd);
 
   // Combine configs into one schema to use when editing the second config.
-  const adv_combo = '// @section _\n' + sch1.text + sch2.text + '// @section none\n' + config2;
+  const adv_combo = '// @section __\n' + sch1.text + '// @section _\n' + sch2.text + '// @section none\n' + config2;
 
   // The number of lines to subtract in the second schema.
-  const prefix_lines = sch1.lines + sch2.lines + 2;
+  const prefix_lines = sch1.lines + sch2.lines + 3;
 
   /**
    * Create two schemas for use in editor interaction, since we need to know if a change
