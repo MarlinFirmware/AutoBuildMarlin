@@ -686,7 +686,7 @@ class ConfigSchema {
     }
 
     // The item is enabled by TEMP_SENSOR_[NAME] != 0.
-    const HAS_SENSOR = name => _nonzero(`TEMP_SENSOR_${name}`);
+    const HAS_SENSOR = (name) => _nonzero(`TEMP_SENSOR_${name}`);
 
     // The serial port was defined. (deprecated)
     function HAS_SERIAL(sindex) {
@@ -704,13 +704,13 @@ class ConfigSchema {
         if (axis.slice(1) >= extruders.value) return false;
       }
       const driver = priorItemNamed(`${axis}_DRIVER_TYPE`);
-      return driver && (driver.value === type);
+      return (driver?.value === type);
     }
 
     // The temp sensor for the given heater/cooler is a thermocouple.
     function TEMP_SENSOR_IS_MAX_TC(name) {
       const sensor = priorItemNamed(`TEMP_SENSOR_${name}`);
-      return sensor && [-5, -3, -2].includes(sensor.value);
+      return [-5, -3, -2].includes(sensor?.value);
     }
 
     // Some enabled driver matches the given enum.
@@ -724,13 +724,13 @@ class ConfigSchema {
     // The given axis is a Trinamic driver.
     function AXIS_IS_TMC_CONFIG(axis) {
       const driver = priorItemNamed(`${axis}_DRIVER_TYPE`);
-      return driver && ['TMC2130', 'TMC2160', 'TMC2208', 'TMC2209', 'TMC2660', 'TMC5130', 'TMC5160'].includes(driver.value);
+      return ['TMC2130', 'TMC2160', 'TMC2208', 'TMC2209', 'TMC2660', 'TMC5130', 'TMC5160'].includes(driver?.value);
     }
 
     // DGUS_UI_IS for DGUS_LCD_UI
     function _dgus_ui_is(dgus) {
       const lcd = priorItemNamed('DGUS_LCD_UI');
-      return lcd && (lcd.value === dgus);
+      return (lcd?.value === dgus);
     }
     const DGUS_UI_IS = (...V) => V.some(name => _dgus_ui_is(name));
 

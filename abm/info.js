@@ -52,18 +52,18 @@ class InfoPanelProvider {
 
     // Handle show/hide events.
     wvv.onDidChangeVisibility(() => {
-      console.log(`InfoPanelProvider.onDidChangeVisibility: ${wvv.visible}`);
+      abm.log(`InfoPanelProvider.onDidChangeVisibility: ${wvv.visible}`);
     });
 
     // Let go of the webview view when it is closed.
     wvv.onDidDispose(() => {
-      //console.log("InfoPanelProvider.onDidDispose:");
+      abm.log("InfoPanelProvider.onDidDispose:");
       this._view = undefined;
     });
 
     // Receive message from the webview.
     function handleMessageFromUI(m) {
-      //console.log('InfoPanelProvider::handleMessageFromUI'); console.dir(m);
+      abm.log('InfoPanelProvider::handleMessageFromUI', m);
       switch (m.type) {
         case 'hello':
           vw.showInformationMessage('Hello from the webview!');
