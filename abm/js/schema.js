@@ -666,7 +666,10 @@ class ConfigSchema {
     function _nonzero(name) {
       const item = priorItemNamed(name);
       //console.log(`_nonzero(${name})`, item);
-      return item && item.value && (item.value !== 'false');
+      if (!item?.value) return false;
+      if (item.value === 'false') return false;
+      if (item.value === '0') return false;
+      return true;
     }
 
     // [AXIS]_DRIVER_TYPE is enabled. For older config versions
@@ -764,7 +767,7 @@ class ConfigSchema {
 
         default:
           if (name.startsWith('TEMP_SENSOR_'))
-            return HAS_SENSOR(name.slice(9));
+            return HAS_SENSOR(name.slice(12));
 
           //console.warn(`Unknown: OTHER("${name}")`);
           break;
@@ -987,7 +990,7 @@ class ConfigSchema {
     cond = removeRedundantParentheses(cond);
 
     try {
-      initem.evaled = eval(cond);
+      initem.evaled = eval(cond) ? true : false;
     }
     catch (e) {
       console.error(`Error evaluating: ${cond}\n\n${before_mangle}`, e);
@@ -1463,14 +1466,18 @@ class ConfigSchema {
 
           // Items that depend on TEMP_SENSOR_* to be enabled.
           function is_heater_item(name) {
-            const m1 = name.match(/^(EXTRUDER|HOTEND|BED|CHAMBER|COOLER|PROBE)_(AUTO_FAN_(TEMPERATURE|SPEED)|BETA|M(AX|IN)TEMP|OVERSHOOT|PULLUP_RESISTOR_OHMS|RESISTANCE_25C_OHMS|SH_C_COEFF)$/);
+            const m1 = name.match(/^(EXTRUDER|HOTEND|BED|CHAMBER|COOLER|PROBE)_(AUTO_FAN_(TEMPERATURE|SPEED)|BETA|_LIMIT_SWITCHING|M(AX|IN)TEMP|OVERSHOOT|PULLUP_RESISTOR_OHMS|RESISTANCE_25C_OHMS|SH_C_COEFF)$/);
             if (m1) return ['EXTRUDER', 'HOTEND'].includes(m1[1]) ? '0' : m1[1];
             const m2 = name.match(/^HOTEND(\d)_.+$/);
             if (m2) return m2[1];
             const m3 = name.match(/^HEATER_(\d)_M(AX|IN)TEMP$/);
             if (m3) return m3[1];
-            const m4 = name.match(/^PREHEAT_\d_TEMP_(EXTRUDER|HOTEND|BED|CHAMBER|COOLER|PROBE)$/);
-            if (m4) return ['EXTRUDER', 'HOTEND'].includes(m4[1]) ? '0' : m4[1];
+            const m4 = name.match(/^(PREHEAT_\d_TEMP_|THERMAL_PROTECTION_|PIDTEMP)(EXTRUDER|HOTENDS?|BED|CHAMBER|COOLER|PROBE)$/);
+            if (m4) return ['EXTRUDER', 'HOTEND', 'HOTENDS'].includes(m4[2]) ? '0' : m4[2];
+            const m5 = name.match(/^MAX_(BED|CHAMBER)_POWER$/);
+            if (m5) return m5[2];
+            const m6 = name.match(/^AUTO_POWER_(CHAMBER|COOLER|E)_(TEMP|FANS?)$/);
+            if (m6) return m6[1] == "E" ? '0' : m6[1];
             return '';
           }
 

@@ -2,6 +2,11 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.70
+- Improve Config Editor layout
+- Update Config Editors for external edits
+- Fix temp sensor dependent items, add more
+
 ## 2.1.69
 - Fix strict evaluation of empty array
 - Fix non-matching SIDs
