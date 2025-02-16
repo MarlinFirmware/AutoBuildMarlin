@@ -171,9 +171,6 @@ $(function () {
   var config_filter = { terms: '', show_comments: true, show_disabled: true, collapsed: [] },
       result_index = 0;
 
-  // Ignore the next update message.
-  var ignore_update = false;
-
   // Collect changes and post the collection
   var multi_update = false, changes = [];
   function start_multi_update() {
@@ -182,7 +179,6 @@ $(function () {
   }
   function end_multi_update() {
     multi_update = false;
-    ignore_update = true;
     _msg({ type:'multi-change', changes }); // editor.js:handleMessageFromUI
   }
 
@@ -285,14 +281,12 @@ $(function () {
     refreshVisibleItems();
     saveWebViewState();
 
-    // This update should be ignored when it comes back from onDidChangeTextDocument -> updateWebview
+    // This update should be ignored when it triggers onDidChangeTextDocument
     const msg = { type: 'change', data: { sid:optref.sid, enabled:optref.enabled, type:optref.type, value:optref.value, line:optref.line } };
     if (multi_update)
       changes.push(msg);
-    else {
-      ignore_update = true;
+    else
       _msg(msg); // editor.js:handleMessageFromUI
-    }
   }
 
   /**
@@ -827,10 +821,7 @@ $(function () {
     switch (message.type) {
       // Update the whole form in response to an external change.
       case 'update':
-        if (ignore_update)  // This view caused the update? Ignore it.
-          ignore_update = false;
-        else
-          buildConfigFormWithData(message.bysec);  // Use the provided data to rebuild the form.
+        buildConfigFormWithData(message.bysec);  // Use the provided data to rebuild the form.
         break;
 
       // Display an error message

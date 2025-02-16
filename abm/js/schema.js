@@ -1672,8 +1672,8 @@ class ConfigSchema {
  * The 'advanced' schema depends on the basic config and conditionals, so these
  * are included as a preface, both stripped down to save on serialization.
  */
-function combinedSchema(marlin, fs) {
-  if ('combined' in ConfigSchema) return ConfigSchema.combined;
+function combinedSchema(marlin, fs, reload=false) {
+  if ('combined' in ConfigSchema && !reload) return ConfigSchema.combined;
 
   const con1 = marlin.pathFromArray(['Configuration.h']),
         con2 = marlin.pathFromArray(['Configuration_adv.h']);

@@ -97,7 +97,7 @@ const ConfigSchema =  schema.ConfigSchema;
 var schemas;
 
 // Utility function to get the name of a document from a full path.
-const document_name = (document) => document.uri.fsPath.split(path.sep).pop();
+const document_name = (document) => document.fileName.split(path.sep).pop();
 
 var webviews = [];
 
@@ -116,19 +116,24 @@ class ConfigEditorProvider {
   }
 
   /**
-   * This provider method is called when a custom editor is opened.
+   * This provider method is called when a Config Editor is opened.
    * The passed document creates a closure, since it is used in subfunctions.
+   * So there is one instance of this closure for each Config Editor.
    */
   async resolveCustomTextEditor(document, panel, _token) {
     abm.log("ConfigEditorProvider.resolveCustomTextEditor", document.uri);
 
-    schemas = schema.combinedSchema(marlin, fs);
-    abm.log("abm/editor.js", schemas);
-
     // Set values for items in this closure to use
     const name = document_name(document),
-          is_adv = name == 'Configuration_adv.h',
-          myschema = is_adv ? schemas.advanced : schemas.basic;
+          is_adv = name == 'Configuration_adv.h';
+
+    var myschema;
+    function reloadSchemas() {
+      schemas = schema.combinedSchema(marlin, fs, true);
+      myschema = is_adv ? schemas.advanced : schemas.basic;
+      abm.log("abm/editor.js", schemas);
+    }
+    reloadSchemas();
 
     // Set up the webview with options and basic html.
     const wv = panel.webview;
@@ -164,11 +169,11 @@ class ConfigEditorProvider {
     function updateWebview(external=false) {
       abm.log('ConfigEditorProvider.updateWebview: ' + document_name(document));
 
-      // Send the parsed data to the web view.
+      // Send the parsed data to the basic or advanced config editor view.
       if (external)
         wv.postMessage({ type: 'update', bysec: myschema.bysec }); // editview.js:handleMessageToUI
 
-      // If the second config file is also open, update it as well.
+      // If this isn't the second config, but that file is open, update its view too.
       if (!is_adv && 'Configuration_adv.h' in webviews) {
         abm.log("updateWebview >> Configuration_adv.h");
         webviews['Configuration_adv.h'].postMessage({ type: 'update', bysec: schemas.advanced.bysec });
@@ -185,17 +190,52 @@ class ConfigEditorProvider {
      * (i.e., in a split custom editor)
      */
 
-    // Listen for changes to the document and update the webview
-    // These changes may be local or external.
-    // If the changes are local the webview has already updated itself,
-    // and the local copy will also have gotten an update message.
+    /**
+     * Listen for changes to the document and update the webview as needed.
+     * These changes may be local or external.
+     *
+     * If the changes are internal the webview has already updated itself.
+     *
+     * The event contains a document object with two useful properties:
+     *   changes: An array of vscode.TextDocumentContentChangeEvent[]
+     *   isDirty: true if the document is dirty (not matching disk contents)
+     * On a document change we receive a message to update the document object,
+     * and that in turn fires this event once the document has been updated.
+     *   For the first change we receive:
+     *     changes: 1  dirty: false
+     *     changes: 0  dirty: true
+     *   While the document remains unsaved...
+     *     changes: 1  dirty: true
+     *   When the document is saved...
+     *     changes: 0  dirty: false
+     */
+    var wasDirty = false;
     const changeDocumentSubscription = ws.onDidChangeTextDocument(e => {
-      if (e.document.uri.toString() === document.uri.toString()) {
-        abm.log("ws.onDidChangeTextDocument", e);
-        if (e.contentChanges.length > 0) updateWebview(true);
-        // TODO: If change is not flagged as local then re-parse the text
-        // of the whole file
+      abm.log("ws.onDidChangeTextDocument", e);
+      const doc = e.document;
+      if (doc.uri.fsPath != document.uri.fsPath) return;
+
+      if (wasDirty != doc.isDirty) {
+        wasDirty = doc.isDirty;
+        abm.log(`Document dirty: ${wasDirty}`);
       }
+
+      const changes = e.contentChanges;
+      if (changes.length == 0) return;
+
+      const change1 = changes[0],
+            is_external = !change1.range.isSingleLine || (change1.range.isSingleLine && change1.range.start.character == change1.range.end.character);
+
+      abm.log(
+        changes.length + " " + (is_external ? "Ex" : "In") + "ternal change(s) to " + document_name(doc)
+        + (doc.isClosed ? " (closed)" : "") + (doc.isDirty ? " (dirty)" : ""),
+        "(range:", change1.range.start.line + ":" + change1.range.start.character, "-", change1.range.end.line + ":" + change1.range.end.character + ")"
+      );
+
+      if (is_external) reloadSchemas();
+      updateWebview(is_external);
+      // TODO: If change is not flagged as local then re-parse the file(s)
+      // TODO: Optimize to only re-parse the changed file, not always both.
     });
 
     // Get rid of the listener when our editor is closed.
@@ -251,8 +291,8 @@ class ConfigEditorProvider {
       else
         newtext = newtext.replace(/^(\s*)(#define)(\s{1,3})?(\s*)/, '$1//$2 $4');
 
-      abm.log("Before edit:", text);
-      abm.log("After edit:", newtext);
+      abm.log(`Before edit: ${text}`);
+      abm.log(`After edit : ${newtext}`);
 
       // Get the range for the whole line
       const range = new vscode.Range(line, 0, line, Number.MAX_VALUE);

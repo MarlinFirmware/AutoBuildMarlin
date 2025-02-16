@@ -39,16 +39,11 @@ $(function () {
    * @description Handle 'message' events sent directly to the view.
    * @param {object} message - The message object.
    */
-  var ignore_update = false;  // Ignore the next update message.
   function handleMessageToUI(m) {
     log("infoview.js : handleMessageToUI", m);
     switch (m.type) {
       // Update the whole form in response to an external change.
       case 'info':
-        if (ignore_update) {
-          ignore_update = false;
-          return;
-        }
         //drawInfo(m.data);
         break;
 
