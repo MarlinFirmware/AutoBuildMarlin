@@ -38,7 +38,7 @@ body.vscode-dark {
   --abm-button-bg: #0000;
   --abm-button-color: #77F;
   --abm-button-hover-bg: #77F2;
-  --abm-button-active-bg: #6668;
+  --abm-button-active-bg: #FFF2;
   --abm-button-active-color: #FFF;
   --abm-edit-bg: #00002220;
   --abm-edit-bc: #FFFFFF40;
@@ -74,13 +74,12 @@ body.vscode-high-contrast-light {
 
 body {
   margin: 0;
-  padding: 0;
-  background: var(--marlin-svg) transparent no-repeat fixed center;
-  background-size: 55%;
+  padding: 0 4px;
+  overflow-x: hidden;
   }
 
 #grid { display: none; background-color: #002; }
-#grid.grid { display: block; position: absolute; top: 0; left: 0; z-index: 200; }
+#grid.grid { display: block; position: absolute; top: 0; left: 0; z-index: 300; }
 
 a { text-decoration: none; color: #478EFF; }
 a:hover, a:active { color: #579EFF; }
@@ -156,24 +155,30 @@ div.comment span {
   height: calc(100vh - 5.25em);
   overflow-y: auto;
   overflow-x: hidden;
+  background-color: var(--vscode-editor-background);
   z-index: 100;
   }
 /* Something within to scroll */
 #left-nav { min-height: 50vh; }
 /* Buttons will be created in the left column */
 #left-nav button {
-  display: inline-block;
-  width: var(--nav-width);
+  display: block;
   margin: 0;
+  width: 100%;
   padding: 1px 0.25em;
   font-size: 1.2em;
   font-weight: bold;
-  border: 1px solid threedface;
-  border-color: #0000;
   background-color: var(--abm-button-bg);
   color: var(--abm-button-color);
+  border: none;
+  border-radius: 0.5em 0 0.5em 0.5em;
   text-align: left;
   z-index: 101;
+  }
+#left-nav.outlined button {
+  margin: 0 0 -1px;
+  border: 1px solid threedface;
+  border-color: #000;
   }
 #left-nav button.active {
   background-color: var(--abm-button-active-bg);
@@ -185,9 +190,15 @@ div.comment span {
 
 /* The config form contains all options in a cascade. */
 #config-form {
+  margin-left: calc(var(--nav-width) + 10px);
+  width: calc(100vw - (var(--nav-width) + 10px));
+  min-width: 40em;
   padding-top: 1.25em; /* Pad the top so the contents won't be obscured by the filter form */
-  /* background: transparent; */
+  background: var(--marlin-svg) transparent no-repeat fixed calc(var(--nav-width) / 2 + 50%) 50%;
+  background-size: 55%;
   }
+/* Leave space on the right for a scroll bar */
+#config-form form { margin-right: 20px; }
 #config-form label.opt {
   width: var(--abm-item-label-width);
   padding: 4px;
@@ -239,7 +250,6 @@ input[type="checkbox"] {
 .collapsed .section-inner { display: none; }
 
 #config-form fieldset {
-  margin-left: calc(var(--nav-width) + 20px);
   padding-inline-start: 0;
   padding-inline-end: 0;
   color: var(--abm-edit-color);
@@ -260,7 +270,7 @@ input[type="checkbox"] {
   border-radius: 0.5em 0 0.5em 0.5em;
   color: var(--abm-edit-legend-color);
   background-color: var(--abm-edit-legend-bg);
-  z-index: 200;
+  z-index: 101;
   }
 #config-form legend:hover { cursor: pointer; }
 #config-form legend:after { content: " ▽"; }
@@ -282,6 +292,7 @@ input[type="checkbox"] {
   border: 1px solid; border-radius: 1em;
   text-align: center;
   font-size: large;
+  z-index: 200;
   }
 
   /* Prevent text selection on all the elements */
@@ -302,26 +313,6 @@ pre {
   user-select: text;
   }
 
-/*
-   An updated flex-based layout
-    https://css-tricks.com/snippets/css/a-guide-to-flexbox/
-*/
-
-/* Start with some row/col styles */
-.row {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  width: 100%;
-  }
-
-/* Make all column styles the same by default */
-.col, .col1, .col2, .col3, .col4 {
-  display: flex;
-  flex-direction: column;
-  flex-basis: 100%;
-  flex: 1;
-  }
 /*
   Custom checkbox that looks like a slider
 */
@@ -365,20 +356,25 @@ input:checked + .slider:before { transform: translateX(var(--slider-knob-tran));
 /*
   Media variants for wider and small screens
 */
+@media screen and (max-width: 799px) {
+  #left-nav-box { display: none; }
+  #config-form {
+    margin-left: 10px;
+    width: calc(100vw - 10px);
+    background: var(--marlin-svg) transparent no-repeat fixed 50% 50%;
+    background-size: 75%;
+    }
+  }
+
 @media screen and (min-width: 800px) {
   * {
-    --abm-item-label-width: 27em;
+    --abm-item-label-width: 24em;
     }
-  .col2 { flex: 2; }
-  .col3 { flex: 3; }
-  .col4 { flex: 4; }
-  body { padding: 0 10px; }
   }
 /* When space allows, show sidebar navigation */
 @media screen and (min-width: 1200px) {
   * {
     --abm-item-label-width: 30em;
     }
-  #section-nav { display: block; }
-  body { padding: 0 10px; }
+    #left-nav-box { display: block; }
   }

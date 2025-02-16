@@ -478,24 +478,25 @@ $(function () {
     // If there's no filter we're done.
     if (!hasterms) return;
 
+    // For a result set reset the zero message.
+    if (count > 0) { result_index = 0; return; }
+
     // No matches and has terms? Show the error box.
-    if (count == 0) {
-      const noResults = [ '*',
-        'No results', '0 Results', 'None found', 'No match', 'Zippo', 'Zilch', 'Nada', 'Bupkiss', 'Empty Result Set', '(NULL)',
-        'Access Denied', "#You shouldn't have come back, Flynn.", "#That isn't going to do you any good, Flynn.", "#I'm afraid you...",
-        "#Stop, Flynn. You realize I can't allow this.", "#TERMINATE CONTROL MODE", "#ACTIVATE MATRIX STORAGE",
-        "#You're entering a big error, Flynn...", "#I'm going to have to put you on the Game Grid."
-      ];
-      const quip = noResults[result_index = (result_index + 1) % noResults.length];
-      if (quip == '*')
-        startGrid();
-      else {
-        const $zb = $('#zero-box').addClass('show');
-        if (quip.charAt(0) == '#')
-          $zb.typeout(quip.slice(1));
-        else
-          $zb.text(quip);
-      }
+    const noResults = [ '*',
+      'No results', '0 Results', 'None found', 'No match', 'Zippo', 'Zilch', 'Nada', 'Bupkiss', 'Empty Result Set', '(NULL)',
+      'Access Denied', "#You shouldn't have come back, Flynn.", "#That isn't going to do you any good, Flynn.", "#I'm afraid you...",
+      "#Stop, Flynn. You realize I can't allow this.", "#TERMINATE CONTROL MODE", "#ACTIVATE MATRIX STORAGE",
+      "#You're entering a big error, Flynn...", "#I'm going to have to put you on the Game Grid."
+    ];
+    const quip = noResults[result_index = (result_index + 1) % noResults.length];
+    if (quip == '*')
+      startGrid();
+    else {
+      const $zb = $('#zero-box').addClass('show');
+      if (quip.charAt(0) == '#')
+        $zb.typeout(quip.slice(1));
+      else
+        $zb.text(quip);
     }
   }
 
