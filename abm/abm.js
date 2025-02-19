@@ -1,6 +1,9 @@
 /**
  * Auto Build Marlin
  * abm/abm.js - Build Tool methods.
+ *
+ * Initially loaded as a module by extension.js
+ * Exports a set of functions for use by the extension.
  */
 
 const marlin = require('./js/marlin'),
@@ -16,14 +19,14 @@ const vscode = require('vscode'),
 
 var context, pv, abm_path, pane_path;
 
-// Update based on "when" in package.json
-function set_context(name, value) {
-  vc.executeCommand('setContext', 'abm.' + name, value);
-}
-
 const bugme = false; // Lots of debug output
 function log(s, d=null) {
   if (bugme) { console.log(`[ABM] ${s}`); if (d) console.dir(d); }
+}
+
+// Update based on "when" in package.json
+function set_context(name, value) {
+  vc.executeCommand('setContext', 'abm.' + name, value);
 }
 
 function init(c) {
@@ -682,7 +685,7 @@ function webViewContent() {
   // Load WebView content using evaluated template
   const home_html = load_home();
   const nonce = getNonce();
-  merged_html = eval(`\`${home_html}\``);
+  const merged_html = eval(`\`${home_html}\``);
   return merged_html;
 }
 
@@ -766,10 +769,97 @@ function edit_config(which) {
   vc.executeCommand('vscode.openWith', uri, 'abm.configEditor');
 }
 
-//
-// ABM command activation event handler
-//
-var panel, abm_action;
+/**
+ * Create the WebView panel and set up the initial HTML skeleton
+ */
+var panel;
+function create_webview_panel() {
+
+  // Create the WebView panel, retaining the context when hidden
+  panel = vw.createWebviewPanel(
+    'marlinConfig', 'Auto Build Marlin',
+    vscode.ViewColumn.One,
+    {
+      enableCommandUris: false,        // No need for command: URLs to our extension. Our way is cleaner.
+      retainContextWhenHidden: true,   // getState / setState require more work
+      enableScripts: true,             // Scripts are needed for command passing, at least?
+      localResourceRoots: [
+        vscode.Uri.file(abm_path)      // Parent of this file
+      ]
+    }
+  );
+
+  pv = panel.webview;
+
+  // Set the WebView tab's icon
+  const ipath = path.join(context.extensionPath, 'abm', 'img');
+  panel.iconPath = {
+    dark: vscode.Uri.file(path.join(ipath, 'favicon-dark.svg')),
+    light: vscode.Uri.file(path.join(ipath, 'favicon-light.svg'))
+  };
+
+  //
+  // Show the URL of the web view CSS
+  //
+  //var view_url = pv.asWebviewUri(
+  //  vscode.Uri.file( path.join(context.extensionPath, 'abm', 'css') )
+  //);
+  //vw.showInformationMessage("CSS URL is " + view_url);
+
+  //
+  // Populate the Web View with a cool UI
+  // This method lets us pre-generate the HTML
+  //
+  pv.html = webViewContent();
+
+  const cs = context.subscriptions;
+
+  panel.onDidDispose(
+    () => {
+      panel = null;
+      watchAndValidate();              // Switch to watching the folder (only on writes?)
+      unwatchBuildFolder();            // Closing the view killed the build
+      destroyIPCFile();                // No IPC needed unless building
+      set_context('visible', false);   // Update based on "when" in package.json
+    },
+    null, cs
+  );
+
+  // When shown update checkboxes: "Show on Startup" - "Silent Build" – "Auto Reveal"
+  panel.onDidChangeViewState(
+    () => {
+      if (panel.active) {
+        postMessage({ command:'check', name:'show_on_startup', state:prefs.show_on_startup() });
+        postMessage({ command:'check', name:'silent_build', state:prefs.silent_build() });
+        postMessage({ command:'check', name:'auto_reveal', state:prefs.auto_reveal() });
+      }
+    },
+    null, cs
+  );
+
+  // Handle messages from the webview
+  pv.onDidReceiveMessage(handleMessageFromUI, undefined, cs);
+
+  // Create an IPC file for messages from Terminal
+  createIPCFile();
+}
+
+/**
+ * ABM command activation event handler
+ * This is the handler for these commands (registered in extension.js):
+ *   abm.show, abm.build, abm.upload, abm.traceback, abm.clean, abm.config
+ *
+ * When this is called it remembers the command, then opens the ABM Panel view
+ * and runs the command action, if any.
+ *
+ * The first time this runs, the panel must be created, the configuration
+ * must be read and parsed, and the parsed information must be sent to the
+ * panel for display.
+ *
+ * After the first run, the panel will already exist, so it just has to be
+ * updated with the latest configuration information.
+ */
+var abm_action;
 function run_command(action) {
   abm_action = action;
   if (panel) {
@@ -777,72 +867,7 @@ function run_command(action) {
     runSelectedAction();
   }
   else {
-
-    panel = vw.createWebviewPanel(
-      'marlinConfig', 'Auto Build Marlin',
-      vscode.ViewColumn.One,
-      {
-        enableCommandUris: false,        // No need for command: URLs to our extension. Our way is cleaner.
-        retainContextWhenHidden: true,   // getState / setState require more work
-        enableScripts: true,             // Scripts are needed for command passing, at least?
-        localResourceRoots: [
-          vscode.Uri.file(abm_path)      // Parent of this file
-        ]
-      }
-    );
-
-    pv = panel.webview;
-
-    const ipath = path.join(context.extensionPath, 'abm', 'img');
-    panel.iconPath = {
-      dark: vscode.Uri.file(path.join(ipath, 'favicon-dark.svg')),
-      light: vscode.Uri.file(path.join(ipath, 'favicon-light.svg'))
-    };
-
-    //
-    // Show the URL of the web view CSS
-    //
-    //var view_url = pv.asWebviewUri(
-    //  vscode.Uri.file( path.join(context.extensionPath, 'abm', 'css') )
-    //);
-    //vw.showInformationMessage("CSS URL is " + view_url);
-
-    //
-    // Populate the Web View with a cool UI
-    // This method lets us pre-generate the HTML
-    //
-    pv.html = webViewContent();
-
-    const cs = context.subscriptions;
-
-    panel.onDidDispose(
-      () => {
-        panel = null;
-        watchAndValidate();              // Switch to watching the folder (only on writes?)
-        unwatchBuildFolder();            // Closing the view killed the build
-        destroyIPCFile();                // No IPC needed unless building
-        set_context('visible', false);   // Update based on "when" in package.json
-      },
-      null, cs
-    );
-
-    // Update the "Show on Startup" and "Silent Build" checkboxes when shown
-    panel.onDidChangeViewState(
-      () => {
-        if (panel.active) {
-          postMessage({ command:'check', name:'show_on_startup',  state:prefs.show_on_startup() });
-          postMessage({ command:'check', name:'silent_build', state:prefs.silent_build() });
-          postMessage({ command:'check', name:'auto_reveal', state:prefs.auto_reveal() });
-        }
-      },
-      null, cs
-    );
-
-    // Handle messages from the webview
-    pv.onDidReceiveMessage(handleMessageFromUI, undefined, cs);
-
-    // Create an IPC file for messages from Terminal
-    createIPCFile();
+    create_webview_panel();
   }
   set_context('visible', true);
 }
@@ -907,4 +932,7 @@ function runPython(script, needs, args) {
 function run_schema_py(type) { runPython('schema.py', '', type); }
 function run_configuration_py() { runPython('configuration.py', path.join('Marlin', 'config.ini')); }
 
-module.exports = { log, init, set_context, edit_config, run_command, validate, watchAndValidate, sponsor, getNonce, run_configuration_py, run_schema_py };
+module.exports = {
+  log, init, set_context, edit_config, run_command, validate, watchAndValidate,
+  sponsor, getNonce, run_configuration_py, run_schema_py, load_html
+};

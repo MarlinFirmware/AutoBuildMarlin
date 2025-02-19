@@ -5,7 +5,8 @@
 
 const path = require('path'),
         fs = require('fs'),
-        os = require('os');
+        os = require('os'),
+    schema = require('./schema');
 
 const vscode = require('vscode'), ws = vscode.workspace,
       workspaceRoot = (ws && ws.workspaceFolders && ws.workspaceFolders.length) ? ws.workspaceFolders[0].uri.fsPath : '';
@@ -13,10 +14,6 @@ const vscode = require('vscode'), ws = vscode.workspace,
 var temp = {}, bugme = false;
 
 function init(b) { bugme = b; }
-
-function reboot() {
-
-}
 
 //
 // Files to parse for config, version, and build info.
@@ -83,7 +80,7 @@ function fullPathForFileDesc(f) {
   return f.fullpath;
 }
 
-function filePathForID(fileid) { return fullPathForFileDesc(files[fileid]); }
+const filePathForID = (fileid) => fullPathForFileDesc(files[fileid]);
 
 //
 // Watch files for changes
@@ -137,21 +134,23 @@ function fileCheck(fileid) {
 }
 
 //
-// Read a workspace file
-// If it's the last file, go on to extract data and update the UI.
+// Read a Marlin/ workspace file and cache the contents in files[fileid].text
+// If a config group is loading, load asynchronously, and if this is the last file call onSuccess()
+// For any read error call onError().
 //
-function processMarlinFile(fileid, onSuccess, onError) {
+function readMarlinFileContents(fileid, onSuccess, onError) {
 
   const mf_path = filePathForID(fileid);
+  const filespec = files[fileid];
 
   if (bugme) console.log(`Reading... ${mf_path}`);
 
   if (temp.filesToLoad) {
     fs.readFile(mf_path, (err, data) => {
       if (err)
-        onError(err, `Couldn't read ${files[fileid].name}`);
+        onError(err, `Couldn't read ${filespec.name}`);
       else {
-        files[fileid].text = data.toString();
+        filespec.text = data.toString();
         if (--temp.filesToLoad == 0) onSuccess();
       }
     });
@@ -160,9 +159,9 @@ function processMarlinFile(fileid, onSuccess, onError) {
     try {
       // Use node.js to read the file
       //var data = fs.readFileSync(mf_path);
-      files[fileid].text = fs.readFileSync(mf_path, {encoding:'utf8'});
+      filespec.text = fs.readFileSync(mf_path, {encoding:'utf8'});
     } catch (err) {
-      onError(err, `Couldn't read ${files[fileid].name}`);
+      onError(err, `Couldn't read ${filespec.name}`);
     }
   }
 }
@@ -173,7 +172,7 @@ function processMarlinFile(fileid, onSuccess, onError) {
 function refreshAll(onSuccess, onError) {
   temp.filesToLoad = Object.keys(files).length;
   for (const fid in files)      // Iterate keys
-    processMarlinFile(fid, onSuccess, onError);
+    readMarlinFileContents(fid, onSuccess, onError);
 }
 
 //
@@ -219,7 +218,7 @@ function extractTempSensors() {
 //
 var board_info;
 function extractBoardInfo(mb) {
-  var r, out = { has_debug: false }, sb = mb.replace('BOARD_', '');
+  let r, out = { has_debug: false }, sb = mb.replace('BOARD_', '');
 
   // Get the include line matching the board
   const lfind = new RegExp(`if\\s*MB\\(.*\\b${sb}\\b.*\\).*\n\\s*(#include.+)\n`, 'g');
@@ -227,34 +226,39 @@ function extractBoardInfo(mb) {
 
     let inc_line = r[1];
 
+    // mb: MOTHERBOARD name
     out.mb = mb;
     out.pins_file = inc_line.replace(/.*#include\s+"([^"]*)".*/, '$1');
 
-    out.archs = inc_line.replace(/.+\/\/\s*((\w+\s*,?\s*)+)(env|mac|win|lin|uni):.+/, '$1');
-    out.archs_arr = out.archs.trim().replace(/\s*,\s*/g, ',').split(',');
+    // archs: The architecture(s) for the board
+    out.archs = inc_line.replace(/.+\/\/\s*(\w+(\s*,\s*\w+)*)\s*(env|mac|win|lin|uni):.+/, '$1');
+    out.archs_arr = out.archs.trim().split(/\s*,\s*/);
 
+    // envs: The environments for the board
     out.envs = [];
-    var efind = new RegExp('(env|mac|win|lin|uni):(\\w+)', 'g');
-    const plat = process.platform;
-    while ((r = efind.exec(inc_line))) {
-      var is_win = plat == 'win32',
-          is_mac = plat == 'darwin',
-          is_lin = plat == 'linux',
-          is_uni = !(is_win || is_mac || is_lin);
-      if ( (r[1] == 'win' && !is_win)
-        || (r[1] == 'mac' && !is_mac)
-        || (r[1] == 'lin' && !is_lin)
-        || (r[1] == 'uni' && !is_uni && !is_lin) ) continue;
-      let debugenv = r[2].match(/^.+_debug$/i);
+
+    const efind = /(env|mac|win|lin|uni):(\w+)/g,
+          platMap = { win32: 'win', darwin: 'mac', linux: 'lin' },
+          platform = platMap[process.platform] || 'uni';
+
+    let match;
+    while ((match = efind.exec(inc_line))) {
+      const [_full, type, name] = match;
+
+      // Skip if the current platform doesn't match
+      if (type !== 'env' && type !== platform) continue;
+
       let note = '';
-      if (/STM32F....E/.test(r[2])) note = '(512K)';
-      else if (/STM32F....C/.test(r[2])) note = '(256K)';
-      out.envs.push({ name: r[2], note: note, debug: debugenv, native: r[1] != 'env' });
+      if (/STM32F....E/i.test(name)) note = '(512K)';
+      else if (/STM32F....C/i.test(name)) note = '(256K)';
+
+      const debugenv = /_debug$/i.test(name);
+      out.envs.push({ name, note, debug: debugenv, native: type !== 'env' });
       if (debugenv) out.has_debug = true;
     }
 
     // Get the description from the boards.h file
-    var cfind = new RegExp(`#define\\s+${mb}\\s+\\d+\\s*//(.+)`, 'gm');
+    const cfind = new RegExp(`#define\\s+${mb}\\s+\\d+\\s*//(.+)`, 'gm');
     r = cfind.exec(files.boards.text);
     out.description = r ? r[1].trim() : '';
   }
@@ -294,17 +298,26 @@ function getMachineSettings() {
 
   out.name = configValue('CUSTOM_MACHINE_NAME').dequote();
 
-  const mtypes = [ 'DELTA', 'MORGAN_SCARA', 'COREXY', 'COREXZ', 'COREYZ', 'COREYX', 'COREZX', 'COREZY' ],
-       mpretty = [ 'Delta', 'SCARA', 'CoreXY', 'CoreXZ', 'CoreYZ', 'CoreYX', 'CoreZX', 'CoreZY' ];
+  const mtypes = [
+    'DELTA',
+    'MORGAN_SCARA', 'MP_SCARA', 'AXEL_TPARA',
+    'COREXY', 'COREXZ', 'COREYZ', 'COREYX', 'COREZX', 'COREZY',
+    'MARKFORGED_XY', 'MARKFORGED_YX',
+    'ARTICULATED_ROBOT_ARM', 'FOAMCUTTER_XYUV', 'POLAR'
+  ];
+  const mpretty = [
+    'Delta',
+    'Morgan SCARA', 'MP SCARA', 'Axel TPARA',
+    'CoreXY', 'CoreXZ', 'CoreYZ', 'CoreYX', 'CoreZX', 'CoreZY',
+    'Markforged XY', 'Markforged YX',
+    'Robot Arm', 'Foam Cutter', 'Polar'
+  ];
 
-  let s = 'Cartesian';
-  mtypes.every((v,i) => {
-    if (!configDefined(v)) return true;
-    s = mpretty[i]; return false;
-  });
-  out.style = s;
+  const s = out.style = mtypes
+    .map((v, i) => (configDefined(v) ? mpretty[i] : null))
+    .find(s => s !== null) || 'Cartesian';
 
-  let d = out.dimensions = { x: configValue('X_BED_SIZE'), y: configValue('Y_BED_SIZE'), z: configValue('Z_MAX_POS') };
+  const d = out.dimensions = { x: configValue('X_BED_SIZE'), y: configValue('Y_BED_SIZE'), z: configValue('Z_MAX_POS') };
 
   out.description = `${s} ${d.x}x${d.y}x${d.z}mm`;
 
@@ -343,24 +356,18 @@ function getExtruderSettings() {
     out.sensors[1] = configValue('TEMP_SENSOR_1');
 
   // Only one of these types is allowed at a time
-  const etypes = [ 'SINGLENOZZLE',                           // Single nozzle, multiple steppers
-                   'DUAL_X_CARRIAGE',                        // IDEX: single, duplication or mirror
-                   'PARKING_EXTRUDER',                       // Parkable, with solenoid
-                   'MAGNETIC_PARKING_EXTRUDER',              // Parkable, with magnet
-                   'SWITCHING_TOOLHEAD',                     // Switching with servo
-                   'MAGNETIC_SWITCHING_TOOLHEAD',            // Switching with magnet
-                   'ELECTROMAGNETIC_SWITCHING_TOOLHEAD' ];
-       epretty = [ 'Single Nozzle' ];
-  etypes.every((v,i) => {
+  const epretty = [ 'Single Nozzle' ];
+  schema.ConfigSchema.exclusive.toolhead.every((v,i) => {
     if (!configDefined(v)) return true;
-    out.type = epretty[i] ? epretty[i] : v.toLabel(); return false;
+    out.type = epretty[i] ?? v.toLabel();
+    return false;
   });
 
   // These are mutually-exclusive
   const efancy = [ 'MIXING_EXTRUDER', 'SWITCHING_EXTRUDER', 'SWITCHING_NOZZLE', 'MK2_MULTIPLEXER', 'PRUSA_MMU2' ];
   efancy.every((v) => {
     if (!configDefined(v)) return true;
-    out.fancy = v == 'PRUSA_MMU2' ? 'Prusa MMU2' : v.toLabel();
+    out.fancy = v.toLabel();
   });
 
   if (out.fancy) {
@@ -404,7 +411,7 @@ function getPinDefinitionInfo(mb) {
   if (!files.pindef || files.pindef.mb != mb) {
     const pbits = `src/pins/${board_info.pins_file}`.split('/');
     files.pindef = { name: pbits.pop(), path: pbits, mb: mb };
-    processMarlinFile('pindef'); // Since temp.filesToLoad == 0 just read the file
+    readMarlinFileContents('pindef'); // Since temp.filesToLoad == 0 just read the file
   }
 
   pindef_info = {
@@ -417,7 +424,7 @@ function getPinDefinitionInfo(mb) {
 module.exports = {
   workspaceRoot, pathFromArray,
 
-  files, init, reboot, validate, refreshAll,
+  files, init, validate, refreshAll,
 
   watchConfigurations, watchAndValidate,
 

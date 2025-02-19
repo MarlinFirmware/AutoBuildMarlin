@@ -124,24 +124,26 @@ class ConfigEditorProvider {
     abm.log("ConfigEditorProvider.resolveCustomTextEditor", document.uri);
 
     // Set values for items in this closure to use
-    const name = document_name(document),
-          is_adv = name == 'Configuration_adv.h';
+    const doc = document_name(document);
+    const my = {
+      filename: doc,
+      adv: doc == 'Configuration_adv.h',
+      wv: panel.webview
+    };
 
-    var myschema;
+    // Keep global references to both views
+    webviews[my.filename] = my.wv;
+
     function reloadSchemas() {
       schemas = schema.combinedSchema(marlin, fs, true);
-      myschema = is_adv ? schemas.advanced : schemas.basic;
+      my.schema = my.adv ? schemas.advanced : schemas.basic;
       abm.log("abm/editor.js", schemas);
     }
     reloadSchemas();
 
     // Set up the webview with options and basic html.
-    const wv = panel.webview;
-    wv.options = { enableScripts: true };
-    wv.html = this.getWebViewHtml(wv);
-
-    // Keep global references to both views
-    webviews[name] = wv;
+    my.wv.options = { enableScripts: true };
+    my.wv.html = this.getWebViewHtml(my.wv);
 
     /**
      * @brief Tell my webview to rebuild itself with new config data.
@@ -149,17 +151,17 @@ class ConfigEditorProvider {
      */
     function initWebview() {
       // Get the name of the document.
-      abm.log(`ConfigEditorProvider.initWebview: ${name}`);
+      abm.log(`ConfigEditorProvider.initWebview: ${my.filename}`);
 
       // Send the pre-parsed data to the web view.
-      wv.postMessage({ type: 'update', bysec: myschema.bysec }); // editview.js:handleMessageToUI
+      my.wv.postMessage({ type: 'update', bysec: my.schema.bysec }); // editview.js:handleMessageToUI
 
       // Parse the text and send it to the webview.
       //sch.importText(document.getText());
-      //wv.postMessage({ type: 'update', bysec: sch.bysec });
+      //my.wv.postMessage({ type: 'update', bysec: sch.bysec });
 
       // Originally the webview received the raw text.
-      //wv.postMessage({ type: 'update', text: document.getText() });
+      //my.wv.postMessage({ type: 'update', text: document.getText() });
     }
 
     /**
@@ -167,14 +169,13 @@ class ConfigEditorProvider {
      * @description Send updated data to this instance's webview so it can rebuild the form.
      */
     function updateWebview(external=false) {
-      abm.log('ConfigEditorProvider.updateWebview: ' + document_name(document));
+      abm.log(`ConfigEditorProvider.updateWebview: ${my.filename}`);
 
       // Send the parsed data to the basic or advanced config editor view.
-      if (external)
-        wv.postMessage({ type: 'update', bysec: myschema.bysec }); // editview.js:handleMessageToUI
+      if (external) my.wv.postMessage({ type: 'update', bysec: my.schema.bysec }); // editview.js:handleMessageToUI
 
       // If this isn't the second config, but that file is open, update its view too.
-      if (!is_adv && 'Configuration_adv.h' in webviews) {
+      if (!my.adv && 'Configuration_adv.h' in webviews) {
         abm.log("updateWebview >> Configuration_adv.h");
         webviews['Configuration_adv.h'].postMessage({ type: 'update', bysec: schemas.advanced.bysec });
       }
@@ -191,23 +192,13 @@ class ConfigEditorProvider {
      */
 
     /**
-     * Listen for changes to the document and update the webview as needed.
-     * These changes may be local or external.
+     * @brief Listen for changes to the document and update the webview as needed.
+     * @description Changes may be internal or external. If the changes are internal
+     *              the webview forms will have already been updated.
      *
-     * If the changes are internal the webview has already updated itself.
-     *
-     * The event contains a document object with two useful properties:
-     *   changes: An array of vscode.TextDocumentContentChangeEvent[]
-     *   isDirty: true if the document is dirty (not matching disk contents)
-     * On a document change we receive a message to update the document object,
-     * and that in turn fires this event once the document has been updated.
-     *   For the first change we receive:
-     *     changes: 1  dirty: false
-     *     changes: 0  dirty: true
-     *   While the document remains unsaved...
-     *     changes: 1  dirty: true
-     *   When the document is saved...
-     *     changes: 0  dirty: false
+     *              The event contains a document object with two useful properties:
+     *                changes: An array of vscode.TextDocumentContentChangeEvent[]
+     *                isDirty: true if the document is dirty (not matching disk contents)
      */
     var wasDirty = false;
     const changeDocumentSubscription = ws.onDidChangeTextDocument(e => {
@@ -232,16 +223,12 @@ class ConfigEditorProvider {
         "(range:", change1.range.start.line + ":" + change1.range.start.character, "-", change1.range.end.line + ":" + change1.range.end.character + ")"
       );
 
+      // For non-local changes re-parse the file
       if (is_external) reloadSchemas();
-      updateWebview(is_external);
-      // TODO: If change is not flagged as local then re-parse the file(s)
-      // TODO: Optimize to only re-parse the changed file, not always both.
-    });
 
-    // Get rid of the listener when our editor is closed.
-    panel.onDidDispose(() => {
-      changeDocumentSubscription.dispose();
-      delete webviews[name];
+      // Update the web view according to the type of change
+      updateWebview(is_external);
+      // TODO: Optimize to only re-parse the changed file, not always both.
     });
 
     /**
@@ -250,15 +237,17 @@ class ConfigEditorProvider {
      *              Only modifies 'enabled' state and 'value' so nothing too complicated.
      *              This adds "edits" to the document text and optionally applies them.
      *              By using edits they go into the undo/redo stack.
+     *              This also leads to onDidChangeTextDocument events, where we need to
+     *              distinguish between internal and external changes.
      */
     function applyConfigChange(document, changes, edit=null) {
-      abm.log('ConfigEditorProvider.applyConfigChange: ' + document_name(document), changes);
+      abm.log(`ConfigEditorProvider.applyConfigChange: ${my.filename}`, changes);
 
       // Update the item in our local schema copy.
-      myschema.updateEditedItem({ sid:changes.sid, enabled:changes.enabled, value:changes.value });
+      my.schema.updateEditedItem({ sid:changes.sid, enabled:changes.enabled, value:changes.value });
 
       // And for the basic config, update its clone.
-      if (!is_adv)
+      if (!my.adv)
         schemas.advanced.updateEditedItem({ sid:changes.sid, enabled:changes.enabled, value:changes.value });
 
       // Get the line from the document.
@@ -293,8 +282,7 @@ class ConfigEditorProvider {
       else
         newtext = newtext.replace(/^(\s*)(#define)(\s{1,3})?(\s*)/, '$1//$2 $4');
 
-      abm.log(`Before edit: ${text}`);
-      abm.log(`After edit : ${newtext}`);
+      abm.log(`${line} : ${newtext}`);
 
       // Get the range for the whole line
       const range = new vscode.Range(line, 0, line, Number.MAX_VALUE);
@@ -308,7 +296,7 @@ class ConfigEditorProvider {
       edit.replace(document.uri, range, newtext);
 
       // Pad a multi-line value with blank lines to keep line numbers from shifting
-      let multiline = (myschema.bysid[changes.sid].line_end ?? changes.line) - changes.line;
+      let multiline = (my.schema.bysid[changes.sid].line_end ?? changes.line) - changes.line;
       if (multiline > 0) {
         let clrline = line;
         while (multiline--) {
@@ -332,9 +320,7 @@ class ConfigEditorProvider {
 
         case 'multi-change':
           const edit = new vscode.WorkspaceEdit();
-          m.changes.forEach(d => {
-            applyConfigChange(document, d.data, edit);
-          });
+          m.changes.forEach(d => { applyConfigChange(document, d.data, edit); });
           ws.applyEdit(edit);
           break;
 
@@ -343,9 +329,15 @@ class ConfigEditorProvider {
           break;
       }
     }
-    wv.onDidReceiveMessage(handleMessageFromUI);
+    my.wv.onDidReceiveMessage(handleMessageFromUI);
 
-    // Tell the webview to display the Configuration header file contents.
+    // Get rid of the listener when our editor is closed.
+    panel.onDidDispose(() => {
+      changeDocumentSubscription.dispose();
+      delete webviews[my.filename];
+    });
+
+    // Send the Configuration schema to the webview to display as a form.
     initWebview();
   }
 

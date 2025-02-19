@@ -91,7 +91,7 @@ class InfoPanelProvider {
   jsUri(webview, file) { return this.resourceUri(webview, 'js', file); }
 
   /**
-   * Static HTML as the starting point for editor webviews.
+   * Static HTML as the starting point for info webviews.
    * Attached scripts are invoked in the webview's context.
    */
   getWebViewHtml(webview) {

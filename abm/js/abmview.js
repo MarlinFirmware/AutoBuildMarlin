@@ -13,7 +13,7 @@ $(function(){
 "use strict";
 
 // Singleton pattern
-var ABM = (function(){
+var ABM = (() => {
 
   // private variables and functions
   var self, poffset = 0, ptimer = null;

@@ -299,7 +299,7 @@ $(function () {
 
   function applyEnableCheckbox($cb) {
     const $line = $cb.closest('.line'), // Parent div.line of the checkbox.
-        enabled = $cb.is(':checked') || $cb.hasClass('checked');  // State based on the checkbox or class.
+        enabled = $cb.is(':checked, .checked');  // State based on the checkbox or class.
 
     // Change the field in the data structure now,
     // since the receiver can't change it directly.
@@ -401,7 +401,7 @@ $(function () {
       if (!/^\d*\.?\d*f?$/.test(newval))
         newval = newval.replace(/^(\d+)\.*$/, '$1.0f');
     }
-    else if ($e.hasClass('int-arr') || $e.hasClass('float-arr')) {
+    else if ($e.is('.array, .int-arr, .float-arr')) {
       newval = newval.trim().replace(/^(.+\}).+/, '$1');
       if (newval == '' || newval[0] != '{') newval = '{ ' + newval;
       if (newval[newval.length - 1] != '}') newval = newval + ' }';

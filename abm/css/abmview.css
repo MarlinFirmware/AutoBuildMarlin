@@ -404,6 +404,6 @@ div.subtabs button.active {
 
 a.reveal { font-size: small; color: var(--abm-text-color-link); }
 
-form#showy { display: block; position: relative; float: right; }
+form#showy { position: fixed; right: calc(var(--abm-social-width) + 20px); }
 form#showy label { display: block; padding: 2px 0; }
 form#showy input[type="checkbox"] { position: relative; top: 0.2em; }

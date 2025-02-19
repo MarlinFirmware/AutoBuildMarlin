@@ -6,13 +6,14 @@
  * used for the Custom Editor form or export to JSON, YML, or even
  * YAML tailored to Jekyll.
  *
- * Loaded by custom views (e.g., editor.js) so they can use this class
- * to do things with the unserialized schema data.
+ * Loaded by custom views (e.g., editor.js) so they can use this
+ * class to do things with the unserialized schema data.
  *
  * The same ConfigSchema class object is accessible from all view
- * providers, so the data only needs to be loaded and updated in one
- * place. View providers must do their own thing in sending data to
- * their webviews via serialized messages.
+ * providers, so loaded config data is cached for all view providers.
+ * View providers must provide their own message handling to update
+ * their webviews via serialized messages, and to receive messages
+ * from their views to update the schema.
  */
 'use strict';
 
@@ -189,9 +190,11 @@ class ConfigSchema {
    *
    */
   static sectionOrderWithEmojis = {
+    '__': '❓',
     '_': '❓',
     'test': '🧪',
-    'custom': '❓',
+    'custom': '👤',
+    'user': '👤',
     'none': '❓',
 
     'info': 'ℹ️',
@@ -377,7 +380,7 @@ class ConfigSchema {
    * @param {int} before The last index allowed for the item.
    * @return The item found, or null.
    */
-  firstItemWithName(name, before=99999) {
+  firstItemWithName(name, before=Infinity) {
     log(`firstItemWithName(${name}, ${before})`);
     return this.firstItem(it => it.name === name && ConfigSchema.definedBefore(it, before));
   }
@@ -389,29 +392,20 @@ class ConfigSchema {
    * @param {int} before The last index allowed for the item.
    * @return The item found, or null.
    */
-  lastItemWithName(name, before=99999) {
+  lastItemWithName(name, before=Infinity) {
     log(`lastItemWithName(${name}, ${before})`);
     return this.lastItem(it => it.name === name && ConfigSchema.definedBefore(it, before));
   }
 
   /**
-   * Get the group an item should belong to, by name.
-   * There may be exceptions. e.g., Only the top level U8GLIB_SSD1306 should be in the "lcd" radio group.
-   * If an item shows up more than once in a configuration
-   * file, it may belong to different groups, so the logic
-   * should be expanded for known special cases.
-   *
-   * @param {info} item Item info to get the group for.
-   * @returns The name of the group, or null.
+   * Various options for distinct selection
    */
-  itemGroup(item) {
+  static exclusive = {
     // U8GLIB
-    const u8glib = ['U8GLIB_SSD1306', 'U8GLIB_SH1106'];
-    if (u8glib.includes(item.name))
-      return item?.depth ? 'sav-u8glib' : 'lcd';
+    u8glib: ['U8GLIB_SSD1306', 'U8GLIB_SH1106'],
 
     // LCD Names
-    const lcd_names = [
+    lcd: [
       'REPRAP_DISCOUNT_SMART_CONTROLLER',
       'YHCB2004',
       'RADDS_DISPLAY',
@@ -483,36 +477,25 @@ class ConfigSchema {
       'TFT_CLASSIC_UI', 'TFT_COLOR_UI', 'TFT_LVGL_UI', 'TFT_LVGL_UI_FSMC', 'TFT_LVGL_UI_SPI',
       'FSMC_GRAPHICAL_TFT', 'SPI_GRAPHICAL_TFT', 'TFT_320x240', 'TFT_320x240_SPI', 'TFT_480x320', 'TFT_480x320_SPI',
       'DWIN_CREALITY_LCD', 'DWIN_LCD_PROUI', 'DWIN_CREALITY_LCD_JYERSUI', 'DWIN_MARLINUI_PORTRAIT', 'DWIN_MARLINUI_LANDSCAPE'
-    ];
-    if (lcd_names.includes(item.name))
-      return item?.depth ? null : 'lcd';
+    ],
 
     // TFT Interfaces
-    const tft_if = ['TFT_INTERFACE_FSMC', 'TFT_INTERFACE_SPI'];
-    if (tft_if.includes(item.name)) return 'tft-if';
-
+    tft_if: ['TFT_INTERFACE_FSMC', 'TFT_INTERFACE_SPI'],
     // TFT Resolutions
-    const tft_res = ['TFT_RES_320x240', 'TFT_RES_480x272', 'TFT_RES_480x320', 'TFT_RES_1024x600'];
-    if (tft_res.includes(item.name)) return 'tft-res';
-
+    tft_res: ['TFT_RES_320x240', 'TFT_RES_480x272', 'TFT_RES_480x320', 'TFT_RES_1024x600'],
     // TFT UIs
-    const tft_ui = ['TFT_COLOR_UI', 'TFT_CLASSIC_UI', 'TFT_LVGL_UI'];
-    if (tft_ui.includes(item.name)) return 'tft-ui';
-
+    tft_ui: ['TFT_COLOR_UI', 'TFT_CLASSIC_UI', 'TFT_LVGL_UI'],
     // Chiron TFTs
-    const tft_chiron = ['CHIRON_TFT_STANDARD', 'CHIRON_TFT_NEW'];
-    if (tft_chiron.includes(item.name)) return 'tft-chiron';
+    tft_chiron: ['CHIRON_TFT_STANDARD', 'CHIRON_TFT_NEW'],
 
     // RGB or RGBW
-    const rgbled = ['RGB_LED', 'RGBW_LED'];
-    if (rgbled.includes(item.name)) return 'rgbled';
+    rgbled: ['RGB_LED', 'RGBW_LED'],
 
     // Hotend temperature control methods
-    const temp_control = ['PIDTEMP', 'MPCTEMP'];
-    if (temp_control.includes(item.name)) return 'temp-control';
+    temp_control: ['PIDTEMP', 'MPCTEMP'],
 
     // Probe types
-    const probes = [
+    probe: [
       'PROBE_MANUALLY',
       'BLTOUCH', 'BD_SENSOR',
       'FIX_MOUNTED_PROBE', 'NOZZLE_AS_PROBE',
@@ -523,51 +506,97 @@ class ConfigSchema {
       'SENSORLESS_PROBING',
       'MAGLEV4', 'MAG_MOUNTED_PROBE',
       'BIQU_MICROPROBE_V1', 'BIQU_MICROPROBE_V2'
-    ];
-    if (probes.includes(item.name)) return 'probe';
+    ],
 
     // Leveling methods
-    const leveling = [
+    leveling: [
       'AUTO_BED_LEVELING_3POINT',
       'AUTO_BED_LEVELING_LINEAR',
       'AUTO_BED_LEVELING_BILINEAR',
       'AUTO_BED_LEVELING_UBL',
       'MESH_BED_LEVELING',
-    ];
-    if (leveling.includes(item.name)) return 'leveling';
+    ],
 
     // Kinematics / Machine Types
-    const kinematics = [
+    kinematic: [
       'DELTA',
       'MORGAN_SCARA', 'MP_SCARA', 'AXEL_TPARA',
       'COREXY', 'COREXZ', 'COREYZ', 'COREYX', 'COREZX', 'COREZY',
       'MARKFORGED_XY', 'MARKFORGED_YX',
       'ARTICULATED_ROBOT_ARM', 'FOAMCUTTER_XYUV', 'POLAR'
-    ];
-    if (kinematics.includes(item.name)) return 'kinematics';
+    ],
 
     // Extruder/Toolhead Types
-    const nozzle = ['SWITCHING_NOZZLE', 'MECHANICAL_SWITCHING_NOZZLE'];
-    if (nozzle.includes(item.name)) return 'nozzles';
-
-    const switching = ['SWITCHING_EXTRUDER', 'MECHANICAL_SWITCHING_EXTRUDER'];
-    if (switching.includes(item.name)) return 'switching';
-
-    const toolhead = [
+    switching_nozzle: ['SWITCHING_NOZZLE', 'MECHANICAL_SWITCHING_NOZZLE'],
+    switching_extruder: ['SWITCHING_EXTRUDER', 'MECHANICAL_SWITCHING_EXTRUDER'],
+    toolhead: [
       'SINGLENOZZLE',
       'DUAL_X_CARRIAGE',
       'PARKING_EXTRUDER', 'MAGNETIC_PARKING_EXTRUDER',
       'SWITCHING_TOOLHEAD', 'MAGNETIC_SWITCHING_TOOLHEAD', 'ELECTROMAGNETIC_SWITCHING_TOOLHEAD'
-    ];
-    if (toolhead.includes(item.name)) return 'toolhead';
+    ],
 
     // Axis Homing Submenus
-    const lcd_homing = ['INDIVIDUAL_AXIS_HOMING_MENU', 'INDIVIDUAL_AXIS_HOMING_SUBMENU'];
-    if (lcd_homing.includes(item.name)) return 'lcd-homing';
+    lcd_homing: ['INDIVIDUAL_AXIS_HOMING_MENU', 'INDIVIDUAL_AXIS_HOMING_SUBMENU'],
 
     // Digital Potentiometers
-    const digipot = ['DIGIPOT_MCP4018', 'DIGIPOT_MCP4451'];
-    if (digipot.includes(item.name)) return 'digipot';
+    digipot: ['DIGIPOT_MCP4018', 'DIGIPOT_MCP4451']
+  };
+
+  /**
+   * Get the group an item should belong to, by name.
+   * There may be exceptions. e.g., Only the top level U8GLIB_SSD1306 should be in the "lcd" radio group.
+   * If an item shows up more than once in a configuration
+   * file, it may belong to different groups, so the logic
+   * should be expanded for known special cases.
+   *
+   * @param {info} item Item info to get the group for.
+   * @returns The name of the group, or null.
+   */
+  itemGroup(item) {
+    // U8GLIB
+    if (ConfigSchema.exclusive.u8glib.includes(item.name)) return item?.depth ? 'sav-u8glib' : 'lcd';
+
+    // LCD Names
+    if (ConfigSchema.exclusive.lcd.includes(item.name)) return item?.depth ? null : 'lcd';
+
+    // TFT Interfaces
+    if (ConfigSchema.exclusive.tft_if.includes(item.name)) return 'tft-if';
+
+    // TFT Resolutions
+    if (ConfigSchema.exclusive.tft_res.includes(item.name)) return 'tft-res';
+
+    // TFT UIs
+    if (ConfigSchema.exclusive.tft_ui.includes(item.name)) return 'tft-ui';
+
+    // Chiron TFTs
+    if (ConfigSchema.exclusive.tft_chiron.includes(item.name)) return 'tft-chiron';
+
+    // RGB or RGBW
+    if (ConfigSchema.exclusive.rgbled.includes(item.name)) return 'rgbled';
+
+    // Hotend temperature control methods
+    if (ConfigSchema.exclusive.temp_control.includes(item.name)) return 'temp-control';
+
+    // Probe types
+    if (ConfigSchema.exclusive.probe.includes(item.name)) return 'probe';
+
+    // Leveling methods
+    if (ConfigSchema.exclusive.leveling.includes(item.name)) return 'leveling';
+
+    // Kinematics / Machine Types
+    if (ConfigSchema.exclusive.kinematic.includes(item.name)) return 'kinematics';
+
+    // Extruder/Toolhead Types
+    if (ConfigSchema.exclusive.switching_nozzle.includes(item.name)) return 'nozzles';
+    if (ConfigSchema.exclusive.switching_extruder.includes(item.name)) return 'switching';
+    if (ConfigSchema.exclusive.toolhead.includes(item.name)) return 'toolhead';
+
+    // Axis Homing Submenus
+    if (ConfigSchema.exclusive.lcd_homing.includes(item.name)) return 'lcd-homing';
+
+    // Digital Potentiometers
+    if (ConfigSchema.exclusive.digipot.includes(item.name)) return 'digipot';
 
     // Return null for all other items.
     return null;
@@ -1095,7 +1124,7 @@ class ConfigSchema {
     let sid = 0;
 
     // Loop through files and parse them line by line
-    let section = 'none',     // Current Settings section
+    let section = 'user',     // Current Settings section
         line_number = numstart, // Counter for the line number of the file
         conditions = [],      // Condition stack to track #if block levels
         if_depth = 0,         // Depth of the current #if block
