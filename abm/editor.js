@@ -217,7 +217,7 @@ class ConfigEditorProvider {
 
       if (wasDirty != doc.isDirty) {
         wasDirty = doc.isDirty;
-        abm.log(`Document dirty: ${wasDirty}`);
+        abm.log(`${wasDirty ? "" : "(Saved?) "}Document dirty:${wasDirty} closed:${doc.isClosed}`);
       }
 
       const changes = e.contentChanges;
@@ -275,6 +275,7 @@ class ConfigEditorProvider {
         return;
       }
 
+      // Init the new text as the existing text of the line
       let newtext = text;
 
       // Update the value of non-switch options
@@ -286,6 +287,7 @@ class ConfigEditorProvider {
         }
       }
 
+      // Update un/commenting of #define, as needed
       if (changes.enabled)
         newtext = newtext.replace(/^(\s*)\/\/+\s*(#define)(\s{1,3})?(\s*)/, '$1$2 $4');
       else
@@ -302,7 +304,19 @@ class ConfigEditorProvider {
       const inplace = edit === null;
       if (inplace) edit = new vscode.WorkspaceEdit();
 
+      // Replace the line with the new text
       edit.replace(document.uri, range, newtext);
+
+      // Pad a multi-line value with blank lines to keep line numbers from shifting
+      let multiline = (myschema.bysid[changes.sid].line_end ?? changes.line) - changes.line;
+      if (multiline > 0) {
+        let clrline = line;
+        while (multiline--) {
+          ++clrline;
+          const range = new vscode.Range(clrline, 0, clrline, Number.MAX_VALUE);
+          edit.replace(document.uri, range, "");
+        }
+      }
 
       if (inplace) ws.applyEdit(edit);
     }

@@ -2,6 +2,9 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.71
+- Fix handling of multi-line value replacement
+
 ## 2.1.70
 - Improve Config Editor layout
 - Update Config Editors for external edits

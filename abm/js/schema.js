@@ -1451,7 +1451,8 @@ class ConfigSchema {
             'orig': { enabled },
           };
 
-          if (val !== '') { define_info.value = val; define_info.orig.value = val; }
+          if (line_end !== line_start) define_info.line_end = line_end;
+          if (val !== '') define_info.value = define_info.orig.value = val;
           if (value_type !== '') define_info.type = value_type;
           if (options) define_info.options = options;
 
