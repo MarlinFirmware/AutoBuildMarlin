@@ -94,16 +94,21 @@ var ABM = (() => {
           if (!m.val)
             $dest.hide();
           else {
-            if (m.uri) {
-              const $a = $('<a>').attr('href', '#').text(m.val);
-              $a.click((e) => {
-                e.preventDefault();
-                _msg({ command:'openfile', uri:m.uri });
-              });
-              $dest.append($a);
+            function createItem(text, uri) {
+              const element = uri
+                ? $('<a>', { href: '#' }).text(text).on('click', e => {
+                    e.preventDefault();
+                    _msg({ command: 'openfile', uri });
+                  })
+                : document.createTextNode(text);
+              return element;
             }
-            else
-              $dest.text(m.val);
+
+            const items = Array.isArray(m.val)
+              ? m.val.map(v => createItem(v.text, v.uri))
+              : [createItem(m.val, m.uri)];
+
+            items.forEach(item => $dest.append(item));
             $dest.show();
           }
           //console.log(`Setting ${m.tag} to ${m.val}`);

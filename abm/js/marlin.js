@@ -214,7 +214,7 @@ function extractTempSensors() {
 // - If the board isn't found, look for a rename alert.
 // - Get the status of environment builds.
 //
-// Return hashed array { mb, pins_file, archs, archs_arr, envs, short, description, (has_debug), (error) }
+// Return hashed array { mb, pins_files, archs, archs_arr, envs, short, description, (has_debug), (error) }
 //
 var board_info;
 function extractBoardInfo(mb) {
@@ -228,7 +228,27 @@ function extractBoardInfo(mb) {
 
     // mb: MOTHERBOARD name
     out.mb = mb;
-    out.pins_file = inc_line.replace(/.*#include\s+"([^"]*)".*/, '$1');
+
+    // pins_files: Pins files relative paths
+    out.pins_files = [];
+
+    const pinfind = new RegExp(`#include\\s+"((.+/)?pins_.+)"`, 'g');
+    let short_pins_path = inc_line.replace(/.*#include\s+"([^"]*)".*/, '$1');
+    while (short_pins_path) {
+      out.pins_files.push({
+        text: short_pins_path,
+        uri: path.join('Marlin', 'src', 'pins', short_pins_path)
+      });
+      const pinfile_path = pathFromArray(['src', 'pins', ...short_pins_path.split('/')]);
+      const pinfile_dir = short_pins_path.replace(/\/pins_.+\.h$/, '');
+      short_pins_path = null;
+      if (fs.existsSync(pinfile_path)) {
+        const pinfile_text = fs.readFileSync(pinfile_path, {encoding:'utf8'});
+        if ((r = pinfind.exec(pinfile_text))) {
+          short_pins_path = `${pinfile_dir}/${r[1]}`.replace(/[^\/]+\/\.\.\//, '');
+        }
+      }
+    }
 
     // archs: The architecture(s) for the board
     out.archs = inc_line.replace(/.+\/\/\s*(\w+(\s*,\s*\w+)*)\s*(env|mac|win|lin|uni):.+/, '$1');
@@ -409,7 +429,7 @@ function getExtruderSettings() {
 var pindef_info;
 function getPinDefinitionInfo(mb) {
   if (!files.pindef || files.pindef.mb != mb) {
-    const pbits = `src/pins/${board_info.pins_file}`.split('/');
+    const pbits = `src/pins/${board_info.pins_files[0].text}`.split('/');
     files.pindef = { name: pbits.pop(), path: pbits, mb: mb };
     readMarlinFileContents('pindef'); // Since temp.filesToLoad == 0 just read the file
   }

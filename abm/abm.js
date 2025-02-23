@@ -300,9 +300,7 @@ function allFilesAreLoaded() {
   postValue('board', mbn);
   postValue('board-desc', board_info.description);
 
-  const pf = board_info.pins_file;
-  const pinsPath = path.join('Marlin', 'src', 'pins', pf);
-  postValue('pins', pf, pinsPath);
+  postValue('pins', board_info.pins_files);
   if (pindef_info.board_name) postValue('pins-desc', pindef_info.board_name);
 
   postValue('archs', board_info.archs);
@@ -628,9 +626,8 @@ function postTool(t) {
 }
 
 // Post a value to the UI
-function postValue(tag, val, uri) {
+function postValue(tag, val) {
   var message = { command:'info', tag:tag, val:val };
-  if (uri) message.uri = uri;
   log("Send to UI", message);
   postMessage(message);
 }

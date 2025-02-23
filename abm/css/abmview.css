@@ -272,6 +272,12 @@ pre.config {
   margin: 0;
   }
 
+#info-pins a {
+  display: block;
+  width: 100%;
+  }
+#info-pins a+a { font-size: 66.66%; }
+
 /* Environment Caption cell */
 .env-more {
   display: none;
