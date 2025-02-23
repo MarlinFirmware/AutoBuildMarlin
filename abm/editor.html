@@ -1,0 +1,29 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; img-src ${ webview.cspSource }; style-src ${ webview.cspSource }; script-src 'nonce-${ nonce }' 'unsafe-eval'; "
+  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="${ cssUri }" rel="stylesheet" />
+  <script nonce="${ nonce }" src="${ jqueryUri }"></script>
+  <script nonce="${ nonce }" src="${ vsviewUri }"></script>
+  <script nonce="${ nonce }" src="${ schemaUri }"></script>
+  <script nonce="${ nonce }" src="${ scriptUri }"></script>
+  <script nonce="${ nonce }" src="${ gridUri }"></script>
+  <title>Configuration Editor</title>
+</head>
+<body id="abm-conf">
+  <form id="filter-form">
+    <button id="hello-button">Hello!</button>
+    <label for="filter">Filter:</label><input type="search" id="filter" name="filter" />
+    <label class="iconcb" for="show-comments" title="Show Comments"><input type="checkbox" id="show-comments" name="show-comments" checked="checked" /><span>💬</span></label>
+    <label class="iconcb" for="show-disabled" title="Show Disabled"><input type="checkbox" id="show-disabled" name="show-disabled" checked="checked" /><span>🚫</span></label>
+    <span id="filter-count"></span>
+  </form>
+  <div id="left-nav-box"><div id="left-nav"></div></div>
+  <div id="config-form"></div>
+  <div id="zero-box">0 Results</div>
+</body>
+</html>

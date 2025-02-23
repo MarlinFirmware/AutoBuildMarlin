@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; img-src ${ webview.cspSource }; style-src ${ webview.cspSource }; script-src 'nonce-${ nonce }'; "
+  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="${ cssUri }" rel="stylesheet" />
+  <script nonce="${ nonce }" src="${ vsviewUri }"></script>
+  <script nonce="${ nonce }" src="${ schemaUri }"></script>
+  <script nonce="${ nonce }" src="${ jqueryUri }"></script>
+  <script nonce="${ nonce }" src="${ scriptUri }"></script>
+  <title>Marlin Info</title>
+</head>
+<body id="abm-info">
+</body>
+</html>

@@ -650,9 +650,11 @@ function js_path(filename) { return subpath_uri('js', filename); }
 function css_path(filename) { return subpath_uri('css', filename); }
 function check(b) { return b ? 'checked="checked"' : ''; }
 
-function load_home() {
-  return fs.readFileSync(path.join(abm_path, 'abm.html'), {encoding:'utf8'});
+function load_html(filename) {
+  return fs.readFileSync(path.join(abm_path, filename), {encoding:'utf8'});
 }
+function load_home() { return load_html('abm.html'); }
+
 function load_pane(name, data) {
   var html = fs.readFileSync(path.join(pane_path, name + '.html'), {encoding:'utf8'});
   return eval(`\`${html}\``);
@@ -679,14 +681,11 @@ function webViewContent() {
   // Load SD pane
   panes.sd = load_pane('sd');
 
-  // Get the version from package.json
-  abm_version = context.extension.packageJSON.version;
-
   // Load WebView content using evaluated template
-  const home_html = load_home();
-  const nonce = getNonce();
-  const merged_html = eval(`\`${home_html}\``);
-  return merged_html;
+  const nonce = getNonce(),
+        abm_version = context.extension.packageJSON.version;
+
+  return eval(`\`${ load_home() }\``);
 }
 
 //
