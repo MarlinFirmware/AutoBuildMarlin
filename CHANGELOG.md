@@ -2,6 +2,15 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.72
+- ABM Panel: List all pins files included for `MOTHERBOARD`
+- ABM Panel: Provide more space for main content
+- Config Editor: Put early in 'User' group
+- Schema: Handle sensor type requirements
+- Schema: Define "exclusive" options groups as `ConfigSchema.exclusive[]`
+- Move Custom Editor and Info Panel HTML templates to files
+- Continuing code refactor for shared schema
+
 ## 2.1.71
 - Fix handling of multi-line value replacement
 
