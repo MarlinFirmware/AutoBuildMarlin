@@ -710,7 +710,7 @@ class ConfigSchema {
 
     // The item is enabled by its E < EXTRUDERS.
     function HAS_EAXIS(eindex) {
-      const extruders = priorItemNamed('EXTRUDERS', 99999);
+      const extruders = priorItemNamed('EXTRUDERS'); // Not Infinity
       if (extruders == null) return false;
       const stat = eindex < extruders.value;
       //console.log(`HAS_EAXIS(${eindex}) == ${stat ? 'true' : 'false'}`, extruders);
@@ -719,6 +719,14 @@ class ConfigSchema {
 
     // The item is enabled by TEMP_SENSOR_[NAME] != 0.
     const HAS_SENSOR = (name) => _nonzero(`TEMP_SENSOR_${name}`);
+
+    // Some enabled sensor matches the given number.
+    function _has_sensor(num) {
+      return 0 < self.countPriorItems(
+        it => it.name.startsWith('TEMP_SENSOR_') && it.value == num, initem.sid, 1
+      );
+    }
+    const ANY_THERMISTOR_IS = (...V) => V.some(num => _has_sensor(num));
 
     // The serial port was defined. (deprecated)
     function HAS_SERIAL(sindex) {
@@ -742,8 +750,11 @@ class ConfigSchema {
     // The temp sensor for the given heater/cooler is a thermocouple.
     function TEMP_SENSOR_IS_MAX_TC(name) {
       const sensor = priorItemNamed(`TEMP_SENSOR_${name}`);
-      return [-5, -3, -2].includes(sensor?.value);
+      if (!sensor) return false;
+      const result = ['-5', '-3', '-2', -5, -3, -2].includes(sensor?.value);
+      return result;
     }
+    const HAS_MAX_TC = () => { return TEMP_SENSOR_IS_MAX_TC('0') || TEMP_SENSOR_IS_MAX_TC('1') || TEMP_SENSOR_IS_MAX_TC('2') || TEMP_SENSOR_IS_MAX_TC('BED') || TEMP_SENSOR_IS_MAX_TC('REDUNDANT'); }
 
     // Some enabled driver matches the given enum.
     function _has_driver(type) {
@@ -1019,6 +1030,8 @@ class ConfigSchema {
     cond = removeRedundantParentheses(cond);
 
     try {
+      if (initem.name === 'TEMP_SENSOR_0')
+        console.log(initem);
       initem.evaled = eval(cond) ? true : false;
     }
     catch (e) {
@@ -1511,6 +1524,20 @@ class ConfigSchema {
             return '';
           }
 
+          // Items that depend on some TEMP_SENSOR_* to have a specific value.
+          function is_sensor_item(name) {
+            const m1 = name.match(/^DUMMY_THERMISTOR_(\d+)_VALUE$/);
+            if (m1) return m1[1];
+            return '';
+          }
+
+          // Items that depend on some TEMP_SENSOR_* to be a thermocouple.
+          function is_thermocouple_item(name) {
+            const m1 = name == "THERMOCOUPLE_MAX_ERRORS";
+            if (m1) return true;
+            return '';
+          }
+
           // Items that depend on EXTRUDERS to be enabled.
           function is_eaxis_item(name) {
             const m1 = name.match(/^E(\d)_(DRIVER_TYPE|AUTO_FAN_PIN|FAN_TACHO_PIN|FAN_TACHO_PULL(UP|DOWN)|MAX_CURRENT|SENSE_RESISTOR|MICROSTEPS|CURRENT|RSENSE|CHAIN_POS|INTERPOLATE|HOLD_MULTIPLIER|CS_PIN|SLAVE_ADDRESS|HYBRID_THRESHOLD)$/);
@@ -1563,6 +1590,7 @@ class ConfigSchema {
           const axis = is_axis_item(define_name),
               eindex = is_eaxis_item(define_name),
               hindex = is_heater_item(define_name),
+              tindex = is_sensor_item(define_name),
               sindex = is_serial_item(define_name);
 
           function extend_requires(cond) {
@@ -1574,7 +1602,9 @@ class ConfigSchema {
           if (axis) extend_requires(`HAS_AXIS(${axis})`);
           if (eindex) extend_requires(`HAS_EAXIS(${eindex})`);
           if (hindex) extend_requires(`HAS_SENSOR(${hindex})`);
+          if (tindex) extend_requires(`ANY_THERMISTOR_IS(${tindex})`);
           if (sindex) extend_requires(`HAS_SERIAL(${sindex})`);
+          if (is_thermocouple_item(define_name)) extend_requires(`HAS_MAX_TC()`);
 
           // If the comment specifies units, add that to the info
           function set_units(comm) {
