@@ -423,7 +423,7 @@ function getExtruderSettings() {
 
 //
 // Re-fetch information from the board's pins file(s)
-// and re-load the pins file contents into files['pindef'].text
+// and re-load the pins file contents into files.pindef.text
 // Return hashed array with { name, path, mb }
 //
 var pindef_info;

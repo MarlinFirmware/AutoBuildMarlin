@@ -72,7 +72,8 @@ class InfoPanelProvider {
     }
     wv.onDidReceiveMessage(handleMessageFromUI);
 
-    // Tell the webview to display something.
+    // Tell the webview to display something
+    // Received by infoview.js:handleMessageToUI
     function updateWebview() {
       wv.postMessage({ type: 'say', text: "hello" }); // infoview.js:handleMessageToUI
     }
@@ -113,4 +114,4 @@ InfoPanelProvider.viewType = 'abm.infoView';
 // Export the provider
 exports.InfoPanelProvider = InfoPanelProvider;
 
-console.log("InfoPanelProvider (info.js) loaded");
+abm.log("InfoPanelProvider (info.js) loaded");

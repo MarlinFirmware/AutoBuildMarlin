@@ -958,10 +958,10 @@ class ConfigSchema {
         let inner = code.slice(openIndex + 1, closeIndex).trim();
 
         // Single identifier or number (e.g., `(x)`, `(42)`)
-        if (/^[a-zA-Z0-9_]+$/.test(inner)) return true;
+        if (/^\w+$/.test(inner)) return true;
 
         // Function call (e.g., `(defined("mysymbol"))`)
-        if (/^[a-zA-Z_][a-zA-Z0-9_]*\s*\(.*\)$/.test(inner)) return true;
+        if (/^[a-zA-Z_]\w*\s*\(.*\)$/.test(inner)) return true;
 
         // If it's a nested set of parentheses like ((EXPR)), check the inside
         if (inner.startsWith('(') && inner.endsWith(')')) {
@@ -976,6 +976,7 @@ class ConfigSchema {
         return false;
       }
 
+      // Create a set describing redundant parentheses, return as a sorted array
       let inQuote = '', stack = [], redundant = new Set();
       for (let i = 0; i < code.length; i++) {
         let char = code[i];
@@ -1005,6 +1006,7 @@ class ConfigSchema {
       return Array.from(redundant).sort((a, b) => a - b);
     }
 
+    // Return a new string with redundant parentheses removed
     function removeRedundantParentheses(code) {
       let redundantSet = new Set(findRedundantParentheses(code)); // Set for quick lookup
       let result = "";
@@ -1021,21 +1023,20 @@ class ConfigSchema {
     // Convert Marlin macros into JavaScript function calls:
     cond = cond
       .replace(/(AXIS_DRIVER_TYPE)_(\w+)\((.+?)\)/g, '$1($2,$3)')                   // AXIS_DRIVER_TYPE_X(A4988)  => AXIS_DRIVER_TYPE(X,A4988)
-      .replace(/\b([A-Z_][A-Z0-9_]*)\b(\s*([^(,]|$))/g, 'OTHER($1)$2')              // LOOSE_SYMBOL               => OTHER(LOOSE_SYMBOL)
-      .replace(/([A-Z_][A-Z0-9_]+\s*\(|,\s*)OTHER\(([^()]+)\)/g, '$1$2')            // ANYCALL(OTHER(ABCD)        => ANYCALL(ABCD    ... , OTHER(ABCD) => , ABCD
+      .replace(/\b([A-Z_]\w*)\b(\s*([^(,]|$))/g, 'OTHER($1)$2')                     // LOOSE_SYMBOL               => OTHER(LOOSE_SYMBOL)
+      .replace(/([A-Z_]\w+\s*\(|,\s*)OTHER\(([^()]+)\)/g, '$1$2')                   // ANYCALL(OTHER(ABCD)        => ANYCALL(ABCD    ... , OTHER(ABCD) => , ABCD
       .replace(/\b(defined)\b\s*\(?\s*OTHER\s*\(\s*([^()]+)\s*\)\s*\)?/g, '$1($2)') // defined.OTHER(ABCD).       => defined(ABCD)
-      .replace(/\b([A-Z_][A-Z0-9_]*)\b([^(])/gi, '"$1"$2')                          // ABCD[^(]                   => "ABCD"
+      .replace(/\b([A-Z_]\w*)\b([^(])/gi, '"$1"$2')                                 // ABCD[^(]                   => "ABCD"
       ;
 
     cond = removeRedundantParentheses(cond);
 
     try {
-      if (initem.name === 'TEMP_SENSOR_0')
-        console.log(initem);
+      //initem.requirez = cond;
       initem.evaled = eval(cond) ? true : false;
     }
     catch (e) {
-      console.error(`Error evaluating: ${cond}\n\n${before_mangle}`, e);
+      console.error(`Error evaluating: ${cond}\nBefore: ${before_mangle}\n`, e);
       initem.evaled = true;
     }
 
@@ -1509,72 +1510,51 @@ class ConfigSchema {
 
           // Items that depend on TEMP_SENSOR_* to be enabled.
           function is_heater_item(name) {
-            const m1 = name.match(/^(EXTRUDER|HOTEND|BED|CHAMBER|COOLER|PROBE)_(AUTO_FAN_(TEMPERATURE|SPEED)|BETA|_LIMIT_SWITCHING|M(AX|IN)TEMP|OVERSHOOT|PULLUP_RESISTOR_OHMS|RESISTANCE_25C_OHMS|SH_C_COEFF)$/);
-            if (m1) return ['EXTRUDER', 'HOTEND'].includes(m1[1]) ? '0' : m1[1];
-            const m2 = name.match(/^HOTEND(\d)_.+$/);
-            if (m2) return m2[1];
-            const m3 = name.match(/^HEATER_(\d)_M(AX|IN)TEMP$/);
-            if (m3) return m3[1];
-            const m4 = name.match(/^(PREHEAT_\d_TEMP_|THERMAL_PROTECTION_|PIDTEMP)(EXTRUDER|HOTENDS?|BED|CHAMBER|COOLER|PROBE)$/);
-            if (m4) return ['EXTRUDER', 'HOTEND', 'HOTENDS'].includes(m4[2]) ? '0' : m4[2];
-            const m5 = name.match(/^MAX_(BED|CHAMBER)_POWER$/);
-            if (m5) return m5[2];
-            const m6 = name.match(/^AUTO_POWER_(CHAMBER|COOLER|E)_(TEMP|FANS?)$/);
-            if (m6) return m6[1] == "E" ? '0' : m6[1];
-            return '';
+            const m1 = name.match(/^HOTEND(\d)_.+$/)
+                    || name.match(/^HEATER_(\d)_M(AX|IN)TEMP$/)
+                    || name.match(/^MAX_(BED|CHAMBER)_POWER$/)
+                    || name.match(/^(EXTRUDER|HOTEND|BED|CHAMBER|COOLER|PROBE)_(AUTO_FAN_(TEMPERATURE|SPEED)|BETA|_LIMIT_SWITCHING|M(AX|IN)TEMP|OVERSHOOT|PULLUP_RESISTOR_OHMS|RESISTANCE_25C_OHMS|SH_C_COEFF)$/)
+                    || name.match(/^(?:PREHEAT_\d_TEMP_|THERMAL_PROTECTION_|PIDTEMP)(EXTRUDER|HOTENDS?|BED|CHAMBER|COOLER|PROBE)$/)
+                    || name.match(/^AUTO_POWER_(CHAMBER|COOLER|E)_(TEMP|FANS?)$/);
+            if (m1) return ['EXTRUDER', 'HOTEND', 'HOTENDS', 'E'].includes(m1[1]) ? '0' : m1[1];
           }
 
           // Items that depend on some TEMP_SENSOR_* to have a specific value.
           function is_sensor_item(name) {
             const m1 = name.match(/^DUMMY_THERMISTOR_(\d+)_VALUE$/);
             if (m1) return m1[1];
-            return '';
           }
 
           // Items that depend on some TEMP_SENSOR_* to be a thermocouple.
           function is_thermocouple_item(name) {
             const m1 = name == "THERMOCOUPLE_MAX_ERRORS";
             if (m1) return true;
-            return '';
           }
 
           // Items that depend on EXTRUDERS to be enabled.
           function is_eaxis_item(name) {
-            const m1 = name.match(/^E(\d)_(DRIVER_TYPE|AUTO_FAN_PIN|FAN_TACHO_PIN|FAN_TACHO_PULL(UP|DOWN)|MAX_CURRENT|SENSE_RESISTOR|MICROSTEPS|CURRENT|RSENSE|CHAIN_POS|INTERPOLATE|HOLD_MULTIPLIER|CS_PIN|SLAVE_ADDRESS|HYBRID_THRESHOLD)$/);
+            const m1 = name.match(/^E(\d)_(DRIVER_TYPE|AUTO_FAN_PIN|FAN_TACHO_PIN|FAN_TACHO_PULL(UP|DOWN)|MAX_CURRENT|SENSE_RESISTOR|MICROSTEPS|CURRENT|RSENSE|CHAIN_POS|INTERPOLATE|HOLD_MULTIPLIER|CS_PIN|SLAVE_ADDRESS|HYBRID_THRESHOLD)$/)
+                    || name.match(/^CHOPPER_TIMING_E(\d)$/)
+                    || name.match(/^INVERT_E(\d)_DIR$/)
+                    || name.match(/^HEATER_(\d)_M(AX|IN)TEMP$/)
+                    || name.match(/^TEMP_SENSOR_(\d)$/)
+                    || name.match(/^FIL_RUNOUT(\d)_(STATE|PULL(UP|DOWN))$/);
             if (m1) return m1[1];
-            const m2 = name.match(/^CHOPPER_TIMING_E(\d)$/);
-            if (m2) return m2[1];
-            const m3 = name.match(/^INVERT_E(\d)_DIR$/);
-            if (m3) return m3[1];
-            const m4 = name.match(/^HEATER_(\d)_M(AX|IN)TEMP$/);
-            if (m4) return m4[1];
-            const m5 = name.match(/^TEMP_SENSOR_(\d)$/);
-            if (m5) return m5[1];
-            const m6 = name.match(/^FIL_RUNOUT(\d)_(STATE|PULL(UP|DOWN))$/);
-            if (m6) return m6[1];
             if (['DISABLE_IDLE_E', 'STEP_STATE_E', 'NOZZLE_PARK_FEATURE', 'NOZZLE_CLEAN_FEATURE'].includes(name)) return '0';
-            return '';
           }
 
           // Items that depend on *_DRIVER_TYPE to be enabled.
           function is_axis_item(name) {
-            const m1 = name.match(/^([XYZIJKUVW]\d?)_(CHAIN_POS|CS_PIN|CURRENT(_HOME)?|ENABLE_ON|HOLD_MULTIPLIER|HOME_DIR|HYBRID_THRESHOLD|INTERPOLATE|MAX_CURRENT|M(AX|IN)_ENDSTOP_(INVERTING|HIT_STATE)|M(AX|IN)_POS|MICROSTEPS|RSENSE|SAFETY_STOP|SENSE_RESISTOR|SLAVE_ADDRESS|STALL_SENSITIVITY)$/);
+            const m1 = name.match(/^([XYZIJKUVW]\d?)_(CHAIN_POS|CS_PIN|CURRENT(_HOME)?|ENABLE_ON|HOLD_MULTIPLIER|HOME_DIR|HYBRID_THRESHOLD|INTERPOLATE|MAX_CURRENT|M(AX|IN)_ENDSTOP_(INVERTING|HIT_STATE)|M(AX|IN)_POS|MICROSTEPS|RSENSE|SAFETY_STOP|SENSE_RESISTOR|SLAVE_ADDRESS|STALL_SENSITIVITY)$/)
+                    || name.match(/^(?:CHOPPER_TIMING|DISABLE(?:_INACTIVE|_IDLE)?|M(?:AX|IN)_SOFTWARE_ENDSTOP|SAFE_BED_LEVELING_START|STEALTHCHOP|STEP_STATE)_([XYZIJKUVW]\d?)$/)
+                    || name.match(/^INVERT_(.+)_(DIR|STEP_PIN)$/)
+                    || name.match(/^MANUAL_(.+)_HOME_POS$/)
+                    || name.match(/^CALIBRATION_MEASURE_(.+)M(AX|IN)$/)
+                    || name.match(/^USE_(.+)M(AX|IN)_PLUG$/)
+                    || name.match(/^ENDSTOPPULL(?:UP|DOWN)_(.+)M(AX|IN)$/);
             if (m1) return m1[1];
-            const m2 = name.match(/^(CHOPPER_TIMING|DISABLE(_INACTIVE|_IDLE)?|M(AX|IN)_SOFTWARE_ENDSTOP|SAFE_BED_LEVELING_START|STEALTHCHOP|STEP_STATE)_([XYZIJKUVW]\d?)$/);
-            if (m2) return m2[4];
-            const m3 = name.match(/^INVERT_(.+)_(DIR|STEP_PIN)$/);
-            if (m3) return m3[1];
-            const m4 = name.match(/^MANUAL_(.+)_HOME_POS$/);
-            if (m4) return m4[1];
-            const m5 = name.match(/^CALIBRATION_MEASURE_(.+)M(AX|IN)$/);
-            if (m5) return m5[1];
-            const m6 = name.match(/^USE_(.+)M(AX|IN)_PLUG$/);
-            if (m6) return m6[1];
-            const m7 = name.match(/^ENDSTOPPULL(UP|DOWN)_(.+)M(AX|IN)$/);
-            if (m7) return m7[2];
-            const m8 = name.match(/^AXIS(\d)_(NAME|ROTATES)$/);
-            if (m8) return ['I', 'J', 'K', 'U', 'V', 'W'][m8[1] - 4];
-            return '';
+            const m2 = name.match(/^AXIS(\d)_(NAME|ROTATES)$/);
+            if (m2) return ['I', 'J', 'K', 'U', 'V', 'W'][m2[1] - 4];
           }
 
           function is_serial_item(name) {
@@ -1583,7 +1563,6 @@ class ConfigSchema {
             if (name === 'BAUD_RATE_GCODE') return '0';
             const m2 = name.match(/^SERIAL_PORT_(\d)$/);
             if (m2) return m2[1] === '2' ? '0' : (m2[1] - 1).toString();
-            return '';
           }
 
           // Some items depend on axes being enabled
