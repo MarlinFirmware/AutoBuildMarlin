@@ -753,6 +753,9 @@ $(function () {
   function buildConfigForm() {
     const sdict = schema.bysec;
 
+    const bod = $('body')[0];
+    bod.schema = schema;
+
     // Legend titles can collapse and reveal their sections.
     const do_collapse = (e, sectid) => { toggleCollapsed(sectid, e.altKey); };
 

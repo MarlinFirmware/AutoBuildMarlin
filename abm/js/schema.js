@@ -1046,7 +1046,9 @@ class ConfigSchema {
     }
     catch (e) {
       console.error(`Error evaluating: ${cond}\nBefore: ${before_mangle}\n`, e);
+      // Default to true for safety, but log the error for debugging
       initem.evaled = true;
+      initem.evalError = e.message;
     }
 
     //log(`${initem.name} -----${initem.evaled} == ${cond} ----------`);
