@@ -943,41 +943,41 @@ class ConfigSchema {
       return cond;
     }
 
+    /**
+     * Find parentheses that wrap only one entity and
+     * return their indexes in an array.
+     */
     function findRedundantParentheses(code) {
 
       // Check if parentheses belong to a function call
       function isFunctionCall(code, openIndex) {
         let i = openIndex - 1;
-        // Skip spaces to find the preceding character
         while (i >= 0 && (/\s/.test(code[i]))) i--;
         return i >= 0 && (/\w/.test(code[i])); // If a word character precedes '(', it's a function call
       }
 
-      // Check if a pair of parentheses is redundant
-      function isRedundant(code, openIndex, closeIndex) {
-        let inner = code.slice(openIndex + 1, closeIndex).trim();
+      // Check if a pair of parentheses is unnecessary
+      function isRedundant(code, openIndex, i, pairs) {
+        // Paired parentheses form a unit
+        if (pairs[openIndex + 1] == i - 1) return true;
 
-        // Single identifier or number (e.g., `(x)`, `(42)`)
-        if (/^\w+$/.test(inner)) return true;
+        let inner = code.slice(openIndex + 1, i).trim();
 
-        // Function call (e.g., `(defined("mysymbol"))`)
-        if (/^[a-zA-Z_]\w*\s*\(.*\)$/.test(inner)) return true;
+        // Simple function call
+        if (/^[a-z_]\w*\s*\([^)]*\)$/i.test(inner)) return true;
 
-        // If it's a nested set of parentheses like ((EXPR)), check the inside
-        if (inner.startsWith('(') && inner.endsWith(')')) {
-          let depth = 0;
-          for (let i = 0; i < inner.length; i++) {
-            if (inner[i] === '(') depth++;
-            if (inner[i] === ')') depth--;
-            if (depth === 0 && i < inner.length - 1) return false; // There’s more content outside
-          }
-          return true; // The whole thing is wrapped again => redundant
-        }
+        // Number
+        if (/^-?\d+(\.\d+)?$/.test(inner)) return true;
+
+        // Single identifier
+        if (/^[a-z_]\w*$/i.test(inner)) return true;
+
+        // Anything else, including empty
         return false;
       }
 
       // Create a set describing redundant parentheses, return as a sorted array
-      let inQuote = '', stack = [], redundant = new Set();
+      let inQuote = '', stack = [], redundant = new Set(), pairs = [];
       for (let i = 0; i < code.length; i++) {
         let char = code[i];
 
@@ -985,20 +985,23 @@ class ConfigSchema {
         if (inQuote) {
           // Handle escaping within strings
           if (char === "\\" && i + 1 < code.length) i++; // Skip escaped character
-          else if (char === inQuote) inQuote = null;
+          else if (char === inQuote) inQuote = '';
           continue;
         }
 
         if (char === '"' || char === "'") {
           inQuote = char;
         } else if (char === '(') {
-          // Store the char index as belonging to a function unit or wrapper
-          stack.push({ index: i, type: isFunctionCall(code, i) ? 'unit' : 'normal' });
+          // Store the char index as belonging to a function or wrapper
+          stack.push({ index: i, type: isFunctionCall(code, i) ? 'fn' : 'normal' });
         } else if (char === ')' && stack.length > 0) {
           let { index: openIndex, type } = stack.pop();
-          if (type === 'normal' && isRedundant(code, openIndex, i)) {
-            redundant.add(openIndex);
-            redundant.add(i);
+          if (type === 'normal') {
+            pairs[openIndex] = i;
+            if (isRedundant(code, openIndex, i, pairs)) {
+              redundant.add(openIndex);
+              redundant.add(i);
+            }
           }
         }
       }
@@ -1008,12 +1011,18 @@ class ConfigSchema {
 
     // Return a new string with redundant parentheses removed
     function removeRedundantParentheses(code) {
-      let redundantSet = new Set(findRedundantParentheses(code)); // Set for quick lookup
-      let result = "";
+      const redundantSet = new Set(findRedundantParentheses(code)); // Set for quick lookup
+      let new_code = [];
       for (let i = 0; i < code.length; i++)
-        if (!redundantSet.has(i)) result += code[i]; // Append char if it's not in redundant indices
-      return result;
+        if (!redundantSet.has(i)) new_code.push(code[i]); // Append char if it's not in redundant indices
+      return new_code.join("");
     }
+
+    // TEST CASES
+    //let testcase1 = removeRedundantParentheses("(((notFromHere(ok) && ((FROM_HERE))))) || (FROG_SPIT)");
+    //if (testcase1 !== "(notFromHere(ok) && FROM_HERE) || FROG_SPIT") console.warn("removeRedundantParentheses TEST 1 FAIL");
+    //let testcase2 = removeRedundantParentheses("(((a + (b))))");
+    //if (testcase2 !== "(a + b)") console.warn("removeRedundantParentheses TEST 2 FAIL");
 
     const before_mangle = cond;
 
