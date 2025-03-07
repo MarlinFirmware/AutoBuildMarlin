@@ -105,8 +105,10 @@ class ConfigSchema {
 
   // Refresh the bysid index from the data stored in sections
   refreshDataBySID() {
-    this.bysid = [];
-    for (const item of this.iterateDataBySection()) this.bysid[item.sid] = item;
+    // Create a new array to avoid memory leaks from old references
+    const newBysid = [];
+    for (const item of this.iterateDataBySection()) newBysid[item.sid] = item;
+    this.bysid = newBysid;
   }
 
   // Setter for the data, collated into the form { sec1: { nam1: { ... }, name2: [ { ... }, { ... } ], ... }
@@ -894,7 +896,7 @@ class ConfigSchema {
      *  - R?REPEAT2(2,_TODO,4) .........  && ((0) < (4) * 2) && ((1) < (4) * 2)
      */
     function expand_REPEAT(cond) {
-      const reppatt = /\bR?REPEAT(|_1|_S|2|2_S)\(((\w+\s*\([^()]+\)|[^()]+)(\s*,\s*(\w+\([^()]+\)|[^()]+))*)\)/g;
+      const reppatt = /\bR?REPEAT(|_1|_S|2|2_S)\(((\w+\s*\([^()]*\)|[^()]+)(\s*,\s*(\w+\([^()]*\)|[^()]+))*)\)/g;
       let res;
       while (res = reppatt.exec(cond)) {
         const reptype = res[1],
@@ -1035,7 +1037,7 @@ class ConfigSchema {
       .replace(/\b([A-Z_]\w*)\b(\s*([^(,]|$))/g, 'OTHER($1)$2')                     // LOOSE_SYMBOL               => OTHER(LOOSE_SYMBOL)
       .replace(/([A-Z_]\w+\s*\(|,\s*)OTHER\(([^()]+)\)/g, '$1$2')                   // ANYCALL(OTHER(ABCD)        => ANYCALL(ABCD    ... , OTHER(ABCD) => , ABCD
       .replace(/\b(defined)\b\s*\(?\s*OTHER\s*\(\s*([^()]+)\s*\)\s*\)?/g, '$1($2)') // defined.OTHER(ABCD).       => defined(ABCD)
-      .replace(/\b([A-Z_]\w*)\b([^(])/gi, '"$1"$2')                                 // ABCD[^(]                   => "ABCD"
+      .replace(/\b([A-Z_]\w*)\b(?!\s*\()/gi, '"$1"')                                // ABCD (not followed by '(') => "ABCD"
       ;
 
     cond = removeRedundantParentheses(cond);
