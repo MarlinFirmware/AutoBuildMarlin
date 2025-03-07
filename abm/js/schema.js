@@ -710,7 +710,7 @@ class ConfigSchema {
 
     // The item is enabled by its E < EXTRUDERS.
     function HAS_EAXIS(eindex) {
-      const extruders = priorItemNamed('EXTRUDERS'); // Not Infinity
+      const extruders = priorItemNamed('EXTRUDERS') || priorItemNamed('EXTRUDERS', Infinity);
       if (extruders == null) return false;
       const stat = eindex < extruders.value;
       //console.log(`HAS_EAXIS(${eindex}) == ${stat ? 'true' : 'false'}`, extruders);
