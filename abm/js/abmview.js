@@ -53,10 +53,10 @@ var ABM = (() => {
       // Watch for option key events and change the title of all button.clean elements
       //
       $(document).keydown((e) => {
-        if (e.key === 'Alt') $('button.clean').addClass('opt')
+        if (e.key === 'Alt') $('button.clean').addClass('opt');
       });
       $(document).keyup((e) => {
-        if (e.key === 'Alt') $('button.clean').removeClass('opt')
+        if (e.key === 'Alt') $('button.clean').removeClass('opt');
       });
 
       //

@@ -1368,8 +1368,8 @@ class ConfigSchema {
         // Combine adjacent conditions where possible
         function combine_conditions(condarr) {
           let cond = '(' + condarr.flat().join(') && (') + ')';
-          while (true) {
-            const old_cond = '' + cond;
+          for (;;) {
+            const old_cond = cond;
             cond = cond
               .replaceAll('!ENABLED', 'DISABLED').replaceAll('!DISABLED', 'ENABLED')
               .replace(/(DISABLED|!ALL|!BOTH)\s*\(\s*([^()]+?)\s*\)\s*\|\|\s*(DISABLED|!ALL|!BOTH)\s*\(\s*/g, '!ALL($2, ')
