@@ -803,7 +803,7 @@ class ConfigSchema {
         case 'XYZ': return 3;
 
         case 'HAS_TRINAMIC_CONFIG':
-          return HAS_DRIVER(['TMC2130', 'TMC2160', 'TMC2208', 'TMC2209', 'TMC2660', 'TMC5130', 'TMC5160']);
+          return HAS_DRIVER('TMC2130', 'TMC2160', 'TMC2208', 'TMC2209', 'TMC2660', 'TMC5130', 'TMC5160');
 
         default:
           if (name.startsWith('TEMP_SENSOR_'))
