@@ -378,43 +378,41 @@ $(function () {
    * @description Based on the field class, check the type value for proper formatting.
    *              and prevent it from being empty.
    */
-  function handleEditField(e)   {
-    const $e = $(e.target), val = $e.val();
+  function handleEditField(e) {
+    const $e = $(e.target), val = $e.val().trim();
     if (val == $e[0].oldtext) return;
     $e[0].oldtext = val;
-    var newval = val;
+    let newval = val;
     if ($e.hasClass('enum')) {
       // Allow anything but don't let it be empty.
-      newval = newval.trim();
       if (newval == '') newval = '_';
     }
     else if ($e.hasClass('int')) {
-      newval = Math.floor(newval.replace(/[^\d.]/g, '')).toString();
-      if (newval == 0 || newval == 'NaN') newval = '0';
+      if (newval !== '-' && newval !== '+')
+        newval = newval.replace(/[^-+\d]/g, '');
     }
     else if ($e.hasClass('float')) {
-      newval = newval.replace(/[,.]+/g, '.')
-                     .replace(/(.*\..+)\./g, '$1')
-                     .replace(/[^\d.f]/g, '')
-                     .replace(/(.+)f(.+)/g, '$1$2');
-      if (newval == '') newval = '0.0f';
-      if (!/^\d*\.?\d*f?$/.test(newval))
-        newval = newval.replace(/^(\d+)\.*$/, '$1.0f');
+      if (newval !== '-') {
+        newval = newval.replace(/[,.]+/g, '.')
+                       .replace(/(.*\..+)\./g, '$1')
+                       .replace(/[^-+\d.f]/g, '')
+                       .replace(/(.+)f(.+)/g, '$1$2');
+        if (!/^-?\d*\.?\d*f?$/.test(newval))
+          newval = newval.replace(/^(-?\d+)\.*$/, '$1.0f');
+      }
     }
     else if ($e.is('.array, .int-arr, .float-arr')) {
-      newval = newval.trim().replace(/^(.+\}).+/, '$1');
+      newval = newval.replace(/^(.+\}).+/, '$1');
       if (newval == '' || newval[0] != '{') newval = '{ ' + newval;
       if (newval[newval.length - 1] != '}') newval = newval + ' }';
     }
     else if ($e.hasClass('string')) {
       // A string must start and end with double-quotes.
-      newval = newval.trim();
       if (newval == '' || newval[0] != '"') newval = '"' + newval;
       if (newval[newval.length - 1] != '"') newval = newval + '"';
     }
     else if ($e.hasClass('char')) {
       // A char must be a single character in single-quotes.
-      newval = newval.trim();
       if (newval == '' || newval == "'" || newval == "''")
         newval = "' '";
       else if (newval == "'\\'")
@@ -428,6 +426,28 @@ $(function () {
       $e[0].setSelectionRange(sel[0], sel[1]);
     }
     handleEdit(e, true);
+  }
+  function finalizeEditField(e) {
+    const $e = $(e.target), val = $e.val();
+    let newval = val.trim();
+    if ($e.hasClass('int')) {
+      newval = Math.floor(newval).toString();
+      if (newval == 0 || newval == 'NaN') newval = '0';
+    }
+    else if ($e.hasClass('float')) {
+      newval = newval.replace(/[,.]+/g, '.')
+                     .replace(/(.*\..+)\./g, '$1')
+                     .replace(/[^-+\d.f]/g, '')
+                     .replace(/(.+)f(.+)/g, '$1$2');
+      if (newval == '')
+        newval = '0.0f';
+      else if (!/^-?\d*\.?\d*f?$/.test(newval))
+        newval = newval.replace(/^(-?\d+)\.*$/, '$1.0f');
+    }
+    if (newval != val) {
+      $e.val(newval);
+      handleEdit(e, true);
+    }
   }
   function handleSelectField(e) { handleEdit(e, false); }
   function handleBoolField(e)   {
@@ -672,7 +692,7 @@ $(function () {
         $linediv.append($select);
       }
       else {
-        const $input = $("<input>", { type: "text", name: name, value: val }).bind("change keyup", handleEditField);
+        const $input = $("<input>", { type: "text", name: name, value: val }).bind("change keyup", handleEditField).bind("blur", finalizeEditField);
         if (tclass) $input.addClass(tclass);
         $input[0].oldtext = val;
         $linediv.append($input);
