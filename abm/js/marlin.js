@@ -251,8 +251,8 @@ function extractBoardInfo(mb) {
     }
 
     // archs: The architecture(s) for the board
-    out.archs = inc_line.replace(/.+\/\/\s*(\w+(\s*,\s*\w+)*)\s*(env|mac|win|lin|uni):.+/, '$1');
-    out.archs_arr = out.archs.trim().split(/\s*,\s*/);
+    out.archs = inc_line.replace(/.+\/\/\s*((\w+\s*)+(,\s*\w+\s*)*)(env|mac|win|lin|uni):.+/, '$1').trim();
+    out.archs_arr = out.archs.split(/\s*,\s*/);
 
     // envs: The environments for the board
     out.envs = [];

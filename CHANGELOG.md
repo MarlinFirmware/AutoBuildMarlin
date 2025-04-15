@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.74
+- Config Editor: Fix int and float value sanitizing
+- ABM Panel: Fix parsing of arch list from `pins.h`
+
 ## 2.1.73
 - Config Editor: Fix missing En Driver Type options
 - Schema: Fix `HAS_DRIVER` arguments
