@@ -26,6 +26,7 @@ const vscode = require("vscode"),
 const ConfigSchema = schema.ConfigSchema;
 var schemas;
 
+const jsonFeedUrl = 'https://marlinfw.org/feeds/feed.json';
 class InfoPanelProvider {
 
   constructor(context) { this.context = context; }
@@ -48,7 +49,7 @@ class InfoPanelProvider {
       enableScripts: true,
       localResourceRoots: [ this.context.extensionUri ]
     };
-    wv.html = this.getWebViewHtml(wv);
+    wv.html = await this.getWebViewHtml(wv);
 
     // Handle show/hide events.
     wvv.onDidChangeVisibility(() => {
@@ -91,20 +92,34 @@ class InfoPanelProvider {
   }
   jsUri(webview, file) { return this.resourceUri(webview, 'js', file); }
 
+  async fetchMarlinSiteIndex() {
+    try {
+      const response = await fetch(jsonFeedUrl);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const searchData = await response.text()
+      return searchData;
+    } catch (error) {
+      console.error('Failed to fetch search data:', error);
+      return null;
+    }
+  }
+
   /**
    * Static HTML as the starting point for info webviews.
    * Attached scripts are invoked in the webview's context.
    */
-  getWebViewHtml(webview) {
+  async getWebViewHtml(webview) {
     // Local path to script and css for the webview
     const nonce = abm.getNonce(), // Use a nonce to whitelist which scripts can be run
       jqueryUri = this.jsUri(webview, 'jquery-3.6.0.min.js'),
       vsviewUri = this.jsUri(webview, 'vsview.js'),
       schemaUri = this.jsUri(webview, 'schema.js'),
       scriptUri = this.jsUri(webview, 'infoview.js'),
-         cssUri = this.resourceUri(webview, 'css', 'infoview.css');
+         cssUri = this.resourceUri(webview, 'css', 'infoview.css'),
+    _searchData = (await this.fetchMarlinSiteIndex()).replaceAll('`', '\\`');
 
-    return eval(`\`${ abm.load_html('info.html') }\``);
+    const merged_html = eval(`\`${ abm.load_html('info.html') }\``);
+    return merged_html;
   }
 }
 

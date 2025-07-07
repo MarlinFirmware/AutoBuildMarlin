@@ -9,6 +9,214 @@
  */
 'use strict';
 
+// Useful string method
+String.prototype.toTitleCase = function () {
+  return this.replace(/\b([A-Z])(\w+)\b/gi, (_,p1,p2) => { return p1.toUpperCase() + p2.toLowerCase(); });
+}
+
+//
+// Declare a jekyllSearch singleton
+//
+var jekyllSearch = (() => {
+
+  var q, qmatch,
+    $searchPage, $searchForm, $searchInput,
+    $resultTemplate, $resultsContainer,
+    $foundContainer, $foundTerm, $foundCount,
+    self, searchTimer, odd = false,
+    section_head = { gcode:"G-code", basics:"Getting Started", config:"Configuration", feat:"Features", devel:"Developer Guide", setting:"Settings" };
+
+  const ignore_pattern = /\b(a(ll|nd|re(n't)?)|but|can('t|not)?|d(id|oes)(n't)?|end|for|ha(d|s|ve)(n't)?|it'?s|odd|use[ds]?|even|from|man?y|more|much|some|this|tha[nt]|th[eo]se|the([mny]|ir|re|y're)?|(was|were)(n't)?|wh(at|en|ere|ich|o|y)|will|won't|other|people|(al)?though|users|your?|one|two)\b/g;
+
+  // Return the public interface
+  return {
+
+    /**
+     * Inject content into template using placeholder
+     * @param {String} originalContent
+     * @param {String} injection
+     * @param {String} placeholder
+     * @return {String} injected content
+     */
+    injectContent: (originalContent, injection, placeholder) => {
+      if (injection === undefined) injection = '';
+      var regex = new RegExp(placeholder, 'g');
+      return originalContent.replace(regex, injection);
+    },
+
+    init: function() {
+      self = this;  // The enclosing function()
+
+      // Extend String to remove accents from characters
+      String.prototype.unaccent = function() { return this.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+
+      $searchPage = $("#search");
+      $searchForm = $("[data-search-form]");
+      $searchInput = $("[data-search-input]");
+      $resultTemplate = $("#search-result");
+      $resultsContainer = $("[data-search-results]");
+      $foundContainer = $("[data-search-found]");
+      $foundTerm = $("[data-search-found-term]");
+      $foundCount = $("[data-search-found-count]");
+
+      // hide items found string
+      $foundContainer.hide();
+
+      $searchForm.on('submit',function(e){ return false; });
+
+      // Get search results on submission of form
+      // TODO: Update results on change, after a pause
+      $searchInput.change(self.onSearchChanged)
+                  .on('input cut paste', () => { setTimeout(self.searchFromField, 50) })
+                  .keydown((e) => {
+                    var k = e.keyCode;
+                    if (k == 10 || k == 13) return self.onSearchChanged(e);
+                  })
+                  .keyup((e) => {
+                    var k = e.keyCode;
+                    if (k >= 32 || k == 8) self.onSearchKeyUp();
+                  })
+
+      // Search the provided string on load
+      self.searchFromField();
+
+      // Focus the search field, and also select all chars
+      $searchInput.focus().select();
+    },
+
+    // Get the trimmed string from the search field
+    searchFieldString: () => {
+      return $searchInput.val().trim();
+    },
+
+    // Convert a string to a regex pattern
+    searchPattern: (str) => {
+      const patt = str.toLowerCase().replace(ignore_pattern, '').trim().replace(/\s+/gm, '.+').replace(/([([\\])/gm, '\\$1');
+      return new RegExp(patt);
+    },
+
+    // Execute a search using the field value
+    searchText: (intext) => {
+      var newq = intext.unaccent(),
+          newm = self.searchPattern(newq);
+      self.execSearch(newq, newm);
+    },
+
+    // Execute a search using the field value
+    searchFromField: () => {
+      self.searchText(self.searchFieldString());
+    },
+
+    // When the field value changes (as on blur, paste) execute a search right away.
+    onSearchChanged: (e, allow=false) => {
+      if (!allow) e.preventDefault();
+      const newq = self.searchFieldString();
+      if (newq.length == 0 || newq.length >= 3 || newq.match(/^[gmd]\d+/i))
+        self.searchFromField();
+      return allow;
+    },
+
+    // After a keypress set a timer to run a search on the field value,
+    // canceling any previous timer.
+    onSearchKeyUp: () => {
+      if (searchTimer) { clearTimeout(searchTimer); searchTimer = 0; }
+      const newq = self.searchFieldString();
+      if (newq.length == 0 || newq.length >= 3 || newq.match(/^[gmd]\d+/i))
+        searchTimer = setTimeout(self.searchFromField, 50);
+    },
+
+    /**
+     * Execute search
+     * @return null
+     */
+    execSearch: (newq, newm) => {
+      if (newq == '') return;
+
+      q = newq;
+      qmatch = newm;
+
+      var resultsCount = 0, results = '', lastclass = '';
+
+      odd = false;
+      $.each(searchData, (index, item) => {
+        // check if search term is in content or title
+        const comp = (item.name + " " + item.title + ' ' + item.content + item.excerpt).toLowerCase();
+        if (comp.match(qmatch)) {
+          if (item.class != lastclass) {
+            lastclass = item.class;
+            var fancy = section_head[item.class];
+            results += '<h2 class="' + item.class + '">' + (fancy ? fancy : item.class.toTitleCase()) + '</h2>';
+          }
+          var result = self.populateResultContent($resultTemplate.html(), item);
+          resultsCount++;
+          results += result;
+        }
+      });
+
+      self.populateResultsString(resultsCount);
+      self.showSearchResults(results);
+    },
+
+    /**
+     * Add search results to placeholder
+     * @param {String} results
+     * @return null
+     */
+    showSearchResults: (results) => {
+      // Add results HTML to placeholder
+      $resultsContainer.html(results);
+
+      // Get the height of .overlay and pad the top of the results
+      $resultsContainer.css({paddingTop: $('.overlay').height() + 'px'});
+
+      // Scroll back to top
+      $(window).scrollTop(0);
+    },
+
+    /**
+     * Add results content to item template
+     * @param {String} html
+     * @param {object} item
+     * @return {String} Populated HTML
+     */
+    populateResultContent: (html, item) => {
+      html = self.injectContent(html, item.title, '##Title##');
+      html = self.injectContent(html, item.link, '##Url##');
+      html = self.injectContent(html, item.excerpt, '##Excerpt##');
+      var extra_tags = '';
+      if (item.exp !== undefined)
+        extra_tags += '<span class="label label-experimental">🧪</span>';
+      if (item.since !== undefined)
+        extra_tags += '<span class="label label-since">✅&nbsp;' + item.since + '</span>';
+      if (item.group !== undefined)
+        extra_tags += '<span class="label label-default">🏷️&nbsp;' + item.group + '</span>';
+      if (item.requires !== undefined)
+        $.each(item.requires.split(","), (i,v) => {
+          extra_tags += '<span class="label label-requires">🔧&nbsp;' + v + '</span>';
+        });
+      if (extra_tags) extra_tags += '<span class="clear">&nbsp;</span>'
+      html = self.injectContent(html, extra_tags, '##CustomHTML##');
+      var c = item.class ? item.class : '';
+      html = self.injectContent(html, 'item ' + (odd ? 'odd ' : '') + c, '##DivClass##');
+      odd = !odd;
+      return html;
+    },
+
+    /**
+     * Populates results string
+     * @param {String} count
+     * @return null
+     */
+    populateResultsString: (count) => {
+      $foundTerm.text(q);
+      $foundCount.text(count);
+      $foundContainer.show();
+    }
+
+  }; // return public interface
+
+})();
+
 $(function () {
 
   var verbose = false;
@@ -23,7 +231,8 @@ $(function () {
 
   // Set up the view anew.
   function initInfoView() {
-    // Set up the webview with options and basic html.
+    // Fetch the marlinfw.org site index
+    jekyllSearch.init();
   }
 
   // Save the current view state.

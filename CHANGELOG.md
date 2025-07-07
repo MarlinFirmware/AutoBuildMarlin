@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.75
+- Info Panel: Search marlinfw.org site for documentation.
+- Config Editor: Add parsing for Marlin `2.1.3-b3` macros.
+
 ## 2.1.74
 - Config Editor: Fix int and float value sanitizing
 - ABM Panel: Fix parsing of arch list from `pins.h`

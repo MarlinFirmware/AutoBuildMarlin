@@ -7,6 +7,7 @@
 * {
   --marlin-svg: url(marlin-b.svg);
   --abm-info-color: var(--vscode-editor-color);
+  --abm-info-overlay-bg: var(--vscode-sideBarSectionHeader-background);
   --abm-item-label-width: 24em;
   --abm-field-max-width: calc(100% - var(--abm-item-label-width) - 2em);
   }
@@ -20,6 +21,12 @@ body.vscode-light {
   --abm-info-color-comment: #3C2200;
   --abm-info-legend-color: #000;
   --abm-info-legend-bg: #FFFA;
+  --color-h1-gcode: #B88;
+  --color-h1-basics: #8B8;
+  --color-h1-feat: #8BB;
+  --color-h1-hardware: #88B;
+  --color-h1-devel: #BB8;
+  --color-h1-setting: #B8B;
   }
 
 body.vscode-dark {
@@ -32,6 +39,12 @@ body.vscode-dark {
   --abm-info-color-comment: #827461;
   --abm-info-legend-color: #FFF;
   --abm-info-legend-bg: #0008;
+  --color-h1-gcode: #B88;
+  --color-h1-basics: #8B8;
+  --color-h1-feat: #8BB;
+  --color-h1-hardware: #88B;
+  --color-h1-devel: #BB8;
+  --color-h1-setting: #B8B;
   }
 
 body.vscode-high-contrast {
@@ -44,6 +57,12 @@ body.vscode-high-contrast {
   --abm-info-color-comment: #827461;
   --abm-info-legend-color: #FF0;
   --abm-info-legend-bg: #009;
+  --color-h1-gcode: #B88;
+  --color-h1-basics: #8B8;
+  --color-h1-feat: #8BB;
+  --color-h1-hardware: #88B;
+  --color-h1-devel: #BB8;
+  --color-h1-setting: #B8B;
   }
 body.vscode-high-contrast-light {
   --abm-info-legend-color: #009;
@@ -60,9 +79,7 @@ body {
   background: var(--marlin-svg) transparent no-repeat fixed center;
   background-size: 80%;
   }
-h1, h2, h3, h4, h5, h6 {
-  text-align: center;
-  }
+h1, h2 { text-align: center; }
 
 /* Prevent text selection on all the elements */
 * {
@@ -82,6 +99,47 @@ pre {
   user-select: text;
   }
 
-/* Media variants for wider and small screens */
-@media screen and (min-width: 800px) {
+[data-search-form] {
+  padding-bottom: 4px;
+  font-size: 150%;
+  label { font-weight: bold; margin-right: 0.5em; }
+  input { font-size: 110%; border-radius: 1em; padding: 2px 0.5em; }
+  text-align: center;
+}
+[data-search-results] {
+  h3, h4 { text-align: left; }
+  h2 { border-radius: 0.5em; width: auto; padding: 4px 0; margin-bottom: 0; }
+  h2.gcode { background: var(--color-h1-gcode); }
+  h2.basics { background: var(--color-h1-basics); }
+  h2.feat { background: var(--color-h1-feat); }
+  h2.hardware { background: var(--color-h1-hardware); }
+  h2.devel { background: var(--color-h1-devel); }
+  h2.setting { background: var(--color-h1-setting); }
+  h2.config { background: var(--color-h1-setting); }
+  div.item {
+    clear: both;
+    padding: 1em;
+    border-bottom: 1px solid black;
+    span.label {
+      float: right;
+      font-weight: bold;
+      margin-right: 1em;
+    }
+    >a { clear: both; }
+    background-color: #FFF4;
+    &.odd { background-color: #FFFA; }
   }
+  &>h1 {
+    color: var(--color-data-search);
+    background: var(--color-data-search-bg);
+  }
+}
+p.found { text-align: center; }
+
+div.overlay {
+  width: 100%;
+  position: fixed;
+  background-color: var(--abm-info-overlay-bg);
+  box-shadow: 0 0 24px -6px #000;
+  h1 { margin: 0 0 4px 0; }
+}

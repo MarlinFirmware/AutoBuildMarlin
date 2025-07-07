@@ -8,6 +8,11 @@
   />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link href="${ cssUri }" rel="stylesheet" />
+  <script nonce="${ nonce }">
+    //<![CDATA[
+    const searchData = ${ _searchData };
+    // ]]>
+  </script>
   <script nonce="${ nonce }" src="${ vsviewUri }"></script>
   <script nonce="${ nonce }" src="${ schemaUri }"></script>
   <script nonce="${ nonce }" src="${ jqueryUri }"></script>
@@ -15,5 +20,40 @@
   <title>Marlin Info</title>
 </head>
 <body id="abm-info">
+  <!-- Based on marlinfw.org live site search page -->
+
+  <div id="search" class="container" role="main">
+
+  <div class="overlay">
+
+  <h1>🔍 Marlin Documentation</h1>
+
+  <!-- Search form -->
+  <form data-search-form>
+    <label for="q">Search:</label><input type="search" name="q" id="q" placeholder="@marlinfw.org" autocomplete="off" data-search-input />
+  </form>
+
+  <!-- Search results placeholder -->
+  <p class="found" data-search-found>
+    <span data-search-found-count></span> result(s) found for &ldquo;<span data-search-found-term></span>&rdquo;.
+  </p>
+
+  </div>
+
+  <div data-search-results></div>
+
+  <!-- Search result template -->
+  <script type="text/x-template" id="search-result">
+    <div class="##DivClass##">
+      <a href="https://marlinfw.org##Url##" title="Open ##Url## in browser…">
+        <h3 class="title">##Title##</h3>
+        <p class="excerpt">##Excerpt##</p>
+      </a>
+      ##CustomHTML##
+    </div>
+  </script>
+
+  </div>
+
 </body>
 </html>
