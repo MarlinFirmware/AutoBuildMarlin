@@ -100,8 +100,8 @@ $(function () {
     }
   });
 
-  String.prototype.toTitleCase = function () {
-    return this.replace(/\b([A-Z])(\w+)\b/gi, (_, p1, p2) => { return p1.toUpperCase() + p2.toLowerCase(); })
+  String.prototype.toTitleCase = function() {
+    return this.replace(/\b([A-Z])(\w+)\b/gi, (_,p1,p2) => { return p1.toUpperCase() + p2.toLowerCase(); });
   }
   String.prototype.toMarlinCase = function () {
     return this.replace(/(\w)(jerk|step|temp|bed|chamber|probe)/gi, '$1 $2')

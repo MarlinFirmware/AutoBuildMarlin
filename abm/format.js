@@ -7,7 +7,7 @@
 
 const vscode = require("vscode");
 
-require('../proto')
+require("../proto");
 
 /**
  * Apply additional cleanup to code, after Uncrustify formatting with
