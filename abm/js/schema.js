@@ -756,7 +756,14 @@ class ConfigSchema {
       const result = ['-5', '-3', '-2', -5, -3, -2].includes(sensor?.value);
       return result;
     }
-    const HAS_MAX_TC = () => { return TEMP_SENSOR_IS_MAX_TC('0') || TEMP_SENSOR_IS_MAX_TC('1') || TEMP_SENSOR_IS_MAX_TC('2') || TEMP_SENSOR_IS_MAX_TC('BED') || TEMP_SENSOR_IS_MAX_TC('REDUNDANT'); }
+    const HAS_MAX_TC = () => { return TEMP_SENSOR_IS_MAX_TC('0') || TEMP_SENSOR_IS_MAX_TC('1') || TEMP_SENSOR_IS_MAX_TC('2') || TEMP_SENSOR_IS_MAX_TC('BED') || TEMP_SENSOR_IS_MAX_TC('REDUNDANT'); };
+
+    const UNUSED_TEMP_SENSOR = (index) => {
+      const sensor = priorItemNamed(`TEMP_SENSOR_${index}`);
+      if (!sensor) return true;
+      const hotends = priorItemNamed('HOTENDS') || 0;
+      return index >= hotends;
+    };
 
     // Some enabled driver matches the given enum.
     function _has_driver(type) {
