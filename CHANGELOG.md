@@ -2,6 +2,9 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.76
+- Info Panel: Clean up appearance
+
 ## 2.1.75
 - Info Panel: Search marlinfw.org site for documentation.
 - Config Editor: Add parsing for Marlin `2.1.3-b3` macros.

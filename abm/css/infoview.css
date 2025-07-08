@@ -6,67 +6,70 @@
 
 * {
   --marlin-svg: url(marlin-b.svg);
-  --abm-info-color: var(--vscode-editor-color);
-  --abm-info-overlay-bg: var(--vscode-sideBarSectionHeader-background);
   --abm-item-label-width: 24em;
   --abm-field-max-width: calc(100% - var(--abm-item-label-width) - 2em);
+  --color-h2-gcode: #B88C;
+  --color-h2-basics: #8B8C;
+  --color-h2-feat: #8BBC;
+  --color-h2-hardware: #88BC;
+  --color-h2-devel: #BB8C;
+  --color-h2-setting: #B8BC;
+  --color-h2-page: #999C;
   }
 
 body.vscode-light {
+  --abm-info-overlay-bg: white;
   --abm-svg-color: #00000020;
   --abm-info-bg: #F5F5FDC0;
   --abm-info-bc: #CCCCCCC0;
   --abm-line-hover-bg: #FFFFFFE0;
-  --abm-info-color: #000;
+  --abm-info-color: black;
   --abm-info-color-comment: #3C2200;
-  --abm-info-legend-color: #000;
+  --abm-info-legend-color: black;
   --abm-info-legend-bg: #FFFA;
-  --color-h1-gcode: #B88;
-  --color-h1-basics: #8B8;
-  --color-h1-feat: #8BB;
-  --color-h1-hardware: #88B;
-  --color-h1-devel: #BB8;
-  --color-h1-setting: #B8B;
+  --abm-item-row-bg: #FFF4;
+  --abm-item-row-odd-bg: #FFFA;
+  --abm-item-border-color: #000A;
   }
 
 body.vscode-dark {
+  --abm-info-overlay-bg: #333;
   --marlin-svg: url(marlin-w.svg);
   --abm-svg-color: #FFFFFF20;
   --abm-line-hover-bg: #00000020;
   --abm-info-bg: #00002220;
   --abm-info-bc: #FFFFFF40;
-  --abm-info-color: #FFF;
+  --abm-info-color: white;
   --abm-info-color-comment: #827461;
-  --abm-info-legend-color: #FFF;
+  --abm-info-legend-color: white;
   --abm-info-legend-bg: #0008;
-  --color-h1-gcode: #B88;
-  --color-h1-basics: #8B8;
-  --color-h1-feat: #8BB;
-  --color-h1-hardware: #88B;
-  --color-h1-devel: #BB8;
-  --color-h1-setting: #B8B;
+  --abm-item-row-bg: #0000;
+  --abm-item-row-odd-bg: #FFF2;
+  --abm-item-border-color: #FFFA;
   }
 
 body.vscode-high-contrast {
+  --abm-info-overlay-bg: #2A2;
   --marlin-svg: url(marlin-w.svg);
   --abm-svg-color: #FFFFFF20;
   --abm-line-hover-bg: #00000030;
   --abm-info-bg: #282C34AA;
   --abm-info-bc: #CCCCCCC0;
-  --abm-info-color: #FFF;
+  --abm-info-color: white;
   --abm-info-color-comment: #827461;
-  --abm-info-legend-color: #FF0;
+  --abm-info-legend-color: yellow;
   --abm-info-legend-bg: #009;
-  --color-h1-gcode: #B88;
-  --color-h1-basics: #8B8;
-  --color-h1-feat: #8BB;
-  --color-h1-hardware: #88B;
-  --color-h1-devel: #BB8;
-  --color-h1-setting: #B8B;
+  --abm-item-row-bg: black;
+  --abm-item-row-odd-bg: #226;
+  --abm-item-border-color: white;
   }
 body.vscode-high-contrast-light {
+  --abm-info-overlay-bg: #AFA;
   --abm-info-legend-color: #009;
   --abm-info-legend-bg: #FF0;
+  --abm-item-row-bg: #FFF;
+  --abm-item-row-odd-bg: #DDF;
+  --abm-item-border-color: black;
   }
 
 .clear { clear: both !important; }
@@ -101,33 +104,42 @@ pre {
 
 [data-search-form] {
   padding-bottom: 4px;
-  font-size: 150%;
+  font-size: 120%;
   label { font-weight: bold; margin-right: 0.5em; }
-  input { font-size: 110%; border-radius: 1em; padding: 2px 0.5em; }
+  input { font-size: 100%; border-radius: 1em; padding: 2px 0.5em; }
   text-align: center;
 }
 [data-search-results] {
   h3, h4 { text-align: left; }
-  h2 { border-radius: 0.5em; width: auto; padding: 4px 0; margin-bottom: 0; }
-  h2.gcode { background: var(--color-h1-gcode); }
-  h2.basics { background: var(--color-h1-basics); }
-  h2.feat { background: var(--color-h1-feat); }
-  h2.hardware { background: var(--color-h1-hardware); }
-  h2.devel { background: var(--color-h1-devel); }
-  h2.setting { background: var(--color-h1-setting); }
-  h2.config { background: var(--color-h1-setting); }
+  h2 {
+    width: auto;
+    padding: 4px 0;
+    margin-bottom: 4px;
+    border-radius: 1em;
+    color: var(--abm-info-color);
+  }
+  h2.gcode {background: var(--color-h2-gcode);}
+  h2.basics { background: var(--color-h2-basics); }
+  h2.feat { background: var(--color-h2-feat); }
+  h2.hardware { background: var(--color-h2-hardware); }
+  h2.devel { background: var(--color-h2-devel); }
+  h2.page { background: var(--color-h2-page); }
+  h2.setting { background: var(--color-h2-setting); }
+  h2.config { background: var(--color-h2-setting); }
   div.item {
     clear: both;
     padding: 1em;
-    border-bottom: 1px solid black;
     span.label {
       float: right;
       font-weight: bold;
       margin-right: 1em;
     }
     >a { clear: both; }
-    background-color: #FFF4;
-    &.odd { background-color: #FFFA; }
+    background-color: var(--abm-item-row-bg);
+    &.odd { background-color: var(--abm-item-row-odd-bg); }
+    +div.item {
+      border-top: 1px dotted var(--abm-item-border-color);
+    }
   }
   &>h1 {
     color: var(--color-data-search);
@@ -139,7 +151,7 @@ p.found { text-align: center; }
 div.overlay {
   width: 100%;
   position: fixed;
-  background-color: var(--abm-info-overlay-bg);
-  box-shadow: 0 0 24px -6px #000;
+  background-color: var(--vscode-sideBarTitle-background);
+  box-shadow: 0 0 24px -6px black;
   h1 { margin: 0 0 4px 0; }
 }

@@ -15,9 +15,9 @@ String.prototype.toTitleCase = function () {
 }
 
 //
-// Declare a jekyllSearch singleton
+// Declare a marlinfwSearch singleton
 //
-var jekyllSearch = (() => {
+var marlinfwSearch = (() => {
 
   var q, qmatch,
     $searchPage, $searchForm, $searchInput,
@@ -194,7 +194,7 @@ var jekyllSearch = (() => {
         $.each(item.requires.split(","), (i,v) => {
           extra_tags += '<span class="label label-requires">🔧&nbsp;' + v + '</span>';
         });
-      if (extra_tags) extra_tags += '<span class="clear">&nbsp;</span>'
+      if (extra_tags) extra_tags += '<br class="clear" />'
       html = self.injectContent(html, extra_tags, '##CustomHTML##');
       var c = item.class ? item.class : '';
       html = self.injectContent(html, 'item ' + (odd ? 'odd ' : '') + c, '##DivClass##');
@@ -232,7 +232,7 @@ $(function () {
   // Set up the view anew.
   function initInfoView() {
     // Fetch the marlinfw.org site index
-    jekyllSearch.init();
+    marlinfwSearch.init();
   }
 
   // Save the current view state.
