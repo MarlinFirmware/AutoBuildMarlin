@@ -14,13 +14,22 @@ String.prototype.toTitleCase = function () {
   return this.replace(/\b([A-Z])(\w+)\b/gi, (_,p1,p2) => { return p1.toUpperCase() + p2.toLowerCase(); });
 }
 
+var verbose = false;
+function log(message, data) {
+  if (!verbose) return;
+  console.log(`[docsview] ${message}`);
+  if (data !== undefined) console.dir(data);
+}
+
+var docs_filter = "";
+
 //
 // Declare a marlinfwSearch singleton
 //
 var marlinfwSearch = (() => {
 
-  var q, qmatch,
-    $searchPage, $searchForm, $searchInput,
+  var qmatch,
+    $searchForm, $searchInput,
     $resultTemplate, $resultsContainer,
     $foundContainer, $foundTerm, $foundCount,
     self, searchTimer, odd = false,
@@ -50,7 +59,6 @@ var marlinfwSearch = (() => {
       // Extend String to remove accents from characters
       String.prototype.unaccent = function() { return this.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 
-      $searchPage = $("#search");
       $searchForm = $("[data-search-form]");
       $searchInput = $("[data-search-input]");
       $resultTemplate = $("#search-result");
@@ -132,24 +140,23 @@ var marlinfwSearch = (() => {
     execSearch: (newq, newm) => {
       if (newq == '') return;
 
-      q = newq;
+      docs_filter = newq;
       qmatch = newm;
 
-      var resultsCount = 0, results = '', lastclass = '';
-
-      odd = false;
+      let resultsCount = 0, results = '', prevclass = '';
       $.each(searchData, (index, item) => {
         // check if search term is in content or title
         const comp = (item.name + " " + item.title + ' ' + item.group + ' ' + item.content + item.excerpt).toLowerCase();
         if (comp.match(qmatch)) {
-          if (item.class != lastclass) {
-            lastclass = item.class;
-            var fancy = section_head[item.class];
+          if (item.class != prevclass) {
+            prevclass = item.class;
+            odd = false;
+            let fancy = section_head[item.class];
             results += '<h2 class="' + item.class + '">' + (fancy ? fancy : item.class.toTitleCase()) + '</h2>';
           }
-          var result = self.populateResultContent($resultTemplate.html(), item);
+          results += self.populateResultContent($resultTemplate.html(), item);
+          odd = !odd;
           resultsCount++;
-          results += result;
         }
       });
 
@@ -183,22 +190,20 @@ var marlinfwSearch = (() => {
       html = self.injectContent(html, item.title, '##Title##');
       html = self.injectContent(html, item.link, '##Url##');
       html = self.injectContent(html, item.excerpt, '##Excerpt##');
-      var extra_tags = '';
+      var extra_tags = [];
       if (item.exp !== undefined)
-        extra_tags += '<span class="label label-experimental">🧪</span>';
-      if (item.since !== undefined)
-        extra_tags += '<span class="label label-since">✅&nbsp;' + item.since + '</span>';
-      if (item.group !== undefined)
-        extra_tags += '<span class="label label-default">🏷️&nbsp;' + item.group + '</span>';
-      if (item.requires !== undefined)
-        $.each(item.requires.split(","), (i,v) => {
-          extra_tags += '<span class="label label-requires">🔧&nbsp;' + v + '</span>';
+        extra_tags.push('<span class="experimental">🧪</span>');
+      if (item.requires !== undefined )
+        $.each(item.requires.split(/\s*,\s*/), (i,v) => {
+          extra_tags.push(' <span class="requires">🔧&nbsp;' + v + '</span>');
         });
-      if (extra_tags) extra_tags += '<br class="clear" />'
+      if (item.group !== undefined)
+        extra_tags.push(' <span class="default">🏷️&nbsp;' + item.group + '</span>');
+      if (item.since !== undefined)
+        extra_tags.push(' <span class="since">✅&nbsp;' + item.since + '</span>');
+      extra_tags = extra_tags.length ? `<div class="labels">${extra_tags.join(' ')}</div>` : '';
       html = self.injectContent(html, extra_tags, '##CustomHTML##');
-      var c = item.class ? item.class : '';
-      html = self.injectContent(html, 'item ' + (odd ? 'odd ' : '') + c, '##DivClass##');
-      odd = !odd;
+      html = self.injectContent(html, 'item' + (odd ? ' odd' : '') + (item.last ? ' last' : '') + (item.class ? ` ${item.class}` : ''), '##DivClass##');
       return html;
     },
 
@@ -208,7 +213,7 @@ var marlinfwSearch = (() => {
      * @return null
      */
     populateResultsString: (count) => {
-      $foundTerm.text(q);
+      $foundTerm.text(docs_filter);
       $foundCount.text(count);
       $foundContainer.show();
     }
@@ -218,14 +223,6 @@ var marlinfwSearch = (() => {
 })();
 
 $(function () {
-
-  var verbose = false;
-  function log(message, data) {
-    if (!verbose) return;
-    console.log(`[docsview] ${message}`);
-    if (data !== undefined) console.dir(data);
-  }
-
   // Set up the view anew.
   function initDocsView() {
     // Fetch the marlinfw.org site index

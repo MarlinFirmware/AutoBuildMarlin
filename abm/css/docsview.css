@@ -73,16 +73,16 @@ body.vscode-high-contrast-light {
   }
 
 .clear { clear: both !important; }
-.hide, .nope { display: none !important; }
-.show { display: block !important; }
 
 body {
   margin: 0;
   padding: 0;
   background: var(--marlin-svg) transparent no-repeat fixed center;
   background-size: 80%;
-  }
-h1, h2 { text-align: center; }
+  min-height: 100vh; /* Ensure body takes full viewport height */
+  display: flex;
+  flex-direction: column;
+}
 
 /* Prevent text selection on all the elements */
 * {
@@ -93,65 +93,84 @@ h1, h2 { text-align: center; }
   -ms-user-select: none;
   user-select: none;
   }
-pre {
-  -webkit-touch-callout: text;
-  -webkit-user-select: text;
-  -khtml-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
-  user-select: text;
-  }
 
 [data-search-form] {
+  max-width: 80%;
+  margin: 0 auto;
   padding-bottom: 4px;
   font-size: 120%;
-  label { font-weight: bold; margin-right: 0.5em; }
-  input { font-size: 100%; border-radius: 1em; padding: 2px 0.5em; }
   text-align: center;
+  label { font-weight: bold; margin-right: 0.5em; }
+  input { font-size: 100%; width: 70%; border-radius: 1em; padding: 2px 0.5em; }
 }
+
 [data-search-results] {
-  h3, h4 { text-align: left; }
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1em;
+  max-width: 40em;
+  margin: auto;
+
   h2 {
     width: auto;
     padding: 4px 0;
     margin-bottom: 4px;
     border-radius: 1em;
     color: var(--abm-docs-color);
+    text-align: center; /* Center headings like in original */
+
+    &.gcode { background: var(--color-h2-gcode); }
+    &.basics { background: var(--color-h2-basics); }
+    &.feat { background: var(--color-h2-feat); }
+    &.hardware { background: var(--color-h2-hardware); }
+    &.devel { background: var(--color-h2-devel); }
+    &.page { background: var(--color-h2-page); }
+    &.setting, &.config { background: var(--color-h2-setting); }
   }
-  h2.gcode {background: var(--color-h2-gcode);}
-  h2.basics { background: var(--color-h2-basics); }
-  h2.feat { background: var(--color-h2-feat); }
-  h2.hardware { background: var(--color-h2-hardware); }
-  h2.devel { background: var(--color-h2-devel); }
-  h2.page { background: var(--color-h2-page); }
-  h2.setting { background: var(--color-h2-setting); }
-  h2.config { background: var(--color-h2-setting); }
+
+  p { margin: 4px 0; }
+
   div.item {
-    clear: both;
-    padding: 1em;
-    span.label {
-      float: right;
+    div.labels {
+      text-align: right;
+      font-size: 80%;
       font-weight: bold;
-      margin-right: 1em;
+      span { white-space: nowrap; margin-left: 0.5em; }
     }
-    >a { clear: both; }
+
+    > a {
+      padding: 0.75em;
+
+      flex: 1; /* Take remaining space */
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+
+      h3.title { margin: 0; font-size: 1.2em; }
+
+      .excerpt {
+        margin-bottom: 0;
+        font-size: 0.9em;
+        line-height: 1.4;
+      }
+    }
+
     background-color: var(--abm-item-row-bg);
     &.odd { background-color: var(--abm-item-row-odd-bg); }
-    +div.item {
-      border-top: 1px dotted var(--abm-item-border-color);
-    }
-  }
-  &>h1 {
-    color: var(--color-data-search);
-    background: var(--color-data-search-bg);
+
+    + div.item { border-top: 1px dotted var(--abm-item-border-color); }
   }
 }
-p.found { text-align: center; }
 
 div.overlay {
   width: 100%;
   position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000; /* Ensure overlay stays above other content */
   background-color: var(--vscode-sideBarTitle-background);
   box-shadow: 0 0 24px -6px black;
-  h1 { margin: 0 0 4px 0; }
+  h1 { margin: 0.5em 0; text-align: center; }
+  p.found { text-align: center; padding-bottom: 2px; }
 }
