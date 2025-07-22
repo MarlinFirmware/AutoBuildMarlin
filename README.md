@@ -74,7 +74,7 @@ The Auto Build Marlin extension for VSCode contributes sidebar panels, a web vie
 
 ### Bootstrapping
 
-When VSCode starts the extension it just loads `extension.js`. This file imports `abm.js` and `prefs.js` for utility functions, and `format.js`, `info.js`, and `editor.js` for our feature providers. These files import `js/marlin.js` and `js/schema.js` to process Marlin files, and node `fs` for file functions. Any top level code in these files runs as soon as `extension.js` does. This is when modules init their classes and export their symbols.
+When VSCode starts the extension it just loads `extension.js`. This file imports `abm.js` and `prefs.js` for utility functions, and `format.js`, `docs.js`, and `editor.js` for our feature providers. These files import `js/marlin.js` and `js/schema.js` to process Marlin files, and node `fs` for file functions. Any top level code in these files runs as soon as `extension.js` does. This is when modules init their classes and export their symbols.
 
 With all that done, `extension.js` defines the code that will register ABM's commands and feature providers with VSCode upon activation.
 

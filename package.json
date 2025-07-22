@@ -2,7 +2,7 @@
   "name": "auto-build",
   "displayName": "Auto Build Marlin",
   "description": "Provides an interface to configure, build, and upload Marlin Firmware.",
-  "version": "2.1.76",
+  "version": "2.1.77",
   "preview": false,
   "publisher": "marlinfirmware",
   "icon": "icon.png",
@@ -128,8 +128,8 @@
         },
         {
           "type": "webview",
-          "id": "abm.infoView",
-          "name": "Marlin Info"
+          "id": "abm.docsView",
+          "name": "Marlin Docs"
         }
       ]
     },
@@ -256,7 +256,7 @@
         {
           "command": "abm.show",
           "group": "navigation@1",
-          "when": "abm.active && (view == abm.welcomeView || view == abm.infoView)"
+          "when": "abm.active && (view == abm.welcomeView || view == abm.docsView)"
         },
         {
           "command": "abm.build",
@@ -281,7 +281,7 @@
         {
           "command": "abm.config",
           "group": "navigation@6",
-          "when": "abm.active && (view == abm.welcomeView || view == abm.infoView)"
+          "when": "abm.active && (view == abm.welcomeView || view == abm.docsView)"
         }
       ],
       "commandPalette": [

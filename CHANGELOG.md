@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.77
+- Docs Panel: Replacing "Info" panel
+- Docs Panel: Filter now includes group name
+
 ## 2.1.76
 - Info Panel: Clean up appearance
 

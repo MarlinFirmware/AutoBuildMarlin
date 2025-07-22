@@ -1,7 +1,7 @@
 /**
  * Auto Build Marlin
- * abm/css/infoview.css
- * Styles for Info sidebar panel
+ * abm/css/docsview.css
+ * Styles for Docs sidebar panel
  */
 
 * {
@@ -18,55 +18,55 @@
   }
 
 body.vscode-light {
-  --abm-info-overlay-bg: white;
+  --abm-docs-overlay-bg: white;
   --abm-svg-color: #00000020;
-  --abm-info-bg: #F5F5FDC0;
-  --abm-info-bc: #CCCCCCC0;
+  --abm-docs-bg: #F5F5FDC0;
+  --abm-docs-bc: #CCCCCCC0;
   --abm-line-hover-bg: #FFFFFFE0;
-  --abm-info-color: black;
-  --abm-info-color-comment: #3C2200;
-  --abm-info-legend-color: black;
-  --abm-info-legend-bg: #FFFA;
+  --abm-docs-color: black;
+  --abm-docs-color-comment: #3C2200;
+  --abm-docs-legend-color: black;
+  --abm-docs-legend-bg: #FFFA;
   --abm-item-row-bg: #FFF4;
   --abm-item-row-odd-bg: #FFFA;
   --abm-item-border-color: #000A;
   }
 
 body.vscode-dark {
-  --abm-info-overlay-bg: #333;
+  --abm-docs-overlay-bg: #333;
   --marlin-svg: url(marlin-w.svg);
   --abm-svg-color: #FFFFFF20;
   --abm-line-hover-bg: #00000020;
-  --abm-info-bg: #00002220;
-  --abm-info-bc: #FFFFFF40;
-  --abm-info-color: white;
-  --abm-info-color-comment: #827461;
-  --abm-info-legend-color: white;
-  --abm-info-legend-bg: #0008;
+  --abm-docs-bg: #00002220;
+  --abm-docs-bc: #FFFFFF40;
+  --abm-docs-color: white;
+  --abm-docs-color-comment: #827461;
+  --abm-docs-legend-color: white;
+  --abm-docs-legend-bg: #0008;
   --abm-item-row-bg: #0000;
   --abm-item-row-odd-bg: #FFF2;
   --abm-item-border-color: #FFFA;
   }
 
 body.vscode-high-contrast {
-  --abm-info-overlay-bg: #2A2;
+  --abm-docs-overlay-bg: #2A2;
   --marlin-svg: url(marlin-w.svg);
   --abm-svg-color: #FFFFFF20;
   --abm-line-hover-bg: #00000030;
-  --abm-info-bg: #282C34AA;
-  --abm-info-bc: #CCCCCCC0;
-  --abm-info-color: white;
-  --abm-info-color-comment: #827461;
-  --abm-info-legend-color: yellow;
-  --abm-info-legend-bg: #009;
+  --abm-docs-bg: #282C34AA;
+  --abm-docs-bc: #CCCCCCC0;
+  --abm-docs-color: white;
+  --abm-docs-color-comment: #827461;
+  --abm-docs-legend-color: yellow;
+  --abm-docs-legend-bg: #009;
   --abm-item-row-bg: black;
   --abm-item-row-odd-bg: #226;
   --abm-item-border-color: white;
   }
 body.vscode-high-contrast-light {
-  --abm-info-overlay-bg: #AFA;
-  --abm-info-legend-color: #009;
-  --abm-info-legend-bg: #FF0;
+  --abm-docs-overlay-bg: #AFA;
+  --abm-docs-legend-color: #009;
+  --abm-docs-legend-bg: #FF0;
   --abm-item-row-bg: #FFF;
   --abm-item-row-odd-bg: #DDF;
   --abm-item-border-color: black;
@@ -116,7 +116,7 @@ pre {
     padding: 4px 0;
     margin-bottom: 4px;
     border-radius: 1em;
-    color: var(--abm-info-color);
+    color: var(--abm-docs-color);
   }
   h2.gcode {background: var(--color-h2-gcode);}
   h2.basics { background: var(--color-h2-basics); }

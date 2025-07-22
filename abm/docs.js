@@ -1,45 +1,38 @@
 /**
- * abm/info.js
+ * abm/docs.js
  *
- * Provider for the Marlin Info sidebar.
+ * Provider for the Marlin Docs sidebar.
  * Loads at extension startup.
  *
  * This provider:
- * - Sets up the initial webview for the Marlin Info sidebar.
- * - Handles commands sent by the Info webview.
- * - Sends messages to the Info webview when something changes.
+ * - Sets up the initial webview for the Marlin Docs sidebar.
+ * - Handles commands sent by the Docs webview.
+ * - Sends messages to the Docs webview when something changes.
  *
- * The Info Panel displays the same information as the Build Panel.
- * Code developed for this panel may later be applied to all parts
- * of ABM for display of configuration info.
+ * The Docs Panel downloads the marlinfw.org search index and
+ * displays a search field to find terms in the index.
+ * Search results are displayed in a list with links to the website.
  */
 'use strict';
 
 const vscode = require("vscode"),
-          fs = require('fs'),
          abm = require('./abm'),
-      marlin = require('./js/marlin'),
-      schema = require('./js/schema'),
           vw = vscode.window;
 
-// Get the schema for the display and manipulation of configuration info
-const ConfigSchema = schema.ConfigSchema;
-var schemas;
-
 const jsonFeedUrl = 'https://marlinfw.org/feeds/feed.json';
-class InfoPanelProvider {
+class DocsPanelProvider {
 
   constructor(context) { this.context = context; }
 
   // Called by extension.js to register the provider.
   static register(context) {
-    const provider = new InfoPanelProvider(context);
-    return vw.registerWebviewViewProvider(InfoPanelProvider.viewType, provider);
+    const provider = new DocsPanelProvider(context);
+    return vw.registerWebviewViewProvider(DocsPanelProvider.viewType, provider);
   }
 
-  // Called when the info pane is revealed.
+  // Called when the Docs pane is revealed.
   async resolveWebviewView(wvv, wvContext, _token) {
-    //console.log("InfoPanelProvider.resolveWebviewView"); console.dir(wvv);
+    //console.log("DocsPanelProvider.resolveWebviewView"); console.dir(wvv);
 
     this._view = wvv; // Take ownership of the webview view.
 
@@ -52,35 +45,32 @@ class InfoPanelProvider {
     wv.html = await this.getWebViewHtml(wv);
 
     // Handle show/hide events.
-    wvv.onDidChangeVisibility(() => {
-      abm.log(`InfoPanelProvider.onDidChangeVisibility: ${wvv.visible}`);
-    });
+    //wvv.onDidChangeVisibility(() => {
+    //  abm.log(`DocsPanelProvider.onDidChangeVisibility: ${wvv.visible}`);
+    //});
 
     // Let go of the webview view when it is closed.
     wvv.onDidDispose(() => {
-      abm.log("InfoPanelProvider.onDidDispose:");
+      abm.log("DocsPanelProvider.onDidDispose:");
       this._view = undefined;
     });
 
     // Receive message from the webview.
-    function handleMessageFromUI(m) {
-      abm.log('InfoPanelProvider::handleMessageFromUI', m);
-      switch (m.type) {
-        case 'hello':
-          vw.showInformationMessage('Hello from the webview!');
-          break;
-      }
-    }
-    wv.onDidReceiveMessage(handleMessageFromUI);
+    //function handleMessageFromUI(m) {
+    //  abm.log('DocsPanelProvider::handleMessageFromUI', m);
+    //  switch (m.type) {
+    //    case 'hello':
+    //      vw.showInformationMessage('Hello from the webview!');
+    //      break;
+    //  }
+    //}
+    //wv.onDidReceiveMessage(handleMessageFromUI);
 
     // Tell the webview to display something
-    // Received by infoview.js:handleMessageToUI
+    // Received by docsview.js:handleMessageToUI
     function updateWebview() {
-      wv.postMessage({ type: 'say', text: "hello" }); // infoview.js:handleMessageToUI
+      wv.postMessage({ type: 'say', text: "hello" }); // docsview.js:handleMessageToUI
     }
-
-    schemas = schema.combinedSchema(marlin, fs);
-    abm.log("abm/info.js", schemas);
 
     // Update the view now that the pane has been revealed.
     updateWebview();
@@ -105,7 +95,7 @@ class InfoPanelProvider {
   }
 
   /**
-   * Static HTML as the starting point for info webviews.
+   * Static HTML as the starting point for the docs webview.
    * Attached scripts are invoked in the webview's context.
    */
   async getWebViewHtml(webview) {
@@ -113,20 +103,19 @@ class InfoPanelProvider {
     const nonce = abm.getNonce(), // Use a nonce to whitelist which scripts can be run
       jqueryUri = this.jsUri(webview, 'jquery-3.6.0.min.js'),
       vsviewUri = this.jsUri(webview, 'vsview.js'),
-      schemaUri = this.jsUri(webview, 'schema.js'),
-      scriptUri = this.jsUri(webview, 'infoview.js'),
-         cssUri = this.resourceUri(webview, 'css', 'infoview.css'),
+      scriptUri = this.jsUri(webview, 'docsview.js'),
+         cssUri = this.resourceUri(webview, 'css', 'docsview.css'),
     _searchData = (await this.fetchMarlinSiteIndex()).replaceAll('`', '\\`');
 
-    const merged_html = eval(`\`${ abm.load_html('info.html') }\``);
+    const merged_html = eval(`\`${ abm.load_html('docs.html') }\``);
     return merged_html;
   }
 }
 
 // Static members
-InfoPanelProvider.viewType = 'abm.infoView';
+DocsPanelProvider.viewType = 'abm.docsView';
 
 // Export the provider
-exports.InfoPanelProvider = InfoPanelProvider;
+exports.DocsPanelProvider = DocsPanelProvider;
 
-abm.log("InfoPanelProvider (info.js) loaded");
+abm.log("DocsPanelProvider (docs.js) loaded");

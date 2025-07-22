@@ -1,11 +1,11 @@
 /**
  * Auto Build Marlin
- * abm/js/infoview.js
+ * abm/js/docsview.js
  *
  * This script runs when the view is created / revealed.
  *
  * The webview already contains the base HTML, so we:
- *  - Set up the initial info webview.
+ *  - Set up the initial docs webview.
  */
 'use strict';
 
@@ -222,15 +222,12 @@ $(function () {
   var verbose = false;
   function log(message, data) {
     if (!verbose) return;
-    console.log(`[editview] ${message}`);
+    console.log(`[docsview] ${message}`);
     if (data !== undefined) console.dir(data);
   }
 
-  // References to elements in the webview.
-  const $element = $('#element');
-
   // Set up the view anew.
-  function initInfoView() {
+  function initDocsView() {
     // Fetch the marlinfw.org site index
     marlinfwSearch.init();
   }
@@ -249,12 +246,12 @@ $(function () {
    * @param {object} message - The message object.
    */
   function handleMessageToUI(m) {
-    log("infoview.js : handleMessageToUI", m);
+    log("docsview.js : handleMessageToUI", m);
     switch (m.type) {
       // Update the whole form in response to an external change.
-      case 'info':
-        //drawInfo(m.data);
-        break;
+      //case 'say':
+      //  showtext(m.text);
+      //  break;
 
       // Display an error message
       case 'error':
@@ -272,18 +269,18 @@ $(function () {
   //
 
   // Create elements, add handlers, fill in initial info, etc.
-  initInfoView();
+  initDocsView();
 
   //
-  // Info Panel Revealed
+  // Docs Panel Revealed
   //
-  // If there is state data then we can skip the parser and build the form.
+  // If there is state data then apply it to the view, e.g., to preserve the filter text.
   const state = vscode.getState();
   if (state) {
     log("Got VSCode state", state);
     if ('data' in state) {
-      log("Init Marlin Info Webview with stored data")
-      initInfoView();
+      log("Init Marlin Docs Webview with stored data")
+      initDocsView();
     }
   }
 
