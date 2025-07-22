@@ -40,7 +40,7 @@ function _codeformat(text) {
 function _pinsformat(intext) {
   const verbose = false;
   function log(line, msg) {
-    if (verbose) console.log(`ABM [${line}] ${msg}`);
+    if (verbose) console.log(`format.js [${line}] ${msg}`);
   }
 
   const mpatt = [ '-?\\d+', 'P[A-I]\\d+', 'P\\d_\\d+' ],

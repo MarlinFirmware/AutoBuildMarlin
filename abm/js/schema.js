@@ -1002,9 +1002,9 @@ class ConfigSchema {
           inQuote = char;
         } else if (char === '(') {
           // Store the char index as belonging to a function or wrapper
-          stack.push({ index: i, type: isFunctionCall(code, i) ? 'fn' : 'normal' });
+          stack.push({ openIndex: i, type: isFunctionCall(code, i) ? 'fn' : 'normal' });
         } else if (char === ')' && stack.length > 0) {
-          let { index: openIndex, type } = stack.pop();
+          let { openIndex, type } = stack.pop();
           if (type === 'normal') {
             pairs[openIndex] = i;
             if (isRedundant(code, openIndex, i, pairs)) {
