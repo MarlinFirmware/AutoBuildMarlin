@@ -792,7 +792,7 @@ class ConfigSchema {
       const it = self.firstItem(it => ConfigSchema.definedBefore(it, initem.sid) && it.name === name);
       if (it) {
         if (it.type === 'macro') {
-          const match = it.value.match(/(\w+)\s*\(([^()]+?)\)/),
+          const match = it.value.match(/(\w+)\s*\(([^()]*?)\)/),
                 parms = match[2].replace(/(\w+)/g, "'$1'"),
                 macro = `${match[1]}(${parms})`;
           //console.log(`Evaluating macro ${it.name} == ${macro}`);
@@ -1368,25 +1368,38 @@ class ConfigSchema {
         // Parenthesize the given expression if needed
         function atomize(s) {
           if (s === ''
-            || (/^[A-Za-z0-9_]*(\([^)]+\))?$/.test(s))
-            || (/^[A-Za-z0-9_]+\ ==\ \d+?$/.test(s))
+            || (/^\([^()]*?\)$/i.test(s))
+            || (/^!?[a-z_][a-z0-9_]+(\([^()]+?\))?$/i.test(s))
+            || (/^[a-z_][a-z0-9_]+ ([<>]=?|[!=]=) -?[a-z0-9_]+$/i.test(s))
           ) return s;
           return `(${s})`;
         }
 
+        // 1. Capture "atomic" things, replace with $1, $2, etc.
+        const apatt = [ /!?[a-z_][a-z0-9_]*\([^()]*?\)/gi,   // function-like expression
+                    //  /[a-z_][a-z0-9_]* ([<>]=?|[!=]=) -?[a-z0-9_]*/gi, // simple comparison
+                        /\([^(]+ [^();]+\)/g,                // inner parenthesized thing containing whitespace
+                        /!?[a-z_][a-z0-9_]*?/gi ];           // bare symbol name (e.g., HAS_...)
+
         // Combine adjacent conditions where possible
+        function _combine_conditions(cond) {
+          return cond
+            .replaceAll('!ENABLED', 'DISABLED').replaceAll('!DISABLED', 'ENABLED').replaceAll('!ANY', 'NONE').replaceAll('!NONE', 'ANY')
+            .replace(/(?:DISABLED|!ALL|!BOTH)\s*\(\s*([^()]+?)\s*\)\s*\|\|\s*(?:DISABLED|!ALL|!BOTH)\s*\(\s*/g, '!ALL($1, ')
+            .replace(/(?:ENABLED|ALL|BOTH)\s*\(\s*([A-Za-z_][A-Za-z0-9_]+)\s*\)\s*&&\s*(?:ENABLED|ALL|BOTH)\s*\(\s*/g, 'ALL($1, ')
+            .replace(/(?:ENABLED|ANY|EITHER)\s*\(\s*([A-Za-z_][A-Za-z0-9_]+)\s*\)\s*\|\|\s*(?:ENABLED|ANY|EITHER)\s*\(\s*/g, 'ANY($1, ')
+            .replace(/(?:NONE|DISABLED)\s*\(\s*([^()]+?)\s*\)\s*&&\s*(?:NONE|DISABLED)\s*\(\s*/g, 'NONE($1, ');
+        }
+
         function combine_conditions(condarr) {
-          let cond = '(' + condarr.flat().join(') && (') + ')';
-          for (;;) {
-            const old_cond = cond;
-            cond = cond
-              .replaceAll('!ENABLED', 'DISABLED').replaceAll('!DISABLED', 'ENABLED')
-              .replace(/(DISABLED|!ALL|!BOTH)\s*\(\s*([^()]+?)\s*\)\s*\|\|\s*(DISABLED|!ALL|!BOTH)\s*\(\s*/g, '!ALL($2, ')
-              .replace(/(ENABLED|ALL|BOTH)\s*\(\s*([A-Za-z_][A-Za-z0-9_]+)\s*\)\s*&&\s*(ENABLED|ALL|BOTH)\s*\(\s*/g, 'ALL($2, ')
-              .replace(/(ENABLED|ANY|EITHER)\s*\(\s*([A-Za-z_][A-Za-z0-9_]+)\s*\)\s*\|\|\s*(ENABLED|ANY|EITHER)\s*\(\s*/g, 'ANY($2, ')
-              .replace(/(NONE|DISABLED)\s*\(\s*([^()]+?)\s*\)\s*&&\s*(NONE|DISABLED)\s*\(\s*/g, 'NONE($2, ')
-              .replace(/^\((!?[a-z_][a-z0-9_]+\([^()]+?\))\)$/i, '$1');
-            if (old_cond === cond) break;
+          //let cond = '(' + condarr.flat().join(') && (') + ')';
+          let cond = condarr.flat().join(' && ');
+          if (condarr.length > 1) {
+            for (;;) {
+              let old_cond = cond;
+              cond = _combine_conditions(cond);
+              if (old_cond === cond) break;
+            }
           }
           return cond;
         }
@@ -1594,11 +1607,14 @@ class ConfigSchema {
 
           function extend_requires(cond) {
             if ('requires' in define_info)
-              define_info.requires = `${cond} && (${define_info.requires})`;
+              define_info.requires = `${cond} && ${atomize(define_info.requires)}`;
             else
               define_info.requires = cond;
           }
-          if (axis) extend_requires(`HAS_AXIS(${axis})`);
+          if (axis) {
+            extend_requires(`HAS_AXIS(${axis})`);
+            define_info.requires = define_info.requires.replace(`&& defined(${axis}_DRIVER_TYPE)`, '');
+          }
           if (eindex) extend_requires(`HAS_EAXIS(${eindex})`);
           if (hindex) extend_requires(`HAS_SENSOR(${hindex})`);
           if (tindex) extend_requires(`ANY_THERMISTOR_IS(${tindex})`);
