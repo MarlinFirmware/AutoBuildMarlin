@@ -1684,8 +1684,10 @@ class ConfigSchema {
             full_comment = comment_buff.join('\n');
             comment_buff = [];
           }
-          define_info.comment = full_comment;
-          set_units(full_comment); // If the comment specifies units, add that to the info
+          if (full_comment !== "") {
+            define_info.comment = full_comment;
+            set_units(full_comment); // If the comment specifies units, add that to the info
+          }
 
           // Set the options for the current #define
           if (define_name === "MOTHERBOARD" && boards?.length) {
