@@ -1381,6 +1381,34 @@ class ConfigSchema {
                         /\([^(]+ [^();]+\)/g,                // inner parenthesized thing containing whitespace
                         /!?[a-z_][a-z0-9_]*?/gi ];           // bare symbol name (e.g., HAS_...)
 
+        // Return the given expression free of (most) extraneous parentheses
+        function remove_extra_parens(inExpr) {
+          // Skip simple expressions without opening parentheses
+          if (!(inExpr[0] === '(' || inExpr.includes(' ')) || inExpr.includes(') 0)'))
+            return inExpr;
+
+          const matches = [];
+          let pcount = 0;
+          let outExpr = inExpr
+            .replace(apatt[0], (m) => { matches.push(m); return `;${pcount++};`; })
+            .replace(apatt[1], (m) => { matches.push(m); return `;${pcount++};`; })
+            .replace(apatt[2], (m) => { matches.push(m); return `;${pcount++};`; });
+
+          // 2. Remove extra parentheses for "($<num>)" and "((whatever))"
+          for (;;) {
+            let oldExpr = outExpr;
+            outExpr = outExpr.replace(/\(\s*(!?;\d+;|!?\([^()]*?\))\s*\)/g, '$1');
+            if (outExpr === oldExpr) break;
+          }
+
+          // 3. Restore the original function calls by replacing ;#; with the original strings
+          //    Must do this in reverse order because ;#; may be captured later
+          while (--pcount >= 0)
+            outExpr = outExpr.replace(new RegExp(`;${pcount};`, 'g'), matches[pcount]);
+
+          return outExpr;
+        }
+
         // Combine adjacent conditions where possible
         function _combine_conditions(cond) {
           return cond
@@ -1398,6 +1426,19 @@ class ConfigSchema {
             for (;;) {
               let old_cond = cond;
               cond = _combine_conditions(cond);
+              if (old_cond === cond) break;
+            }
+          }
+          return cond;
+        }
+
+        function combine_conditions_more(condarr) {
+          //let cond = '(' + condarr.flat().join(') && (') + ')';
+          let cond = condarr.flat().join(' && ');
+          if (condarr.length > 1) {
+            for (;;) {
+              let old_cond = cond;
+              cond = _combine_conditions(remove_extra_parens(_combine_conditions(cond)));
               if (old_cond === cond) break;
             }
           }
@@ -1533,7 +1574,7 @@ class ConfigSchema {
           if (options) define_info.options = options;
 
           if (conditions.length) {
-            define_info.requires = combine_conditions(conditions);
+            define_info.requires = combine_conditions_more(conditions);
             define_info.depth = if_depth;
           }
 
@@ -1723,7 +1764,7 @@ class ConfigSchema {
                 name, sid,
                 'enabled': true,
                 'line': line_start,
-                'requires': combine_conditions(conditions)
+                'requires': combine_conditions_more(conditions)
               };
               this.evaluateRequires(define_info);
               isactive = define_info.evaled;
