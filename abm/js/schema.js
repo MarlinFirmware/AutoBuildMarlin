@@ -17,6 +17,8 @@
  */
 'use strict';
 
+const export_schema = false;
+
 function log(message, line = 0) {
   if (ConfigSchema.verbose) console.log(line ? `[${line}] ${message}` : message);
 }
@@ -1839,6 +1841,30 @@ function combinedSchema(marlin, fs, reload=false) {
         adv = ConfigSchema.newSchemaFromText(adv_combo, -prefix_lines);
 
   ConfigSchema.combined = { basic: bas, advanced: adv };
+
+  if (export_schema) {
+    const exp_sid = marlin.pathFromArray(['abm-config-export.json']),
+          exp_sec = marlin.pathFromArray(['abm-config-export-bysec.json']);
+    let flat_bysid = {},
+        flat_bysec = {};
+    const combinedEntries = [...Object.entries(bas.bysid), ...Object.entries(adv.bysid)];
+    for (const [sid, obj] of combinedEntries) {
+      if (sid in flat_bysid) continue;
+      if (['_', '__'].includes(obj.section)) continue;
+      let objcopy = { ...obj };
+      objcopy.file = sid < 1300 ? "Configuration.h" : "Configuration_adv.h";
+      delete objcopy.sid;
+      delete objcopy.line;
+      delete objcopy.orig;
+      delete objcopy.evaled;
+      flat_bysid[sid] = objcopy;
+      if (!(obj.section in flat_bysec)) flat_bysec[obj.section] = {};
+      flat_bysec[obj.section][sid] = objcopy;
+    }
+    fs.writeFileSync(exp_sid, JSON.stringify(flat_bysid, null, 2), 'utf8');
+    fs.writeFileSync(exp_sec, JSON.stringify(flat_bysec, null, 2), 'utf8');
+  }
+
   return ConfigSchema.combined;
 }
 
