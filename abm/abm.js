@@ -38,30 +38,6 @@ function init(c) {
   set_context('inited', true);
 }
 
-/**
- * The simplest layout concept is to take the entire config
- * and parse it in a big list. Parent items are at root, and
- * those with children have a colored background and a
- * "reveal" widget. Child items should be compact so we can fit
- * 2-3 fields across. Grouped (XYZE) items need to align left.
- *
- * I do want to make the layouts customized for each configuration,
- * but I also want the flexibility to grab fields from the config
- * files as they change. So, my idea is simply to wrap all the fields
- * in span containers. To create the panel, we send all the fields
- * in the relevant section to the web view script as soon as the panel
- * is selected. The web view takes care of creating the fields, adding
- * them to the DOM, and showing the panel. The CSS uses a FLEX layout
- * with certain named spans included, while the ones not named in the
- * layout will be placed into the "fallback" location, probably down
- * at the bottom.
- *
- * For the Geometry panel a simple hook is added to update the canvas
- * whenever the fields are updated. And the canvas has interactive bits
- * that update the geometry fields. If there is a pause of a few seconds
- * or the panel is switched then the changes are applied to the configs.
- */
-
 // Return the path to the given item within the build folder.
 function envSubPath(sub, env, item) {
   var bp = path.join(marlin.workspaceRoot, '.pio', sub, env);

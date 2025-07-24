@@ -21,7 +21,14 @@ function log(message, data) {
   if (data !== undefined) console.dir(data);
 }
 
+// Save the current view state.
+// Use this to restore the view when it is revealed.
 var docs_filter = "";
+function saveWebViewState() {
+  const data = { filter: docs_filter };
+  log('saveWebViewState', data);
+  vscode.setState(data);
+}
 
 //
 // Declare a marlinfwSearch singleton
@@ -85,9 +92,6 @@ var marlinfwSearch = (() => {
                     if (k >= 32 || k == 8) self.onSearchKeyUp();
                   })
 
-      // Search the provided string on load
-      self.searchFromField();
-
       // Focus the search field, and also select all chars
       $searchInput.focus().select();
     },
@@ -95,6 +99,12 @@ var marlinfwSearch = (() => {
     // Get the trimmed string from the search field
     searchFieldString: () => {
       return $searchInput.val().trim();
+    },
+
+    // Set the search field value
+    setFilter: (val) => {
+      $searchInput.val(val).select().focus();
+      self.searchFromField();
     },
 
     // Convert a string to a regex pattern
@@ -141,6 +151,7 @@ var marlinfwSearch = (() => {
       if (newq == '') return;
 
       docs_filter = newq;
+      saveWebViewState();
       qmatch = newm;
 
       let resultsCount = 0, results = '', prevclass = '';
@@ -229,14 +240,6 @@ $(function () {
     marlinfwSearch.init();
   }
 
-  // Save the current view state.
-  // Use this to restore the view when it is revealed.
-  function saveWebViewState() {
-    const data = { data: {} };
-    log('saveWebViewState', data);
-    vscode.setState(data);
-  }
-
   /**
    * @brief Handle messages sent from the provider with iview.postMessage(msg)
    * @description Handle 'message' events sent directly to the view.
@@ -275,9 +278,9 @@ $(function () {
   const state = vscode.getState();
   if (state) {
     log("Got VSCode state", state);
-    if ('data' in state) {
+    if ('filter' in state) {
       log("Init Marlin Docs Webview with stored data")
-      initDocsView();
+      marlinfwSearch.setFilter(state.filter);
     }
   }
 

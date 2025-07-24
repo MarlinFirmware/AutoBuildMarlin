@@ -2,6 +2,12 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.78
+- Docs Panel: Preserve last-used search filter
+- Docs Panel: Use Flexbox layout, improve link bounds
+- Schema: Clean up 'requires' clauses, empty comments
+- Schema: Developer flag to export schema as JSON
+
 ## 2.1.77
 - Docs Panel: Replacing "Info" panel
 - Docs Panel: Filter now includes group name
