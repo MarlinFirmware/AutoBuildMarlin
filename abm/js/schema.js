@@ -340,7 +340,7 @@ class ConfigSchema {
    * @brief Get all items that pass the given test function, in schema order.
    *
    * @param {string}   sect    A section name such as "machine".
-   * @param {function} fn      A function like: (itm) => { return itm.type == "string"; }
+   * @param {function} fn      A function like: (itm) => { return itm.type === "string"; }
    * @param {int}      before  The maximum sid to consider. (optional)
    * @param {int}      limit   The maximum number of items to return. (optional)
    * @return Array of item references.
@@ -360,7 +360,7 @@ class ConfigSchema {
   /**
    * @brief Get all items that pass the given test function, in schema order.
    *
-   * @param {function} fn A function like: (itm) => { return itm.type == "string"; }
+   * @param {function} fn A function like: (itm) => { return itm.type === "string"; }
    * @param {int} before The maximum sid to consider. (optional)
    * @param {int} limit The maximum number of items to return. (optional)
    * @return Array of item references.
@@ -714,10 +714,9 @@ class ConfigSchema {
 
     // The item is enabled by its E < EXTRUDERS.
     function HAS_EAXIS(eindex) {
-      const extruders = priorItemNamed('EXTRUDERS') || priorItemNamed('EXTRUDERS', Infinity);
-      if (extruders == null) return false;
-      const stat = eindex < extruders.value;
-      //console.log(`HAS_EAXIS(${eindex}) == ${stat ? 'true' : 'false'}`, extruders);
+      const eoption = priorItemNamed('EXTRUDERS') || priorItemNamed('EXTRUDERS', Infinity);
+      const stat = eindex < (eoption?.value ?? 0);
+      //console.log(`HAS_EAXIS(${eindex}) === ${stat ? 'true' : 'false'}`, eoption);
       return stat;
     }
 
@@ -727,7 +726,7 @@ class ConfigSchema {
     // Some enabled sensor matches the given number.
     function _has_sensor(num) {
       return 0 < self.countPriorItems(
-        it => it.name.startsWith('TEMP_SENSOR_') && it.value == num, initem.sid, 1
+        it => it.name.startsWith('TEMP_SENSOR_') && it.value === num, initem.sid, 1
       );
     }
     const ANY_THERMISTOR_IS = (...V) => V.some(num => _has_sensor(num));
@@ -743,9 +742,8 @@ class ConfigSchema {
     function AXIS_DRIVER_TYPE(adata) {
       const axis = adata[0], type = adata[1];
       if (axis.startsWith('E')) {
-        const extruders = priorItemNamed('EXTRUDERS');
-        if (extruders == null) return false;
-        if (axis.slice(1) >= extruders.value) return false;
+        const extruders = priorItemNamed('EXTRUDERS')?.value ?? 0;
+        if (axis.slice(1) >= extruders) return false;
       }
       const driver = priorItemNamed(`${axis}_DRIVER_TYPE`);
       return (driver?.value === type);
@@ -797,7 +795,7 @@ class ConfigSchema {
           const match = it.value.match(/(\w+)\s*\(([^()]*?)\)/),
                 parms = match[2].replace(/(\w+)/g, "'$1'"),
                 macro = `${match[1]}(${parms})`;
-          //console.log(`Evaluating macro ${it.name} == ${macro}`);
+          //console.log(`Evaluating macro ${it.name} === ${macro}`);
           return eval(macro);
         }
         return (['int', 'float'].includes(it.type)) ? it.value * 1 : it.value;
@@ -806,7 +804,8 @@ class ConfigSchema {
       // Do custom handling for items not found in the schema.
       switch (name) {
         case 'HAS_E_TEMP_SENSOR':
-          for (let i = 0; i < priorItemNamed('EXTRUDERS')?.value; i++)
+          const extruders = priorItemNamed('EXTRUDERS')?.value ?? 0;
+          for (let i = 0; i < extruders; i++)
             if (priorItemNamed(`TEMP_SENSOR_${i}`)?.value) return true;
           return false;
 
@@ -970,7 +969,7 @@ class ConfigSchema {
       // Check if a pair of parentheses is unnecessary
       function isRedundant(code, openIndex, i, pairs) {
         // Paired parentheses form a unit
-        if (pairs[openIndex + 1] == i - 1) return true;
+        if (pairs[openIndex + 1] === i - 1) return true;
 
         let inner = code.slice(openIndex + 1, i).trim();
 
@@ -1062,7 +1061,7 @@ class ConfigSchema {
       initem.evalError = e.message;
     }
 
-    //log(`${initem.name} -----${initem.evaled} == ${cond} ----------`);
+    //log(`${initem.name} -----${initem.evaled} === ${cond} ----------`);
 
     return initem.evaled;
   } // evaluateRequires
@@ -1603,7 +1602,7 @@ class ConfigSchema {
 
           // Items that depend on some TEMP_SENSOR_* to be a thermocouple.
           function is_thermocouple_item(name) {
-            const m1 = name == "THERMOCOUPLE_MAX_ERRORS";
+            const m1 = name === "THERMOCOUPLE_MAX_ERRORS";
             if (m1) return true;
           }
 

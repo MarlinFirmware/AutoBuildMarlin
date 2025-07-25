@@ -1,0 +1,10 @@
+{
+    "es6": true,
+    "browser": false,
+    "indent": 2,
+    "node": true,
+    "white": true,
+    parserOptions: {
+        "todo_comment": false
+    }
+}

@@ -19,17 +19,39 @@ require("../proto");
 function _codeformat(text) {
   // The current code attempts to indent PP directives and code
   // that was formatted by something other than Uncrustify:
-  let result = [],
-      indent = 0,
+  const indent = '-';
+  var result = [],
+      level = 0,
       lines = text.split('\n');
-  const len = lines.length;
-  for (let i = 0; i < len; i++) {
-    let line = lines[i];
-    // Outdent for #else, #elif, #endif
-    if (line.match(/^\s*#\s*(else|elif|endif)/) && indent) indent--;
-    result.push(Array(indent + 1).join('  ') + line);
-    // Indent following #if, #else, #elif
-    if (line.match(/^\s*#\s*(if|else|elif)/)) indent++;
+  for (let line of lines) {
+    // Get the parts of the line
+    const parts = line.match(/^(\s*)(.+)/);
+
+    // Count the number of leading spaces in code/comment lines
+    const curlevel = parts[1].length;
+
+    // Trim the line of leading and trailing spaces
+    line = parts[2];
+
+    // Determine if this line is an opening/closing PP directive
+    const isopen = line.match(/^#\s*(if|else|elif)/),
+          isclose = line.match(/^#\s*e(lse|lif|ndif)/),
+          isblock = isopen || isclose;
+
+    // For ending PP directives, adjust the level down
+    if (isclose && level) level--;
+
+    // Determine the number of spaces to add to the line
+    const added = (isblock ? level * 2 : Math.max(curlevel - level * 2, 0));
+
+    let levstr = level.toString();
+    if (levstr.length < 2) levstr = '0' + levstr;
+
+    // Apply extra indentation to the line, if any
+    result.push(`[${levstr}] ` + Array(added + 1).join(indent) + line);
+
+    // For starting PP directives, adjust the level up
+    if (isopen) level++;
   }
   return result.join('\n');
 }
