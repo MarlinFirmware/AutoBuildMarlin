@@ -954,81 +954,6 @@ class ConfigSchema {
       return cond;
     }
 
-    /**
-     * Find parentheses that wrap only one entity and
-     * return their indexes in an array.
-     */
-    function findRedundantParentheses(code) {
-
-      // Check if parentheses belong to a function call
-      function isFunctionCall(code, openIndex) {
-        let i = openIndex - 1;
-        while (i >= 0 && (/\s/.test(code[i]))) i--;
-        return i >= 0 && (/\w/.test(code[i])); // If a word character precedes '(', it's a function call
-      }
-
-      // Check if a pair of parentheses is unnecessary
-      function isRedundant(code, openIndex, i, pairs) {
-        // Paired parentheses form a unit
-        if (pairs[openIndex + 1] == i - 1) return true;
-
-        let inner = code.slice(openIndex + 1, i).trim();
-
-        // Simple function call
-        if (/^[a-z_]\w*\s*\([^)]*\)$/i.test(inner)) return true;
-
-        // Number
-        if (/^-?\d+(\.\d+)?$/.test(inner)) return true;
-
-        // Single identifier
-        if (/^[a-z_]\w*$/i.test(inner)) return true;
-
-        // Anything else, including empty
-        return false;
-      }
-
-      // Create a set describing redundant parentheses, return as a sorted array
-      let inQuote = '', stack = [], redundant = new Set(), pairs = [];
-      for (let i = 0; i < code.length; i++) {
-        let char = code[i];
-
-        // Handle characters in a string
-        if (inQuote) {
-          // Handle escaping within strings
-          if (char === "\\" && i + 1 < code.length) i++; // Skip escaped character
-          else if (char === inQuote) inQuote = '';
-          continue;
-        }
-
-        if (char === '"' || char === "'") {
-          inQuote = char;
-        } else if (char === '(') {
-          // Store the char index as belonging to a function or wrapper
-          stack.push({ openIndex: i, type: isFunctionCall(code, i) ? 'fn' : 'normal' });
-        } else if (char === ')' && stack.length > 0) {
-          let { openIndex, type } = stack.pop();
-          if (type === 'normal') {
-            pairs[openIndex] = i;
-            if (isRedundant(code, openIndex, i, pairs)) {
-              redundant.add(openIndex);
-              redundant.add(i);
-            }
-          }
-        }
-      }
-
-      return Array.from(redundant).sort((a, b) => a - b);
-    }
-
-    // Return a new string with redundant parentheses removed
-    function removeRedundantParentheses(code) {
-      const redundantSet = new Set(findRedundantParentheses(code)); // Set for quick lookup
-      let new_code = [];
-      for (let i = 0; i < code.length; i++)
-        if (!redundantSet.has(i)) new_code.push(code[i]); // Append char if it's not in redundant indices
-      return new_code.join("");
-    }
-
     // TEST CASES
     //let testcase1 = removeRedundantParentheses("(((notFromHere(ok) && ((FROM_HERE))))) || (FROG_SPIT)");
     //if (testcase1 !== "(notFromHere(ok) && FROM_HERE) || FROG_SPIT") console.warn("removeRedundantParentheses TEST 1 FAIL");
@@ -1048,8 +973,6 @@ class ConfigSchema {
       .replace(/\b(defined)\b\s*\(?\s*OTHER\s*\(\s*([^()]+)\s*\)\s*\)?/g, '$1($2)') // defined.OTHER(ABCD).       => defined(ABCD)
       .replace(/\b([A-Z_]\w*)\b(?!\s*\()/gi, '"$1"')                                // ABCD (not followed by '(') => "ABCD"
       ;
-
-    cond = removeRedundantParentheses(cond);
 
     try {
       //initem.requirez = cond;
@@ -1371,44 +1294,84 @@ class ConfigSchema {
         function atomize(s) {
           if (s === ''
             || (/^\([^()]*?\)$/i.test(s))
-            || (/^!?[a-z_][a-z0-9_]+(\([^()]+?\))?$/i.test(s))
-            || (/^[a-z_][a-z0-9_]+ ([<>]=?|[!=]=) -?[a-z0-9_]+$/i.test(s))
+            || (/^!?[a-z_][a-z0-9_]+\s*(\([^()]*?\))?$/i.test(s))
           ) return s;
           return `(${s})`;
         }
 
-        // 1. Capture "atomic" things, replace with $1, $2, etc.
-        const apatt = [ /!?[a-z_][a-z0-9_]*\([^()]*?\)/gi,   // function-like expression
-                    //  /[a-z_][a-z0-9_]* ([<>]=?|[!=]=) -?[a-z0-9_]*/gi, // simple comparison
-                        /\([^(]+ [^();]+\)/g,                // inner parenthesized thing containing whitespace
-                        /!?[a-z_][a-z0-9_]*?/gi ];           // bare symbol name (e.g., HAS_...)
+        /**
+         * Find parentheses that wrap only one entity and
+         * return their indexes in an array.
+         */
+        function findRedundantParentheses(code) {
 
-        // Return the given expression free of (most) extraneous parentheses
-        function remove_extra_parens(inExpr) {
-          // Skip simple expressions without opening parentheses
-          if (!(inExpr[0] === '(' || inExpr.includes(' ')) || inExpr.includes(') 0)'))
-            return inExpr;
-
-          const matches = [];
-          let pcount = 0;
-          let outExpr = inExpr
-            .replace(apatt[0], (m) => { matches.push(m); return `;${pcount++};`; })
-            .replace(apatt[1], (m) => { matches.push(m); return `;${pcount++};`; })
-            .replace(apatt[2], (m) => { matches.push(m); return `;${pcount++};`; });
-
-          // 2. Remove extra parentheses for "($<num>)" and "((whatever))"
-          for (;;) {
-            let oldExpr = outExpr;
-            outExpr = outExpr.replace(/\(\s*(!?;\d+;|!?\([^()]*?\))\s*\)/g, '$1');
-            if (outExpr === oldExpr) break;
+          // Check if parentheses belong to a function call
+          function isFunctionCall(code, openIndex) {
+            let i = openIndex - 1;
+            while (i >= 0 && (/\s/.test(code[i]))) i--;
+            return i >= 0 && (/\w/.test(code[i])); // If a word character precedes '(', it's a function call
           }
 
-          // 3. Restore the original function calls by replacing ;#; with the original strings
-          //    Must do this in reverse order because ;#; may be captured later
-          while (--pcount >= 0)
-            outExpr = outExpr.replace(new RegExp(`;${pcount};`, 'g'), matches[pcount]);
+          // Check if a pair of parentheses is unnecessary
+          function isRedundant(code, openIndex, i, pairs) {
+            // Parentheses around everything?
+            if (openIndex === 0 && i === code.length - 1) return true;
 
-          return outExpr;
+            let inner = code.slice(openIndex + 1, i).trim();
+
+            // Simple function call
+            if (/^[a-z_]\w*\s*\([^)]*\)$/i.test(inner)) return true;
+
+            // Number
+            if (/^\+-?(\d+\.?|\d*\.\d+)?$/.test(inner)) return true;
+
+            // Single identifier
+            if (/^[a-z_]\w*$/i.test(inner)) return true;
+
+            // Anything else, including empty
+            return false;
+          }
+
+          // Create a set describing redundant parentheses, return as a sorted array
+          let inQuote = '', stack = [], redundant = new Set(), pairs = [];
+          for (let i = 0; i < code.length; i++) {
+            let char = code[i];
+
+            // Handle characters in a string
+            if (inQuote) {
+              // Handle escaping within strings
+              if (char === "\\" && i + 1 < code.length) i++; // Skip escaped character
+              else if (char === inQuote) inQuote = '';
+              continue;
+            }
+
+            if (char === '"' || char === "'") {
+              inQuote = char;
+            } else if (char === '(') {
+              // Store the char index as belonging to a function or wrapper
+              stack.push({ openIndex: i, type: isFunctionCall(code, i) ? 'fn' : 'normal' });
+            } else if (char === ')' && stack.length > 0) {
+              let { openIndex, type } = stack.pop();
+              if (type === 'normal') {
+                pairs[openIndex] = i;
+                if (isRedundant(code, openIndex, i, pairs)) {
+                  redundant.add(openIndex);
+                  redundant.add(i);
+                }
+              }
+            }
+          }
+
+          return Array.from(redundant).sort((a, b) => a - b);
+        }
+
+        // Return a new string with redundant parentheses removed
+        function removeRedundantParentheses(code) {
+          const redundantSet = new Set(findRedundantParentheses(code)); // Set for quick lookup
+          let new_code = [];
+          for (let i = 0; i < code.length; i++)
+            if (!redundantSet.has(i)) new_code.push(code[i]); // Append char if it's not in redundant indices
+          return new_code.join("");
         }
 
         // Combine adjacent conditions where possible
@@ -1422,8 +1385,7 @@ class ConfigSchema {
         }
 
         function combine_conditions(condarr) {
-          //let cond = '(' + condarr.flat().join(') && (') + ')';
-          let cond = condarr.flat().join(' && ');
+          let cond = removeRedundantParentheses(condarr.flat().join(' && '));
           if (condarr.length > 1) {
             for (;;) {
               let old_cond = cond;
@@ -1431,20 +1393,7 @@ class ConfigSchema {
               if (old_cond === cond) break;
             }
           }
-          return cond;
-        }
-
-        function combine_conditions_more(condarr) {
-          //let cond = '(' + condarr.flat().join(') && (') + ')';
-          let cond = condarr.flat().join(' && ');
-          if (condarr.length > 1) {
-            for (;;) {
-              let old_cond = cond;
-              cond = _combine_conditions(remove_extra_parens(_combine_conditions(cond)));
-              if (old_cond === cond) break;
-            }
-          }
-          return cond;
+          return removeRedundantParentheses(cond);
         }
 
         //
@@ -1576,7 +1525,7 @@ class ConfigSchema {
           if (options) define_info.options = options;
 
           if (conditions.length) {
-            define_info.requires = combine_conditions_more(conditions);
+            define_info.requires = combine_conditions(conditions);
             define_info.depth = if_depth;
           }
 
@@ -1656,7 +1605,7 @@ class ConfigSchema {
           }
           if (axis) {
             extend_requires(`HAS_AXIS(${axis})`);
-            define_info.requires = define_info.requires.replace(`&& defined(${axis}_DRIVER_TYPE)`, '');
+            define_info.requires = define_info.requires.replace(` && defined(${axis}_DRIVER_TYPE)`, '');
           }
           if (eindex) extend_requires(`HAS_EAXIS(${eindex})`);
           if (hindex) extend_requires(`HAS_SENSOR(${hindex})`);
@@ -1768,7 +1717,7 @@ class ConfigSchema {
                 name, sid,
                 'enabled': true,
                 'line': line_start,
-                'requires': combine_conditions_more(conditions)
+                'requires': combine_conditions(conditions)
               };
               this.evaluateRequires(define_info);
               isactive = define_info.evaled;
