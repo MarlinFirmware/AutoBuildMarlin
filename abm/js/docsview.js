@@ -155,17 +155,17 @@ var marlinfwSearch = (() => {
       qmatch = newm;
 
       let resultsCount = 0, results = '', prevclass = '';
-      $.each(searchData, (index, item) => {
+      $.each(searchData, (_, it) => {
         // check if search term is in content or title
-        const comp = (item.name + " " + item.title + ' ' + item.group + ' ' + item.content + item.excerpt).toLowerCase();
+        const comp = `${it.name} ${it.title} ${it.group} ${it.content} ${it.excerpt}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
         if (comp.match(qmatch)) {
-          if (item.class != prevclass) {
-            prevclass = item.class;
+          if (it.class != prevclass) {
+            prevclass = it.class;
             odd = false;
-            let fancy = section_head[item.class];
-            results += '<h2 class="' + item.class + '">' + (fancy ? fancy : item.class.toTitleCase()) + '</h2>';
+            let fancy = section_head[it.class];
+            results += '<h2 class="' + it.class + '">' + (fancy ? fancy : it.class.toTitleCase()) + '</h2>';
           }
-          results += self.populateResultContent($resultTemplate.html(), item);
+          results += self.populateResultContent($resultTemplate.html(), it);
           odd = !odd;
           resultsCount++;
         }
