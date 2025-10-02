@@ -129,7 +129,8 @@
         {
           "type": "webview",
           "id": "abm.docsView",
-          "name": "Marlin Docs"
+          "name": "Marlin Docs",
+          "visibility": "visible"
         }
       ]
     },
