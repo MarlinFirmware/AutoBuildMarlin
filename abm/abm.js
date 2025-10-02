@@ -511,7 +511,7 @@ function reveal_env_build(env) {
 
   var cmd;
   switch (process.platform) {
-    case 'win32': cmd = `Explorer /select,${stat.filename}`; break;
+    case 'win32': cmd = `Explorer '/select,${stat.filename}'`; break;
     case 'darwin': cmd = `open -R ${stat.filename}`; break;
     default: cmd = '`which xdg-open open other-open | grep -v found | head -n1` .';
   }
