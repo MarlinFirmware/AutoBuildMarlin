@@ -665,7 +665,7 @@ $(function () {
       }
       else if (type == 'bool') {
         const $cl = $("<label>", { class: 'bool' }),
-          $cb = $('<input>', { type: 'checkbox', checked: val == 'true', value: 'true' }).bind('change', handleBoolField),
+          $cb = $('<input>', { type: 'checkbox', checked: val == true, value: 'true' }).bind('change', handleBoolField),
           $sl = $("<div>", { class: 'slider round' });
         if (tclass) $cb.addClass(tclass);
         $cl.append($cb).append($sl).appendTo($linediv);

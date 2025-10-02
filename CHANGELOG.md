@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.79
+- Config Editor: Fix true/false slider controls
+- Docs Panel: Show on first run
+
 ## 2.1.78
 - Docs Panel: Preserve last-used search filter
 - Docs Panel: Use Flexbox layout, improve link bounds
