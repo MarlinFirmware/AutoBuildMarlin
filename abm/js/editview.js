@@ -477,6 +477,9 @@ $(function () {
         count += len;
       }
     }
+
+    refreshNavButtons();
+
     return count;
   }
 
