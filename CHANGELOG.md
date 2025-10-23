@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.80
+- Build: Fix 'reveal' for old Windows shell
+- ABM Panel: Show hints on "USB" and Maple envs
+
 ## 2.1.79
 - Config Editor: Fix true/false slider controls
 - Docs Panel: Show on first run

@@ -150,8 +150,11 @@ var ABM = (() => {
                 $env_rows_src = $('#env-rows-src'),
                 $envs_table = $('<table>');
 
-          let has_progress = false;
+          let has_progress = false, has_usb = false;
           $.each(m.val, function(i,v) {
+            // If the name ends with USB set the flag
+            if (v.name.match(/.+_USB.*/)) has_usb = true;
+
             // Copy the template <table>, merging the env name. The <span> is allowed here!
             const $env_table_copy = $($env_rows_src.html().replace(/<env>/g, v.name));
             let $erows = $env_table_copy.find('tr').addClass(`env-${v.name}`);
@@ -161,6 +164,7 @@ var ABM = (() => {
 
             // Set env row classes and env caption
             let caption = '';
+            if (v.name.match(/.+maple.*/)) $erows.addClass('maple');
             if (v.debug) $erows.addClass('debug');
             if (v.native) $erows.addClass('native');
             if (v.busy) {
@@ -187,6 +191,8 @@ var ABM = (() => {
 
             $envs_table.append($erows);
           });
+
+          if (has_usb) $env_td.append($('<div id="usb-note">* "USB" Environments allow mounting the SD Card on the Host PC.</div>'));
 
           if (ptimer) { clearInterval(ptimer); ptimer = null; }
           if (has_progress) {
