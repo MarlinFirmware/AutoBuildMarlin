@@ -140,6 +140,7 @@ var ABM = (() => {
           // m.val = an array of env objects:
           //   .name      - Environment Name
           //   .debug     - Debug Allowed
+          //   .prefer    - Preferred Env
           //   .native    - Native (Runnable)
           //   .busy      - Show "Please Wait..." State
           //   .exists    - The env build folder exists
@@ -167,6 +168,7 @@ var ABM = (() => {
             if (v.name.match(/.+maple.*/)) $erows.addClass('maple');
             if (v.debug) $erows.addClass('debug');
             if (v.native) $erows.addClass('native');
+            if (v.prefer) $erows.addClass('prefer');
             if (v.busy) {
               $erows.addClass('busy');
               caption = 'Please Wait…';

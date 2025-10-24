@@ -25,6 +25,7 @@ body.vscode-dark, body.vscode-high-contrast {
   --abm-text-color-pale: #8A8;
   --abm-text-color-good: #6E6;
   --abm-text-color-limbo: #68E;
+  --abm-text-color-limbo-prefer: #6A0;
   --abm-text-color-limbo-maple: #D6B;
   --abm-text-color-busy: #FA0;
   --abm-text-color-error: #C44;
@@ -48,6 +49,7 @@ body.vscode-light, body.vscode-high-contrast-light {
   --abm-text-color-pale: #45F;
   --abm-text-color-good: #00D000;
   --abm-text-color-limbo: #46C;
+  --abm-text-color-limbo-prefer: #490;
   --abm-text-color-limbo-maple: #A08;
   --abm-text-color-busy: #A05900;
   --abm-text-color-error: #C00;
@@ -315,6 +317,8 @@ table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
 
   /* Environment Name Colors */
                .env-name { color: var(--abm-text-color-limbo); }
+  .prefer      .env-name { color: var(--abm-text-color-limbo-prefer); }
+  .prefer      .env-name::after { content: " ⭐"; font-size: 0.5em; vertical-align: top; }
   .maple       .env-name { color: var(--abm-text-color-limbo-maple); }
   .exists      .env-name { color: var(--abm-text-color-good); }
 

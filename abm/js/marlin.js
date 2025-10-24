@@ -217,7 +217,7 @@ function extractTempSensors() {
 // Return hashed array { mb, pins_files, archs, archs_arr, envs, short, description, (has_debug), (error) }
 //
 var board_info;
-function extractBoardInfo(mb) {
+function extractBoardInfo(mb, mb_env) {
   let r, out = { has_debug: false }, sb = mb.replace('BOARD_', '');
 
   // Get the include line matching the board
@@ -273,7 +273,7 @@ function extractBoardInfo(mb) {
       else if (/STM32F....C/i.test(name)) note = '(256K)';
 
       const debugenv = /_debug$/i.test(name);
-      out.envs.push({ name, note, debug: debugenv, native: type !== 'env' });
+      out.envs.push({ name, note, debug: debugenv, native: type !== 'env', prefer: (mb_env == name) });
       if (debugenv) out.has_debug = true;
     }
 

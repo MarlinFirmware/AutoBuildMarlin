@@ -214,7 +214,10 @@ function allFilesAreLoaded() {
   const mb = marlin.configValue('MOTHERBOARD');
 
   if (mb) {
-    board_info = marlin.extractBoardInfo(mb);
+    const mb_env = marlin.configValue('MOTHERBOARD_ENV'); // Users can add a preferred env for their board
+
+    board_info = marlin.extractBoardInfo(mb, mb_env);
+
     log(`Board Info for ${mb} :`, board_info);
 
     if (board_info.short)
@@ -236,6 +239,7 @@ function allFilesAreLoaded() {
     postValue('machine', '');
     postValue('machine-desc', '');
     postValue('board', mbn);
+    postValue('board-env', '');
     postValue('board-desc', '');
     postValue('pins', '', '');
     postValue('pins-desc', '');
@@ -275,6 +279,8 @@ function allFilesAreLoaded() {
 
   postValue('board', mbn);
   postValue('board-desc', board_info.description);
+
+  if (board_info.board_env) postValue('board-env', board_info.board_env);
 
   postValue('pins', board_info.pins_files);
   if (pindef_info.board_name) postValue('pins-desc', pindef_info.board_name);

@@ -2,6 +2,10 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.81
+- ABM Panel: Highlight user's `MOTHERBOARD_ENV`
+- ABM Panel / Edit View: Refactor CSS in sub-rules
+
 ## 2.1.80
 - Build: Fix 'reveal' for old Windows shell
 - ABM Panel: Show hints on "USB" and Maple envs
@@ -24,8 +28,8 @@ The following enhancements and changes have been made to ***Auto Build Marlin***
 - Info Panel: Clean up appearance
 
 ## 2.1.75
-- Info Panel: Search marlinfw.org site for documentation.
-- Config Editor: Add parsing for Marlin `2.1.3-b3` macros.
+- Info Panel: Search marlinfw.org site for documentation
+- Config Editor: Add parsing for Marlin `2.1.3-b3` macros
 
 ## 2.1.74
 - Config Editor: Fix int and float value sanitizing
