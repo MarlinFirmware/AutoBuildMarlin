@@ -183,7 +183,7 @@ pre {
   padding-top: 20px;
   text-align: center;
   background: var(--abm-toolbar-bg);
-  color: var(--abm-text-color-vers); }
+  color: var(--abm-text-color-vers);
   }
 #abm-footer span { position: relative; top: -0.6em; }
 
