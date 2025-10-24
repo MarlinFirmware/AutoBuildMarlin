@@ -24,7 +24,7 @@ body.vscode-dark, body.vscode-high-contrast {
   --abm-text-color-data: #FFE;
   --abm-text-color-pale: #8A8;
   --abm-text-color-good: #6E6;
-  --abm-text-color-limbo: #DB6;
+  --abm-text-color-limbo: #68E;
   --abm-text-color-limbo-maple: #D6B;
   --abm-text-color-busy: #FA0;
   --abm-text-color-error: #C44;
@@ -47,7 +47,7 @@ body.vscode-light, body.vscode-high-contrast-light {
   --abm-text-color-data: #365;
   --abm-text-color-pale: #45F;
   --abm-text-color-good: #00D000;
-  --abm-text-color-limbo: #A80;
+  --abm-text-color-limbo: #46C;
   --abm-text-color-limbo-maple: #A08;
   --abm-text-color-busy: #A05900;
   --abm-text-color-error: #C00;
@@ -184,28 +184,29 @@ pre {
   text-align: center;
   background: var(--abm-toolbar-bg);
   color: var(--abm-text-color-vers);
+  span { position: relative; top: -0.6em; }
   }
-#abm-footer span { position: relative; top: -0.6em; }
 
+/* Info Table Styles */
 table#info {
   font-size: 14pt;
   margin-bottom: 0.5em;
+  &>tbody>tr>th,
+  &>tbody>tr>td { padding: 4px; vertical-align: top; }
+  &>tbody>tr>th {
+    text-align: right;
+    white-space: nowrap;
+    color: var(--abm-text-color-label);
+    }
+  div>span { color: var(--abm-text-color-pale); }
   }
-table#info>tbody>tr>th,
-table#info>tbody>tr>td { padding: 4px; vertical-align: top; }
-table#info>tbody>tr>th {
-  text-align: right;
-  white-space: nowrap;
-  color: var(--abm-text-color-label);
-  }
-
-#info div>span { color: var(--abm-text-color-pale); }
-
 
 /* Button Styles */
 
-button { cursor: pointer; outline: none; }
-button img { vertical-align: text-bottom; }
+button {
+  cursor: pointer; outline: none;
+  img { vertical-align: text-bottom; }
+  }
 
 #abm-toolbar button, #abm-social a {
   display: inline-block;
@@ -217,22 +218,23 @@ button img { vertical-align: text-bottom; }
   border: none;
   opacity: 0.7;
   }
-#abm-toolbar button img, #abm-social a>img { padding: 0.25em 0; }
-#abm-toolbar button span { display: block; padding-bottom: 0.25em; }
-#abm-toolbar button:active,
-#abm-toolbar button.active:hover,
-#abm-toolbar button.active {
-  background: var(--abm-tool-bg-active);
-  opacity: 1.0;
-  }
-#abm-toolbar button:hover { background: var(--abm-tool-bg-hover); }
+#abm-toolbar {
+  button img { padding: 0.25em 0; }
+  button span { display: block; padding-bottom: 0.25em; }
+  button:active,
+  button.active:hover,
+  button.active { background: var(--abm-tool-bg-active); opacity: 1.0; }
+  button:hover { background: var(--abm-tool-bg-hover); }
 
-/* Blend Modes for middle-gray SVG */
-#abm-toolbar button * { color: #808080; mix-blend-mode: color-dodge; }
-#abm-toolbar button:hover * { mix-blend-mode: difference; }
-#abm-toolbar button:active *,
-#abm-toolbar button.active:hover *,
-#abm-toolbar button.active * { mix-blend-mode: color-dodge; }
+  /* Blend Modes for middle-gray SVG */
+  button * { color: #808080; mix-blend-mode: color-dodge; }
+  button:hover * { mix-blend-mode: difference; }
+  button:active *,
+  button.active:hover *,
+  button.active * { mix-blend-mode: color-dodge; }
+  }
+
+#abm-social a>img { padding: 0.25em 0; }
 
 #info button>img, #abm-top button>img {
   width: 1.1em;
@@ -241,10 +243,13 @@ button img { vertical-align: text-bottom; }
   font-size: 90%;
   }
 
-#abm-social { padding-top: var(--abm-header-height); margin-top: 2em; }
-#abm-social a { display: block; width: 70%; padding: 0 15%; margin: 0 auto 0.5em; }
-#abm-social a>span { display: none; }
-#abm-social a:hover { background: var(--abm-tool-bg-hover); opacity: 1; }
+#abm-social {
+  padding-top: var(--abm-header-height);
+  margin-top: 2em;
+  a { display: block; width: 70%; padding: 0 15%; margin: 0 auto 0.5em; }
+  a>span { display: none; }
+  a:hover { background: var(--abm-tool-bg-hover); opacity: 1; }
+  }
 
 .abm-tool button {
   background: rgba(1, 107, 120, 0.5);
@@ -276,22 +281,20 @@ pre.config {
   margin: 0;
   }
 
-#info-pins a {
-  display: block;
-  width: 100%;
+#info-pins {
+  a { display: block; width: 100%; }
+  a+a { font-size: 66.66%; }
   }
-#info-pins a+a { font-size: 66.66%; }
-
 /* Environment Caption cell */
 .env-more {
   display: none;
   position: relative;
   top: -12px;
-  }
-.env-more span {
-  height: 0;
-  margin-left: 1em;
-  vertical-align: middle;
+  span {
+    height: 0;
+    margin-left: 1em;
+    vertical-align: middle;
+    }
   }
 /* Show the caption for exists or busy */
 .exists          .env-more,
@@ -306,57 +309,59 @@ pre.config {
 
 /* Environments Sub-Table */
 table#info>tbody>tr>td#info-envs { padding: 0; } /* Envs Cell */
-#info-envs table td+td { padding-left: 1em; }    /* Buttons Cell */
-#info-envs table td { padding-bottom: 8px; vertical-align: top; }
+#info-envs {
+  table td+td { padding-left: 1em; }    /* Buttons Cell */
+  table td { padding-bottom: 8px; vertical-align: top; }
 
-/* Environment Name Colors */
-#info-envs              .env-name { color: var(--abm-text-color-limbo); }
-#info-envs .maple       .env-name { color: var(--abm-text-color-limbo-maple); }
-#info-envs .exists      .env-name { color: var(--abm-text-color-good); }
+  /* Environment Name Colors */
+               .env-name { color: var(--abm-text-color-limbo); }
+  .maple       .env-name { color: var(--abm-text-color-limbo-maple); }
+  .exists      .env-name { color: var(--abm-text-color-good); }
 
-#info-envs .busy        .env-name,
-#info-envs .busy.exists .env-name { color: var(--abm-text-color-busy); }
+  .busy        .env-name,
+  .busy.exists .env-name { color: var(--abm-text-color-busy); }
 
-#info-envs .exists.incomplete .env-name { color: var(--abm-text-color-error); }
+  .exists.incomplete .env-name { color: var(--abm-text-color-error); }
 
-/* Environment Action Buttons */
+  /* Environment Action Buttons */
 
-/* Show CLEAN for existing build */
-#info-envs         button.clean { display: none; }
-#info-envs .exists button.clean { display: inline-block; }
-#info-envs .exists button.clean.opt { display: none; }
+  /* Show CLEAN for existing build */
+          button.clean { display: none; }
+  .exists button.clean { display: inline-block; }
+  .exists button.clean.opt { display: none; }
 
-/* More specific selector for alternate function */
-#info-envs         button.clean.purge,
-#info-envs .exists button.clean.purge { display: none; }
-#info-envs .exists button.clean.purge.opt { display: inline-block; }
+  /* More specific selector for alternate function */
+          button.clean.purge,
+  .exists button.clean.purge { display: none; }
+  .exists button.clean.purge.opt { display: inline-block; }
 
-/* Only show 'Upload' or 'Debug' depending on the env */
+  /* Only show 'Upload' or 'Debug' depending on the env */
                   button.debug { display: none; }
-#info-envs .debug button.debug { display: inline-block; }
+  .debug button.debug { display: inline-block; }
 
-/* No upload button for debug or native */
-#info-envs .debug button.upload,
-#info-envs .native button.debug,
-#info-envs .native button.upload { display: none; }
+  /* No upload button for debug or native */
+  .debug button.upload,
+  .native button.debug,
+  .native button.upload { display: none; }
 
-/* Only show the "Run" button for a Native target */
-#info-envs                           button.run,
-#info-envs .exists.native.incomplete button.run { display: none; }
-#info-envs .exists.native            button.run { display: inline-block; }
+  /* Only show the "Run" button for a Native target */
+                            button.run,
+  .exists.native.incomplete button.run { display: none; }
+  .exists.native            button.run { display: inline-block; }
 
-/* Hide ALL buttons when busy */
-#info-envs .busy button,
-#info-envs .debug.busy button,
-#info-envs .busy.exists button,
-#info-envs .debug.busy.exists button,
-#info-envs .busy.exists button.clean,
-#info-envs .busy.exists button.debug,
-#info-envs .busy.exists button.run { display: none; }
+  /* Hide ALL buttons when busy */
+  .busy button,
+  .debug.busy button,
+  .busy.exists button,
+  .debug.busy.exists button,
+  .busy.exists button.clean,
+  .busy.exists button.debug,
+  .busy.exists button.run { display: none; }
 
-/* Show busy indicator when busy */
-#info-envs       span.progress { display: none; }
-#info-envs .busy span.progress { display: inline-block; }
+  /* Show busy indicator when busy */
+        span.progress { display: none; }
+  .busy span.progress { display: inline-block; }
+  }
 
 /* Hide buttons template and debug text field */
 #env-rows-src,
@@ -392,31 +397,38 @@ span.progress {
   background-repeat: repeat-x;
   }
 
-div.subpanes { margin-top: 0; }
-
-.subpanes>div {
-  display: none;
-  width: 100%;
-  min-height: 400px;
-  border: 1px solid var(--abm-color-border);
-  background: #FFF3;
+div.subpanes {
+  margin-top: 0;
+  &>div {
+    display: none;
+    width: 100%;
+    min-height: 400px;
+    border: 1px solid var(--abm-color-border);
+    background: #FFF3;
+    }
   }
 
-div.subtabs { margin-bottom: 0; }
-div.subtabs button {
-  border-radius: 0.25em 0.25em 0 0;
-  margin: 0 2px 0 0;
-  color: #EEE;
-  }
-div.subtabs button.active {
-  background: #3BB175;
-  color: #FFF;
+div.subtabs {
+  margin-bottom: 0;
+  button {
+    border-radius: 0.25em 0.25em 0 0;
+    margin: 0 2px 0 0;
+    color: #EEE;
+    }
+  button.active {
+    background: #3BB175;
+    color: #FFF;
+    }
   }
 
 a.reveal { font-size: small; color: var(--abm-text-color-link); }
 
 div#usb-note { padding: 1em 0; font-size: small; color: var(--abm-text-color-hey); }
 
-form#showy { position: fixed; right: calc(var(--abm-social-width) + 20px); }
-form#showy label { display: block; padding: 2px 0; }
-form#showy input[type="checkbox"] { position: relative; top: 0.2em; }
+form#showy {
+  position: fixed;
+  right: calc(var(--abm-social-width) + 20px);
+
+  label { display: block; padding: 2px 0; }
+  input[type="checkbox"] { position: relative; top: 0.2em; }
+  }

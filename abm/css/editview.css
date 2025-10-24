@@ -103,14 +103,15 @@ h1 {
   border: 1px solid var(--abm-edit-filter-color);
   z-index: 100;
   text-align: center;
+  input[type = "checkbox"] { margin-left: 2em; }
   }
 
-#filter-form input[type = "checkbox"] { margin-left: 2em; }
-
 /* Emojis in place of checkboxes */
-.iconcb input[type="checkbox"] { display: none; }
-.iconcb span { margin-left: 1em; cursor: pointer; opacity: 0.25; }
-.iconcb input[type="checkbox"]:checked + span { opacity: 1; }
+.iconcb {
+  input[type="checkbox"] { display: none; }
+  span { margin-left: 1em; cursor: pointer; opacity: 0.25; }
+  input[type="checkbox"]:checked + span { opacity: 1; }
+  }
 
 #filter { margin-left: 0.25em; padding: 2px 0.5em; border-radius: 1em; }
 #filter-count {
@@ -127,22 +128,22 @@ h1 {
 div.comment {
   width: 0;
   margin: 0 0 0.5em calc(var(--abm-item-label-width) + 1em);
+  &.descript {
+    margin-top: 0.5em;
+    margin-left: 1em;
+    /* color: var(--abm-descript-color); */
   }
-div.comment.descript {
-  margin-top: 0.5em;
-  margin-left: 1em;
-  /* color: var(--abm-descript-color); */
-}
-div.comment.switch {
-  margin-top: 0.5em;
-  margin-left: 0.4em;
-  display: inline-block;
-  }
-div.comment span {
-  white-space: pre;
-  font-family: andale mono, monaco, monospace;
-  font-size: small;
-  /* color: var(--abm-edit-color-comment); */
+  &.switch {
+    margin-top: 0.5em;
+    margin-left: 0.4em;
+    display: inline-block;
+    }
+  span {
+    white-space: pre;
+    font-family: andale mono, monaco, monospace;
+    font-size: small;
+    /* color: var(--abm-edit-color-comment); */
+    }
   }
 .hide-comments div.comment { display: none; }
 .hide-disabled div.disabled { display: none; }
@@ -159,34 +160,36 @@ div.comment span {
   z-index: 100;
   }
 /* Something within to scroll */
-#left-nav { min-height: 50vh; }
-/* Buttons will be created in the left column */
-#left-nav button {
-  display: block;
-  margin: 0;
-  width: 100%;
-  padding: 1px 0.25em;
-  font-size: 1.2em;
-  font-weight: bold;
-  background-color: var(--abm-button-bg);
-  color: var(--abm-button-color);
-  border: none;
-  border-radius: 0.5em 0 0.5em 0.5em;
-  text-align: left;
-  z-index: 101;
+#left-nav {
+  min-height: 50vh;
+  /* Buttons will be created in the left column */
+  button {
+    display: block;
+    margin: 0;
+    width: 100%;
+    padding: 1px 0.25em;
+    font-size: 1.2em;
+    font-weight: bold;
+    background-color: var(--abm-button-bg);
+    color: var(--abm-button-color);
+    border: none;
+    border-radius: 0.5em 0 0.5em 0.5em;
+    text-align: left;
+    z-index: 101;
+    }
+  &.outlined button {
+    margin: 0 0 -1px;
+    border: 1px solid threedface;
+    border-color: #000;
+    }
+  button.active {
+    background-color: var(--abm-button-active-bg);
+    color: var(--abm-button-active-color);
+    /* border-color: #0000; */
+    }
+  button:hover { cursor: pointer; background-color: var(--abm-button-hover-bg); }
+  button.active:hover { background-color: var(--abm-button-active-bg); }
   }
-#left-nav.outlined button {
-  margin: 0 0 -1px;
-  border: 1px solid threedface;
-  border-color: #000;
-  }
-#left-nav button.active {
-  background-color: var(--abm-button-active-bg);
-  color: var(--abm-button-active-color);
-  /* border-color: #0000; */
-  }
-#left-nav button:hover { cursor: pointer; background-color: var(--abm-button-hover-bg); }
-#left-nav button.active:hover { background-color: var(--abm-button-active-bg); }
 
 /* The config form contains all options in a cascade. */
 #config-form {
@@ -196,40 +199,76 @@ div.comment span {
   padding-top: 1.25em; /* Pad the top so the contents won't be obscured by the filter form */
   background: var(--marlin-svg) transparent no-repeat fixed calc(var(--nav-width) / 2 + 50%) 50%;
   background-size: 55%;
-  }
-/* Leave space on the right for a scroll bar */
-#config-form form { margin-right: 20px; }
-#config-form label.opt {
-  width: var(--abm-item-label-width);
-  padding: 4px;
-  display: inline-block;
-  vertical-align: top;
-  }
-/* Indent levels for conditional settings */
-#config-form label.opt     { --abm-label-indent: 0; }
-#config-form .d1 label.opt { --abm-label-indent: 2em; }
-#config-form .d2 label.opt { --abm-label-indent: 4em; }
-#config-form .d3 label.opt { --abm-label-indent: 6em; }
-#config-form .d4 label.opt { --abm-label-indent: 8em; }
-#config-form .d5 label.opt { --abm-label-indent: 10em; }
-#config-form .d6 label.opt { --abm-label-indent: 12em; }
-#config-form label.opt { margin-left: var(--abm-label-indent); margin-right: calc(0px - var(--abm-label-indent)); }
+  /* Leave space on the right for a scroll bar */
+  form { margin-right: 20px; }
+  label.opt {
+    width: var(--abm-item-label-width);
+    padding: 4px;
+    display: inline-block;
+    vertical-align: top;
+    }
+  /* Indent levels for conditional settings */
+  label.opt     { --abm-label-indent: 0; }
+  .d1 label.opt { --abm-label-indent: 2em; }
+  .d2 label.opt { --abm-label-indent: 4em; }
+  .d3 label.opt { --abm-label-indent: 6em; }
+  .d4 label.opt { --abm-label-indent: 8em; }
+  .d5 label.opt { --abm-label-indent: 10em; }
+  .d6 label.opt { --abm-label-indent: 12em; }
+  label.opt { margin-left: var(--abm-label-indent); margin-right: calc(0px - var(--abm-label-indent)); }
 
-#config-form input[type="text"] {
-  /* Make the text input fill up the rest of the horizontal space */
-  width: var(--abm-field-max-width);
-  }
-#config-form select { max-width: var(--abm-field-max-width); }
-#config-form input { display: inline-block; }
+  input[type="text"] {
+    /* Make the text input fill up the rest of the horizontal space */
+    width: var(--abm-field-max-width);
+    }
+  select { max-width: var(--abm-field-max-width); }
+  input { display: inline-block; }
 
-/* Smaller inputs for known types */
-#config-form input[type="text"].char { max-width: 2em; }
-#config-form input[type="text"].int,
-#config-form input[type="text"].float,
-#config-form input[type="text"].pin { max-width: 4em; }
-#config-form input[type="text"].enum { max-width: 10em; }
-#config-form input[type="text"].int-arr  { max-width: 12em; }
-#config-form input[type="text"].float-arr { max-width: 18em; }
+  /* Smaller inputs for known types */
+  input[type="text"].char { max-width: 2em; }
+  input[type="text"].int,
+  input[type="text"].float,
+  input[type="text"].pin { max-width: 4em; }
+  input[type="text"].enum { max-width: 10em; }
+  input[type="text"].int-arr  { max-width: 12em; }
+  input[type="text"].float-arr { max-width: 18em; }
+
+  fieldset {
+    padding-inline-start: 0;
+    padding-inline-end: 0;
+    color: var(--abm-edit-color);
+    background-color: var(--abm-edit-bg);
+    margin-top: 2em;
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--abm-edit-bc);
+    border-radius: 0.5em;
+    }
+  fieldset * { opacity: 1; }
+  legend {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-left: -0.5em;
+    padding: 0.25em;
+    border: 2px solid threedface;
+    border-radius: 0.5em 0 0.5em 0.5em;
+    color: var(--abm-edit-legend-color);
+    background-color: var(--abm-edit-legend-bg);
+    z-index: 101;
+    }
+  legend:hover { cursor: pointer; }
+  legend:after { content: " ▽"; }
+  .collapsed legend:after { content: " ▷"; }
+
+  .line { padding: 4px 0; position: relative; }
+  .line:hover { background-color: var(--abm-line-hover-bg); }
+  .line.disabled { opacity: 0.5; }
+
+  /* Create even/odd stripes for the config form */
+  .line:not(.hide):nth-child(even) {
+    /* background: #0004; */
+    }
+  }
 
 .dirty label { font-style: italic; font-weight: bold; }
 
@@ -238,9 +277,9 @@ span.state {
   position: relative;
   top: -4px;
   font-weight: bold;
+  &.low { color: red; margin-right: 2px; }
+  &.high { color: green; margin-left: 2px; }
   }
-span.state.low { color: red; margin-right: 2px; }
-span.state.high { color: green; margin-left: 2px; }
 
 input[type="checkbox"] {
   position: relative;
@@ -248,42 +287,6 @@ input[type="checkbox"] {
   }
 
 .collapsed .section-inner { display: none; }
-
-#config-form fieldset {
-  padding-inline-start: 0;
-  padding-inline-end: 0;
-  color: var(--abm-edit-color);
-  background-color: var(--abm-edit-bg);
-  margin-top: 2em;
-  border-width: 1px;
-  border-style: solid;
-  border-color: var(--abm-edit-bc);
-  border-radius: 0.5em;
-  }
-#config-form fieldset * { opacity: 1; }
-#config-form legend {
-  font-size: 1.2em;
-  font-weight: bold;
-  margin-left: -0.5em;
-  padding: 0.25em;
-  border: 2px solid threedface;
-  border-radius: 0.5em 0 0.5em 0.5em;
-  color: var(--abm-edit-legend-color);
-  background-color: var(--abm-edit-legend-bg);
-  z-index: 101;
-  }
-#config-form legend:hover { cursor: pointer; }
-#config-form legend:after { content: " ▽"; }
-#config-form .collapsed legend:after { content: " ▷"; }
-
-#config-form .line { padding: 4px 0; position: relative; }
-#config-form .line:hover { background-color: var(--abm-line-hover-bg); }
-#config-form .line.disabled { opacity: 0.5; }
-
-/* Create even/odd stripes for the config form */
-#config-form .line:not(.hide):nth-child(even) {
-  /* background: #0004; */
-  }
 
 #zero-box {
   display: none;
@@ -337,21 +340,25 @@ label.bool {
   background-color: #CCC;
   cursor: pointer;
   transition: .2s;
+  &:before {
+    position: absolute;
+    height: var(--slider-knob-size);
+    width: var(--slider-knob-size);
+    bottom: var(--slider-knob-offs);
+    left: var(--slider-knob-offs);
+    background-color: #FFF;
+    transition: .2s;
+    content: "";
+    }
+  .round {
+    border-radius: calc(var(--slider-height) / 2);
+    &:before { border-radius: 50%; }
+    }
   }
-.slider:before {
-  position: absolute;
-  height: var(--slider-knob-size);
-  width: var(--slider-knob-size);
-  bottom: var(--slider-knob-offs);
-  left: var(--slider-knob-offs);
-  background-color: #FFF;
-  transition: .2s;
-  content: "";
+input:checked + .slider {
+  background-color: #66BB6A;
+  &:before { transform: translateX(var(--slider-knob-tran)); }
   }
-input:checked + .slider { background-color: #66BB6A; }
-input:checked + .slider:before { transform: translateX(var(--slider-knob-tran)); }
-.slider.round { border-radius: calc(var(--slider-height) / 2); }
-.slider.round:before { border-radius: 50%; }
 
 /**
  * Media variants for wider and small screens
