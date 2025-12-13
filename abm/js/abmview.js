@@ -148,7 +148,7 @@ var ABM = (() => {
           //   .filename  - The built binary Filename (if it exists)
           //   .stamp     - Timestamp Message
           const $env_td = $('#info-envs').html(''),
-                $env_rows_src = $('#env-rows-src'),
+                $env_rows_src = $('#env-rows-src').html(),
                 $envs_table = $('<table>');
 
           let has_progress = false, has_usb = false;
@@ -157,7 +157,7 @@ var ABM = (() => {
             if (v.name.match(/.+_USB.*/)) has_usb = true;
 
             // Copy the template <table>, merging the env name. The <span> is allowed here!
-            const $env_table_copy = $($env_rows_src.html().replace(/<env>/g, v.name));
+            const $env_table_copy = $($env_rows_src.replace(/#env#/g, v.name));
             let $erows = $env_table_copy.find('tr').addClass(`env-${v.name}`);
 
             // Set the env name in the new button row

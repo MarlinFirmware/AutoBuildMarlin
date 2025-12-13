@@ -86,12 +86,12 @@
       <tr>
         <td class="env-name"></td>
         <td>
-          <button type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'build' })" title="PIO Build"><img src="${ img_path('btn-build.svg') }" /> Build</button>
-          <button class="upload" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'upload' })" title="PIO Upload"><img src="${ img_path('btn-upload.svg') }" /> Upload</button>
-          <button class="debug" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'traceback' })" title="PIO Upload (Debug)"><img src="${ img_path('btn-debug.svg') }" /> Debug</button>
-          <button class="clean" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'clean' })" title="PIO Clean"><img src="${ img_path('btn-clean.svg') }" /> Clean</button>
-          <button class="clean purge" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'purge' })" title="Purge build folder"><img src="${ img_path('btn-clean.svg') }" /> Purge</button>
-          <button class="run" type="button" onclick="msg({ command:'pio', env:'<env>', cmd:'run' })" title="Run">▷ Run</button>
+          <button type="button" onclick="msg({ command:'pio', env:'#env#', cmd:'build' })" title="PIO Build"><img src="${ img_path('btn-build.svg') }" /> Build</button>
+          <button class="upload" type="button" onclick="msg({ command:'pio', env:'#env#', cmd:'upload' })" title="PIO Upload"><img src="${ img_path('btn-upload.svg') }" /> Upload</button>
+          <button class="debug" type="button" onclick="msg({ command:'pio', env:'#env#', cmd:'traceback' })" title="PIO Upload (Debug)"><img src="${ img_path('btn-debug.svg') }" /> Debug</button>
+          <button class="clean" type="button" onclick="msg({ command:'pio', env:'#env#', cmd:'clean' })" title="PIO Clean"><img src="${ img_path('btn-clean.svg') }" /> Clean</button>
+          <button class="clean purge" type="button" onclick="msg({ command:'pio', env:'#env#', cmd:'purge' })" title="Purge build folder"><img src="${ img_path('btn-clean.svg') }" /> Purge</button>
+          <button class="run" type="button" onclick="msg({ command:'pio', env:'#env#', cmd:'run' })" title="Run">▷ Run</button>
           <span class="progress"></span>
         </td>
       </tr>

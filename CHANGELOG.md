@@ -2,6 +2,9 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.82
+- ABM Panel: Fix `<env>` issue caused by changes in Chrome's `innerHTML`
+
 ## 2.1.81
 - ABM Panel: Highlight user's `MOTHERBOARD_ENV`
 - ABM Panel / Edit View: Refactor CSS in sub-rules
