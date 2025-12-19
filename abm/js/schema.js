@@ -206,15 +206,19 @@ class ConfigSchema {
     'eeprom': '💾',
 
     'stepper drivers': '🛞',
+    'stepper motor current': '⚡️',
     'multi stepper': '🛞',
     'idex': '👥',
     'extruder': '💩',
 
     'geometry': '📐',
     'homing': '🏠',
+    'motion/kinematics': '⚙️',
     'kinematics': '⚙️',
-    'motion': '🏃‍♂️‍➡️',
-    'motion control': '🏃‍♂️‍➡️',
+    'motion': '🐇',
+    'motion control': '🐇',
+    'baby-stepping': '🐢',
+    'firmware retraction': '🐍',
 
     'endstops': '🛑',
     'filament runout sensors': '🚨',
@@ -223,13 +227,20 @@ class ConfigSchema {
     'bltouch': '🇰🇷',
     'leveling': '🫓',
 
+    'temperature sensors': '🌡',
     'temperature': '🌡',
+    'temperature/hotend': '🌡',
     'hotend temp': '🌡',
-    'mpctemp': '🌡',
-    'pid temp': '🌡',
-    'mpc temp': '🌡',
+    'temperature/bed': '🌡',
     'bed temp': '🌡',
+    'temperature/chamber': '🌡',
     'chamber temp': '🌡',
+    'temperature/pid temp': '🌡',
+    'pid temp': '🌡',
+    'temperature/mpc temp': '🌡',
+    'mpc temp': '🌡',
+    'mpctemp': '🌡',
+    'temperature presets': '🌡',
     'fans': '❄️',
 
     'tool change': '🔧',
@@ -408,8 +419,9 @@ class ConfigSchema {
     // U8GLIB
     u8glib: ['U8GLIB_SSD1306', 'U8GLIB_SH1106'],
 
-    // LCD Names
+    // LCD Names - mutually-exclusive as top-level options
     lcd: [
+      // Character-based LCDs
       'REPRAP_DISCOUNT_SMART_CONTROLLER',
       'YHCB2004',
       'RADDS_DISPLAY',
@@ -421,6 +433,8 @@ class ConfigSchema {
       'MAKEBOARD_MINI_2_LINE_DISPLAY_1602',
       'ZONESTAR_LCD', 'ANET_KEYPAD_LCD',
       'ULTRA_LCD',
+
+      // I2C and Shift-Register LCDs
       'RA_CONTROL_PANEL',
       'LCD_SAINSMART_I2C_1602', 'LCD_SAINSMART_I2C_2004', 'LCD_I2C_SAINSMART_YWROBOT',
       'LCM1602',
@@ -429,6 +443,8 @@ class ConfigSchema {
       'SAV_3DLCD',
       'FF_INTERFACEBOARD',
       'TFTGLCD_PANEL_SPI', 'TFTGLCD_PANEL_I2C',
+
+      // Graphical 128x64
       'REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER',
       'K3D_FULL_GRAPHIC_SMART_CONTROLLER',
       'REPRAPWORLD_GRAPHICAL_LCD',
@@ -443,8 +459,7 @@ class ConfigSchema {
       'MKS_MINI_12864', 'MKS_MINI_12864_V3',
       'MKS_LCD12864A', 'MKS_LCD12864B',
       'FYSETC_MINI_12864_X_X', 'FYSETC_MINI_12864_1_2',
-      'FYSETC_MINI_12864_2_0', 'FYSETC_MINI_12864_2_1',
-      'FYSETC_GENERIC_12864_1_1',
+      'FYSETC_MINI_12864_2_0', 'FYSETC_MINI_12864_2_1', 'FYSETC_GENERIC_12864_1_1',
       'BTT_MINI_12864', 'BEEZ_MINI_12864', 'BTT_MINI_12864_V1',
       'CR10_STOCKDISPLAY', 'ENDER2_STOCKDISPLAY',
       'ANET_FULL_GRAPHICS_LCD', 'ANET_FULL_GRAPHICS_LCD_ALT_WIRING',
@@ -452,6 +467,8 @@ class ConfigSchema {
       'AZSMZ_12864',
       'SILVER_GATE_GLCD_CONTROLLER',
       'EMOTION_TECH_LCD',
+
+      // OLED Displays
       'U8GLIB_SSD1306', // top-level only
       'SAV_3DGLCD',
       'OLED_PANEL_TINYBOY2',
@@ -461,6 +478,8 @@ class ConfigSchema {
       'OVERLORD_OLED',
       'FYSETC_242_OLED_12864',
       'K3D_242_OLED_CONTROLLER',
+
+      // Extensible UI Displays
       'DGUS_LCD_UI', 'DGUS_LCD',
       'MALYAN_LCD',
       'TOUCH_UI_FTDI_EVE', 'LULZBOT_TOUCH_UI',
@@ -468,6 +487,8 @@ class ConfigSchema {
       'SOVOL_SV06_RTS',
       'NEXTION_TFT',
       'EXTENSIBLE_UI',
+
+      // Graphical TFTs
       'MKS_TS35_V2_0',
       'MKS_ROBIN_TFT24', 'MKS_ROBIN_TFT28', 'MKS_ROBIN_TFT32', 'MKS_ROBIN_TFT35', 'MKS_ROBIN_TFT43',
       'MKS_ROBIN_TFT_V1_1R', 'MKS_ROBIN_TFT',
@@ -480,6 +501,8 @@ class ConfigSchema {
       'TFT_GENERIC',
       'TFT_CLASSIC_UI', 'TFT_COLOR_UI', 'TFT_LVGL_UI', 'TFT_LVGL_UI_FSMC', 'TFT_LVGL_UI_SPI',
       'FSMC_GRAPHICAL_TFT', 'SPI_GRAPHICAL_TFT', 'TFT_320x240', 'TFT_320x240_SPI', 'TFT_480x320', 'TFT_480x320_SPI',
+
+      // Other - Ender-3 V2 stock Full-Color DWIN Controller
       'DWIN_CREALITY_LCD', 'DWIN_LCD_PROUI', 'DWIN_CREALITY_LCD_JYERSUI', 'DWIN_MARLINUI_PORTRAIT', 'DWIN_MARLINUI_LANDSCAPE'
     ],
 
@@ -778,7 +801,7 @@ class ConfigSchema {
     // The given axis is a Trinamic driver.
     function AXIS_IS_TMC_CONFIG(axis) {
       const driver = priorItemNamed(`${axis}_DRIVER_TYPE`);
-      return ['TMC2130', 'TMC2160', 'TMC2208', 'TMC2209', 'TMC2660', 'TMC5130', 'TMC5160'].includes(driver?.value);
+      return ['TMC2130', 'TMC2160', 'TMC2208', 'TMC2209', 'TMC2240', 'TMC2660', 'TMC5130', 'TMC5160'].includes(driver?.value);
     }
 
     // DGUS_UI_IS for DGUS_LCD_UI
@@ -814,7 +837,7 @@ class ConfigSchema {
         case 'XYZ': return 3;
 
         case 'HAS_TRINAMIC_CONFIG':
-          return HAS_DRIVER('TMC2130', 'TMC2160', 'TMC2208', 'TMC2209', 'TMC2660', 'TMC5130', 'TMC5160');
+          return HAS_DRIVER('TMC2130', 'TMC2160', 'TMC2208', 'TMC2209', 'TMC2240', 'TMC2660', 'TMC5130', 'TMC5160');
 
         default:
           if (name.startsWith('TEMP_SENSOR_'))
@@ -1374,7 +1397,29 @@ class ConfigSchema {
           return new_code.join("");
         }
 
-        // Combine adjacent conditions where possible
+        /**
+         * Combine adjacent conditions where possible
+         *
+         * 1. Replace the negated predicates with their positive counterparts so
+         *    following regexes can combine redundant groups.
+         *
+         *    !ENABLED  -> DISABLED
+         *    !DISABLED -> ENABLED
+         *    !ANY      -> NONE
+         *    !NONE     -> ANY
+         *
+         * 2. Collapse consecutive OR'ed expressions that both test a condition for
+         *    being disabled ("DISABLED" / "!ALL" / "!BOTH") into a single `!ALL()`.
+         *
+         * 3. Collapse consecutive AND'ed expressions that both test a condition for
+         *    being enabled ("ENABLED" / "ALL" / "BOTH") into a single `ALL()`.
+         *
+         * 4. Collapse consecutive OR'ed expressions that both test a condition for
+         *    being enabled ("ENABLED" / "ANY" / "EITHER") into a single `ANY()`.
+         *
+         * 5. Collapse consecutive AND'ed expressions that both test a condition for
+         *    being disabled ("DISABLED" / "NONE") into a single `NONE()`.
+         */
         function _combine_conditions(cond) {
           return cond
             .replaceAll('!ENABLED', 'DISABLED').replaceAll('!DISABLED', 'ENABLED').replaceAll('!ANY', 'NONE').replaceAll('!NONE', 'ANY')
@@ -1384,6 +1429,10 @@ class ConfigSchema {
             .replace(/(?:NONE|DISABLED)\s*\(\s*([^()]+?)\s*\)\s*&&\s*(?:NONE|DISABLED)\s*\(\s*/g, 'NONE($1, ');
         }
 
+        //
+        // Combine conditions repeatedly until no more can be combined.
+        // Remove redundant parentheses before and after.
+        //
         function combine_conditions(condarr) {
           let cond = removeRedundantParentheses(condarr.flat().join(' && '));
           if (condarr.length > 1) {
@@ -1534,11 +1583,16 @@ class ConfigSchema {
           if (group) define_info.group = group;
 
           // Items that depend on TEMP_SENSOR_* to be enabled.
+          // Returns the first thing in the (match), except:
+          // If the match is in the list below, return Heater Index '0'
           function is_heater_item(name) {
             const m1 = name.match(/^HOTEND(\d)_.+$/)
                     || name.match(/^HEATER_(\d)_M(AX|IN)TEMP$/)
                     || name.match(/^MAX_(BED|CHAMBER)_POWER$/)
-                    || name.match(/^(EXTRUDER|HOTEND|BED|CHAMBER|COOLER|PROBE)_(AUTO_FAN_(TEMPERATURE|SPEED)|BETA|_LIMIT_SWITCHING|M(AX|IN)TEMP|OVERSHOOT|PULLUP_RESISTOR_OHMS|RESISTANCE_25C_OHMS|SH_C_COEFF)$/)
+                    || name.match(/^PELTIER_(BED)$/)
+                    || name.match(/^(BED)_ANNEALING_GCODE$/)
+                    || name.match(/^TEMP_(BED)_(RESIDENCY_TIME|WINDOW|HYSTERESIS)$/)
+                    || name.match(/^(EXTRUDER|HOTEND|BED|CHAMBER|COOLER|PROBE)_(AUTO_FAN_(TEMPERATURE|SPEED)|BETA|LIMIT_SWITCHING|M(AX|IN)_?TEMP|OVERSHOOT|PULLUP_RESISTOR_OHMS|RESISTANCE_25C_OHMS|SH_C_COEFF)$/)
                     || name.match(/^(?:PREHEAT_\d_TEMP_|THERMAL_PROTECTION_|PIDTEMP)(EXTRUDER|HOTENDS?|BED|CHAMBER|COOLER|PROBE)$/)
                     || name.match(/^AUTO_POWER_(CHAMBER|COOLER|E)_(TEMP|FANS?)$/);
             if (m1) return ['EXTRUDER', 'HOTEND', 'HOTENDS', 'E'].includes(m1[1]) ? '0' : m1[1];
@@ -1590,12 +1644,11 @@ class ConfigSchema {
             if (m2) return m2[1] === '2' ? '0' : (m2[1] - 1).toString();
           }
 
-          // Some items depend on axes being enabled
-          const axis = is_axis_item(define_name),
-              eindex = is_eaxis_item(define_name),
-              hindex = is_heater_item(define_name),
-              tindex = is_sensor_item(define_name),
-              sindex = is_serial_item(define_name);
+          const axis = is_axis_item(define_name),     // Item needs axes to be enabled?
+              eindex = is_eaxis_item(define_name),    // Item requires an extruder?
+              hindex = is_heater_item(define_name),   // Item requires TEMP_SENSOR_* ?
+              tindex = is_sensor_item(define_name),   // Item is a DUMMY_THERMISTOR_#_VALUE ?
+              sindex = is_serial_item(define_name);   // Item depends on enabled SERIAL_PORTs?
 
           function extend_requires(cond) {
             if ('requires' in define_info)

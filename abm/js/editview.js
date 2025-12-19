@@ -122,7 +122,7 @@ $(function () {
               // Title Case Strings and Substrings
               .replace(/(count|pixel|print|\b(ON|NO|K[PID])\b)/g, (m) => { return m.toTitleCase(); })
               // Lowercase words
-              .replace(/\b(and|at|mm|ms|in|of|or)\b/gi, (m) => { return m.toLowerCase(); })
+              .replace(/\b(and|as|at|mm|ms|in|of|or|to)\b/gi, (m) => { return m.toLowerCase(); })
               // Special cases
               .replace(/ per (unit|step)\b/gi, '-per-$1')
               .replace(/\bmm M\b/, '(mm/min)')
@@ -517,6 +517,8 @@ $(function () {
     }
   }
 
+  var allbutton_title = '⭐️ ALL';
+
   // Refresh nav buttons for the form's unfiltered sections
   // TODO: Preserve selection if the section is still visible
   //       and only then stay on ALL. Then show() all sections
@@ -527,7 +529,7 @@ $(function () {
     const $sects = $inform.find('fieldset.section:not(.hide)');
 
     // All button shows all the sections with direct styling.
-    const $allbutton = $('<button class="active">⭐️ ALL</button>')
+    const $allbutton = $('<button id="all-button" class="active"></button>').text(allbutton_title);
     $allbutton.click((e) => {
       $(e.target).addClass('active').siblings().removeClass('active');
       $sects.show();
@@ -574,6 +576,8 @@ $(function () {
 
     $lines.removeClass('hide');
     hideEmptySections(hasterms, $target);
+
+    allbutton_title = hasterms ? `☕️ Match "${terms}"` : '⭐️ ALL';
 
     log(`Applied filter '${terms}'`);
   }
