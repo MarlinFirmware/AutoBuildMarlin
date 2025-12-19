@@ -560,7 +560,8 @@ class ConfigSchema {
       'SINGLENOZZLE',
       'DUAL_X_CARRIAGE',
       'PARKING_EXTRUDER', 'MAGNETIC_PARKING_EXTRUDER',
-      'SWITCHING_TOOLHEAD', 'MAGNETIC_SWITCHING_TOOLHEAD', 'ELECTROMAGNETIC_SWITCHING_TOOLHEAD'
+      'SWITCHING_TOOLHEAD', 'MAGNETIC_SWITCHING_TOOLHEAD', 'ELECTROMAGNETIC_SWITCHING_TOOLHEAD',
+      'MIXING_EXTRUDER'
     ],
 
     // Axis Homing Submenus
@@ -736,11 +737,11 @@ class ConfigSchema {
     }
 
     // The item is enabled by its E < EXTRUDERS.
-    function HAS_EAXIS(eindex) {
+    function HAS_EAXIS(eindex, name=null) {
       const extruders = priorItemNamed('EXTRUDERS') || priorItemNamed('EXTRUDERS', Infinity);
       if (extruders == null) return false;
       const stat = eindex < extruders.value;
-      //console.log(`HAS_EAXIS(${eindex}) == ${stat ? 'true' : 'false'}`, extruders);
+      //console.log(`HAS_EAXIS(${eindex}, ${name}) == ${stat ? 'true' : 'false'}`, extruders);
       return stat;
     }
 
@@ -1022,6 +1023,7 @@ class ConfigSchema {
   }
 
   // Refresh all requires that follow a changed item.
+  // TODO: Add a flag for items whose visibility in the UI depends on a later item (like En_DRIVER_TYPE depending on EXTRUDERS).
   refreshRequiresAfter(after) {
     for (const item of this.iterateDataBySID(after + 1)) delete item.evaled;
     for (const item of this.iterateDataBySID(after + 1)) this.evaluateRequires(item);
@@ -1619,10 +1621,24 @@ class ConfigSchema {
                     || name.match(/^TEMP_SENSOR_(\d)$/)
                     || name.match(/^FIL_RUNOUT(\d)_(STATE|PULL(UP|DOWN))$/);
             if (m1) return m1[1];
-            if (['DISABLE_IDLE_E', 'STEP_STATE_E', 'NOZZLE_PARK_FEATURE', 'NOZZLE_CLEAN_FEATURE'].includes(name)) return '0';
+            if ([
+                'STEP_STATE_E','DEFAULT_NOMINAL_FILAMENT_DIA',
+                'SINGLENOZZLE','SWITCHING_EXTRUDER','MECHANICAL_SWITCHING_EXTRUDER',
+                'SWITCHING_NOZZLE','MECHANICAL_SWITCHING_NOZZLE',
+                'PARKING_EXTRUDER','MAGNETIC_PARKING_EXTRUDER',
+                'DIFFERENTIAL_EXTRUDER',
+                'SWITCHING_TOOLHEAD','MAGNETIC_SWITCHING_TOOLHEAD','ELECTROMAGNETIC_SWITCHING_TOOLHEAD',
+                'MIXING_EXTRUDER',
+                'HOTEND_OFFSET_X','HOTEND_OFFSET_Y','HOTEND_OFFSET_Z',
+                'DISABLE_IDLE_E','DISABLE_E','DISABLE_OTHER_EXTRUDERS',
+                'NOZZLE_PARK_FEATURE','NOZZLE_CLEAN_FEATURE',
+                'DISTINCT_E_FACTORS','DEFAULT_RETRACT_ACCELERATION',
+                'PIDTEMP','MPCTEMP','BANG_MAX'
+              ].includes(name)) return '0';
           }
 
           // Items that depend on *_DRIVER_TYPE to be enabled.
+          // Return the part of the given 'name' that matches an axis name, for use in test conditions.
           function is_axis_item(name) {
             const m1 = name.match(/^([XYZIJKUVW]\d?)_(CHAIN_POS|CS_PIN|CURRENT(_HOME)?|ENABLE_ON|HOLD_MULTIPLIER|HOME_DIR|HYBRID_THRESHOLD|INTERPOLATE|MAX_CURRENT|M(AX|IN)_ENDSTOP_(INVERTING|HIT_STATE)|M(AX|IN)_POS|MICROSTEPS|RSENSE|SAFETY_STOP|SENSE_RESISTOR|SLAVE_ADDRESS|STALL_SENSITIVITY)$/)
                     || name.match(/^(?:CHOPPER_TIMING|DISABLE(?:_INACTIVE|_IDLE)?|M(?:AX|IN)_SOFTWARE_ENDSTOP|SAFE_BED_LEVELING_START|STEALTHCHOP|STEP_STATE)_([XYZIJKUVW]\d?)$/)
@@ -1660,7 +1676,7 @@ class ConfigSchema {
             extend_requires(`HAS_AXIS(${axis})`);
             define_info.requires = define_info.requires.replace(` && defined(${axis}_DRIVER_TYPE)`, '');
           }
-          if (eindex) extend_requires(`HAS_EAXIS(${eindex})`);
+          if (eindex) extend_requires(`HAS_EAXIS(${eindex}, ${define_name})`);
           if (hindex) extend_requires(`HAS_SENSOR(${hindex})`);
           if (tindex) extend_requires(`ANY_THERMISTOR_IS(${tindex})`);
           if (sindex) extend_requires(`HAS_SERIAL(${sindex})`);

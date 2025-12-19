@@ -275,10 +275,16 @@ $(function () {
     log("commitChange", [ optref, fields ]);
     $(`div.line.sid-${optref.sid}`).toggleClass('dirty', dirty);
 
-    // Refresh UI and state
-    //schema.refreshAllRequires();
-    schema.refreshRequiresAfter(optref.sid);
+    // Refresh UI and state. Refresh All if the option can affect earlier things.
+    // Otherwise just refresh those that follow it.
+    if (['EXTRUDERS'].includes(optref.name))
+      schema.refreshAllRequires();
+    else
+      schema.refreshRequiresAfter(optref.sid);
+
+    // Now refresh the UI based on the updated evaluated states.
     refreshVisibleItems();
+    // Save the web view state for VSCode restoration later.
     saveWebViewState();
 
     // This update should be ignored when it triggers onDidChangeTextDocument
@@ -520,16 +526,18 @@ $(function () {
   var allbutton_title = '⭐️ ALL';
 
   // Refresh nav buttons for the form's unfiltered sections
-  // TODO: Preserve selection if the section is still visible
-  //       and only then stay on ALL. Then show() all sections
-  //       so the ".hide" class can take precedence.
   function refreshNavButtons($inform=$form) {
     const $nav = $('#left-nav');
+
+    // Get the active button, if any, to re-activate after refresh.
+    const $active = $nav.find('button.active'),
+          activeid = $active.length > 0 ? $active.attr('id') : 'button-all';
+
     $nav.empty();
     const $sects = $inform.find('fieldset.section:not(.hide)');
 
     // All button shows all the sections with direct styling.
-    const $allbutton = $('<button id="all-button" class="active"></button>').text(allbutton_title);
+    const $allbutton = $('<button id="button-all" class="active"></button>').text(allbutton_title);
     $allbutton.click((e) => {
       $(e.target).addClass('active').siblings().removeClass('active');
       $sects.show();
@@ -539,10 +547,9 @@ $(function () {
     // Other buttons one section, with direct styling.
     for (const sect of $sects) {
       const $sect = $(sect),
+            sectid = $sect[0].classList[1],
             title = $sect.find('legend span.section-title').text(),
-            $button = $(`<button>${title}</button>`);
-
-      const sectid = $sect[0].classList[1];
+            $button = $(`<button id="button-${sectid}">${title}</button>`);
 
       // Bind the button on click to hide all other sections but its own.
       $button.click((e) => {
@@ -553,6 +560,9 @@ $(function () {
       });
       $nav.append($button);
     }
+
+    // Re-activate the previous active button by simulating a click on the button
+    $(`#${activeid}`).trigger('click');
   }
 
   /**

@@ -2,6 +2,11 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.84
+- Config Editor: Keep buttons selected after refresh on value change
+- Config Editor: Full refresh for non-contiguous implicit and later dependencies
+- Schema: Extend the list of extruder-dependent config options
+
 ## 2.1.83
 - Config Editor: Show filter in sections sidebar
 - Schema: Update temp-sensor-dependent config options, add comments
