@@ -16,19 +16,17 @@ require("../proto");
  * - If most of a file is indented due to wrapping #if directives,
  *   remove that extra level of indentation.
  */
-function _codeformat(text) {
+function _codeformat(text, whole=true) {
   // The current code attempts to indent PP directives and code
   // that was formatted by something other than Uncrustify:
   let result = [],
       indent = 0,
       lines = text.split('\n');
-  const len = lines.length;
-  for (let i = 0; i < len; i++) {
-    let line = lines[i];
+  for (line in lines) {
     // Outdent for #else, #elif, #endif
-    if (line.match(/^\s*#\s*(else|elif|endif)/) && indent) indent--;
+    if (indent && line.match(/^\s*#\s*(else|elif|endif)/)) indent--;
     result.push(Array(indent + 1).join('  ') + line);
-    // Indent following #if, #else, #elif
+    // Indent after an #if, #else, #elif
     if (line.match(/^\s*#\s*(if|else|elif)/)) indent++;
   }
   return result.join('\n');
@@ -37,12 +35,16 @@ function _codeformat(text) {
 /**
  * Apply formatting to a pins file, not including indentation.
  */
-function _pinsformat(intext) {
+function _pinsformat(intext, whole=true) {
   const verbose = false;
   function log(line, msg) {
     if (verbose) console.log(`format.js [${line}] ${msg}`);
   }
 
+  // Patterns to find pin values -1, 12, PA12, PA1_2 and defines that use them
+  // Padding depends on the pin style.
+  // Comments are aligned to column 50.
+  // A right-justified value ends 3 columns before the comment.
   const mpatt = [ '-?\\d+', 'P[A-I]\\d+', 'P\\d_\\d+' ],
         definePatt = new RegExp(`^\\s*(//)?#define\\s+[A-Z_][A-Z0-9_]+\\s+(${mpatt[0]}|${mpatt[1]}|${mpatt[2]})\\s*(//.*)?$`, 'gm'),
         ppad = [ 3, 4, 5 ],
@@ -52,7 +54,7 @@ function _pinsformat(intext) {
   var mexpr = [];
   for (let m of mpatt) mexpr.push(new RegExp('^' + m + '$'));
 
-  return process_pins_file(intext);
+  return process_pins_file(intext, whole);
 
   // Find the pin pattern so non-pin defines can be skipped
   function get_pin_pattern(txt) {
@@ -74,7 +76,12 @@ function _pinsformat(intext) {
     return null;
   }
 
-  function process_pins_file(txt) {
+  /**
+   * Process the pins file text. Same as Marlin scripts/pinsformat.py
+   * @param {string} txt The text of the pins file, for reformatting
+   * @returns The reformatted pins file text
+   */
+  function process_pins_file(txt, whole=true) {
     if (!txt.length) return '(no text)';
     const patt = get_pin_pattern(txt);
     if (!patt) return txt;
@@ -126,7 +133,7 @@ function _pinsformat(intext) {
         //
         // #define ALIAS OTHER
         //
-      log(line, 'alias');
+        log(line, 'alias');
         line = r[1] + ' ' + r[3];
         line += r[4].lpad(col_value_rj + 1 - line.length);
         if (r[5]) line = line.rpad(col_comment) + r[5];
@@ -172,7 +179,14 @@ function _pinsformat(intext) {
 
 }
 
-function format_command(fn, whole=false) {
+/**
+ * Format command to apply the pins formatter or the default code formatter.
+ * Parameters exist to provide defaults.
+ * @param {*} fn A default function to use for formatting non-pins files
+ * @param {*} whole Whether to format the whole document (even if there is a selection)
+ * @returns {void}
+ */
+function format_command(fn=_codeformat, whole=false) {
   // Get the active text editor
   const editor = vscode.window.activeTextEditor;
   if (!editor) return;
@@ -183,8 +197,6 @@ function format_command(fn, whole=false) {
   const file = document.uri.fsPath;
   if (file.match(/^.*\/pins\/.*\/pins_[A-Z0-9_]+\.h$/i))
     fn = _pinsformat;
-  else
-    fn = _codeformat;
 
   //vscode.commands.executeCommand('editor.action.formatDocument').then(() => {});
 
@@ -192,8 +204,8 @@ function format_command(fn, whole=false) {
   if (selection.isEmpty) whole = true;
   const range = whole ? new vscode.Range(0, 0, document.lineCount, 0) : selection;
 
-  // We can use the existing editor
-  editor.edit(editBuilder => { editBuilder.replace(range, fn(document.getText(range))); })
+  // We can use the existing editor, replacing the text in the range with the 'fn' processed text.
+  editor.edit(editBuilder => { editBuilder.replace(range, fn(document.getText(range), whole)); })
         .then(success     => { console.log(`Edit ${success ? "successful" : "failed"}`); });
 };
 
