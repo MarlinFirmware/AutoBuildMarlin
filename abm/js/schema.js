@@ -442,6 +442,7 @@ class ConfigSchema {
       'LCD_I2C_VIKI',
       'SAV_3DLCD',
       'FF_INTERFACEBOARD',
+      'MIGHTYBOARD_LCD',
       'TFTGLCD_PANEL_SPI', 'TFTGLCD_PANEL_I2C',
 
       // Graphical 128x64
