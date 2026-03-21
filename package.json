@@ -44,7 +44,7 @@
   "homepage": "https://github.com/MarlinFirmware/AutoBuildMarlin/blob/master/README.md",
   "markdown": "github",
   "extensionKind": [
-    "ui"
+    "workspace", "ui"
   ],
   "categories": [
     "Formatters",
