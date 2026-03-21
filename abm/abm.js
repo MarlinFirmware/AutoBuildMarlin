@@ -17,7 +17,7 @@ const vscode = require('vscode'),
           ws = vscode.workspace,
           vw = vscode.window;
 
-var context, pv, abm_path, pane_path;
+let context, pv, abm_path, pane_path;
 
 const bugme = false; // Lots of debug output
 function log(s, d=null) {
@@ -26,7 +26,7 @@ function log(s, d=null) {
 
 // Update based on "when" in package.json
 function set_context(name, value) {
-  vc.executeCommand('setContext', 'abm.' + name, value);
+  vc.executeCommand('setContext', `abm.${name}`, value);
 }
 
 function init(c) {
@@ -40,8 +40,8 @@ function init(c) {
 
 // Return the path to the given item within the build folder.
 function envSubPath(sub, env, item) {
-  var bp = path.join(marlin.workspaceRoot, '.pio', sub, env);
-  if (item !== undefined) bp = path.join(bp, item);
+  let bp = path.join(marlin.workspaceRoot, '.pio', sub, env);
+  if (item != null) bp = path.join(bp, item);
   return bp;
 }
 
@@ -54,14 +54,14 @@ function envLibdepsPath(env, item) { return envSubPath('libdeps', env, item); }
  * Find an existing build folder. If 'debug' exists, prefer it.
  */
 function existingBuildPath(env, item) {
-  var bp = envBuildPath(env, 'debug');
-  if (item !== undefined) bp = path.join(bp, item);
+  let bp = envBuildPath(env, 'debug');
+  if (item != null) bp = path.join(bp, item);
   if (fs.existsSync(bp)) return bp;
   return envBuildPath(env, item);
 }
 
 function existingBuildPathOrNull(env, item) {
-  var bp = existingBuildPath(env, item);
+  let bp = existingBuildPath(env, item);
   return fs.existsSync(bp) ? bp : null;
 }
 
@@ -71,7 +71,7 @@ function existingBuildPathOrNull(env, item) {
  * So instead of calling refreshNewData directly, put it on a timeout.
  */
 
-var timeouts = {};
+let timeouts = {};
 function onConfigFileChanged(e, fname) {
   log(`File changed (${fname}):`, e);
   if (fname in timeouts) clearTimeout(timeouts[fname]);
@@ -95,7 +95,7 @@ function onConfigFileChanged(e, fname) {
  * After that the IPC file signals when the build is done.
  */
 
-var build = { watcher:null, env:null, active:false };
+let build = { watcher:null, env:null, active:false };
 function currentBuildEnv() {
   return build.active ? build.env : '(none)';
 }
@@ -135,7 +135,7 @@ function watchBuildFolder(env) {
   }
 }
 
-var refresh_to = [];
+let refresh_to = [];
 function cancelBuildRefresh() {
   refresh_to.forEach(clearTimeout);
   refresh_to = [];
@@ -187,7 +187,7 @@ function postMessage(msg) {
 }
 
 // Local reference to parsed board info
-var board_info;
+let board_info;
 
 /**
  * Process data now that all files are loaded
@@ -263,7 +263,7 @@ function allFilesAreLoaded() {
   // If no CUSTOM_MACHINE_NAME was set, get it from the pins file
   if (!machine_info.name) {
     let def = marlin.confValue('pindef', 'DEFAULT_MACHINE_NAME');
-    if (!def || def == 'BOARD_INFO_NAME')
+    if (!def || def === 'BOARD_INFO_NAME')
       def = pindef_info.board_name;
     machine_info.name = def ? def.dequote() : '3D Printer';
   }
@@ -333,12 +333,12 @@ function refreshNewData() {
 //  - exists, completed, busy, stamp
 //
 function lastBuild(env) {
-  var bp = existingBuildPath(env),
+  let bp = existingBuildPath(env),
       src_path = path.join(bp, 'src'),
       out = {
         exists: fs.existsSync(src_path),
         completed: false,
-        busy: build.active && build.env == env,
+        busy: build.active && build.env === env,
         stamp: ''
       };
 
@@ -351,7 +351,7 @@ function lastBuild(env) {
       return n.match(/(.+\.(bin|hex|exe|srec|cbd)|program|MarlinSimulator)$/i);
     });
 
-    var tp = bp;
+    let tp = bp;
     if (bins.length) {
       tp = existingBuildPath(env, bins[bins.length-1]);
       out.filename = bins[bins.length-1];
@@ -405,16 +405,16 @@ function refreshBuildStatus(env) {
 // The IPC file is deleted after reading, or when the Terminal or View closes.
 //
 const ipc_file = path.join(os.tmpdir(), 'ipc');
-var ipc_watcher;
-function createIPCFile() {
-  fs.writeFile(ipc_file, 'ipc', (err) => {
-    if (!err) {
-      log('IPC file created.');
-      ipc_watcher = fs.watch(ipc_file, {}, () => { onIPCFileChange(); });
-    }
-    else
-      log('IPC file existed?');
-  });
+let ipc_watcher;
+async function createIPCFile() {
+  const writeFileAsync = fs.promises.writeFile;
+  try {
+    await writeFileAsync(ipc_file, 'ipc');
+    log('IPC file created.');
+    ipc_watcher = fs.watch(ipc_file, {}, () => { onIPCFileChange(); });
+  } catch (err) {
+    log('IPC write error:', err);
+  }
 }
 
 function destroyIPCFile() {
@@ -433,7 +433,7 @@ function destroyIPCFile() {
 // When the Terminal closes, abort the build and update the UI.
 // Send a command to the Terminal
 //
-var terminal, NEXT_TERM_ID = 1;
+let terminal, NEXT_TERM_ID = 1;
 
 //
 // Reuse or create a new Terminal for a command
@@ -441,7 +441,7 @@ var terminal, NEXT_TERM_ID = 1;
 function terminal_for_command(ttl, noping) {
   const reuse_terminal = prefs.reuse_terminal();
   if (!terminal || !reuse_terminal || noping) {
-    var title;
+    let title;
     if (reuse_terminal || noping)
       title = 'Auto Build Marlin';
     else {
@@ -466,7 +466,7 @@ function terminal_for_command(ttl, noping) {
     });
   }
   else
-    log("Terminal PID is " + terminal.processId);
+    log(`Terminal PID is ${terminal.processId}`);
 
   terminal.show(true);
 }
@@ -480,11 +480,11 @@ function terminal_exit_command(term) {
 //
 function command_with_ping(t, cmdline, ping) {
   const sh = vscode.env.shell,
-        isbash = sh.indexOf('bash') >= 0,
-        iszsh = sh.indexOf('zsh') >= 0,
-        iscmd = sh.indexOf('cmd') >= 0,
-        ispwsh = sh.search(/(powersh|pwsh)/i) >= 0,
-        iswin = process.platform == 'win32',
+        isbash = sh.includes('bash'),
+        iszsh = sh.includes('zsh'),
+        iscmd = sh.includes('cmd'),
+        ispwsh = /(powersh|pwsh)/i.test(sh),
+        iswin = process.platform === 'win32',
         p = iscmd ? '&' : ';',
         q = iswin && isbash ? "'" : '"',
         r = (isbash || iszsh) ? '>|' : '>';
@@ -510,12 +510,12 @@ function terminal_command(ttl, cmdline, noping) {
 //
 function reveal_env_build(env) {
   const stat = getBuildStatus(env);
-  if (!stat || !stat.completed || !stat.filename) return;
+  if (!stat || !stat?.completed || !stat?.filename) return;
 
   const aterm = vw.createTerminal({ name: 'reveal', env:process.env }),
       escpath = existingBuildPath(env).replace('"', '\\"');
 
-  var cmd;
+  let cmd;
   switch (process.platform) {
     case 'win32': cmd = `Explorer '/select,${stat.filename}'`; break;
     case 'darwin': cmd = `open -R ${stat.filename}`; break;
@@ -531,12 +531,12 @@ function reveal_env_build(env) {
 //
 function run_built_exe(env) {
   const stat = getBuildStatus(env);
-  if (!stat || !stat.completed || !stat.filename) return;
+  if (!stat || !stat?.completed || !stat?.filename) return;
 
   const aterm = vw.createTerminal({ name:'run', env:process.env }),
           exe = existingBuildPath(env, stat.filename);
 
-  command_with_ping(aterm, (process.platform == 'win32' ? 'START /B ' : '') + exe);
+  command_with_ping(aterm, (process.platform === 'win32' ? 'START /B ' : '') + exe);
   terminal_exit_command(aterm);
 }
 
@@ -562,12 +562,12 @@ function pio_command(opname, env, nosave) {
     case 'traceback':
     case 'upload':    args = 'run --target upload'; break;
     case 'purge':
-      vscode.workspace.fs.delete(vscode.Uri.file(envBuildPath(env)), { recursive:true });
-      vscode.workspace.fs.delete(vscode.Uri.file(envLibdepsPath(env)), { recursive:true });
+      ws.fs.delete(vscode.Uri.file(envBuildPath(env)), { recursive:true });
+      ws.fs.delete(vscode.Uri.file(envLibdepsPath(env)), { recursive:true });
       refreshNewData();
       return;
     default:
-      vw.showErrorMessage('Unknown action: "' + opname + '"');
+      vw.showErrorMessage(`Unknown action: "${opname}"`);
       return;
   }
   if (!nosave) vc.executeCommand('workbench.action.files.saveAll');
@@ -582,7 +582,7 @@ function pio_command(opname, env, nosave) {
 
   // Start watching the build folder.
   // (Will wait until the folder gets created.)
-  if (opname != 'clean') watchBuildFolder(env);
+  if (opname !== 'clean') watchBuildFolder(env);
 }
 
 const nicer = {
@@ -609,7 +609,7 @@ function postTool(t) {
 
 // Post a value to the UI
 function postValue(tag, val) {
-  var message = { command:'info', tag:tag, val:val };
+  let message = { command:'info', tag:tag, val:val };
   log("Send to UI", message);
   postMessage(message);
 }
@@ -620,8 +620,8 @@ function postValue(tag, val) {
 
 // Get WebView-safe local file URIs
 function subpath_uri(sub, filename) {
-  var fullpath = (sub !== undefined) ? path.join(abm_path, sub) : abm_path;
-  if (filename !== undefined) fullpath = path.join(fullpath, filename);
+  let fullpath = (sub != null) ? path.join(abm_path, sub) : abm_path;
+  if (filename != null) fullpath = path.join(fullpath, filename);
   return pv.asWebviewUri(vscode.Uri.file(fullpath));
 }
 function img_path(filename) { return subpath_uri('img', filename); }
@@ -635,21 +635,18 @@ function load_html(filename) {
 function load_home() { return load_html('abm.html'); }
 
 function load_pane(name, data) {
-  var html = fs.readFileSync(path.join(pane_path, name + '.html'), {encoding:'utf8'});
+  let html = fs.readFileSync(path.join(pane_path, `${name}.html`), {encoding:'utf8'});
   return eval(`\`${html}\``);
 }
 
 function getNonce() {
-  let text = '';
   const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < 32; i++)
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  return text;
+  return Array.from({ length: 32 }, () => possible.charAt(Math.floor(Math.random() * possible.length)) ).join('');
 }
 
 // Contents of the Web View
 function webViewContent() {
-  var panes = {};
+  let panes = {};
 
   // Load Geometry pane
   panes.geometry = load_pane('geom');
@@ -684,11 +681,11 @@ function handleMessageFromUI(m) {
       break;
 
     case 'tool':              // On tool selection, re-populate the selected view
-      //vw.showInformationMessage('Tool: ' + m.tool);
+      //vw.showInformationMessage(`Tool: ${m.tool}`);
       break;
 
     case 'conf':              // On config section selection, re-populate the selected view
-      //vw.showInformationMessage('Config Tab: ' + m.tab);
+      //vw.showInformationMessage(`Config Tab: ${m.tab}`);
       break;
 
     case 'warning':           // Show a warning message
@@ -721,7 +718,7 @@ function handleMessageFromUI(m) {
       return;
 
     case 'pio':               // Build, Upload, Clean...
-      //vw.showInformationMessage('Starting ' + nicer[m.cmd].toTitleCase() + ' for ' + m.env);
+      //vw.showInformationMessage(`Starting ${nicer[m.cmd].toTitleCase()} for ${m.env}`);
       pio_command(m.cmd, m.env);
       return;
 
@@ -742,7 +739,7 @@ function sponsor() {
 // Command handler for abm.edit.*
 //
 function edit_config(which) {
-  let conf = which == 'adv' ? 'Configuration_adv.h' : 'Configuration.h';
+  let conf = which === 'adv' ? 'Configuration_adv.h' : 'Configuration.h';
   let uri = vscode.Uri.file(marlin.pathFromArray([conf]));
   vc.executeCommand('vscode.openWith', uri, 'abm.configEditor');
 }
@@ -750,7 +747,7 @@ function edit_config(which) {
 /**
  * Create the WebView panel and set up the initial HTML skeleton
  */
-var panel;
+let panel;
 function create_webview_panel() {
 
   // Create the WebView panel, retaining the context when hidden
@@ -779,10 +776,10 @@ function create_webview_panel() {
   //
   // Show the URL of the web view CSS
   //
-  //var view_url = pv.asWebviewUri(
+  //let view_url = pv.asWebviewUri(
   //  vscode.Uri.file( path.join(context.extensionPath, 'abm', 'css') )
   //);
-  //vw.showInformationMessage("CSS URL is " + view_url);
+  //vw.showInformationMessage(`CSS URL is ${view_url}`);
 
   //
   // Populate the Web View with a cool UI
@@ -837,7 +834,7 @@ function create_webview_panel() {
  * After the first run, the panel will already exist, so it just has to be
  * updated with the latest configuration information.
  */
-var abm_action;
+let abm_action;
 function run_command(action) {
   abm_action = action;
   if (panel) {
@@ -854,24 +851,24 @@ function run_command(action) {
 // Run the launch action if unambiguous, otherwise ask.
 //
 function runSelectedAction() {
-  var act = abm_action;
+  let act = abm_action;
   abm_action = undefined;
-  postTool(act == 'config' ? 'config' : 'build');
+  postTool(act === 'config' ? 'config' : 'build');
   if (!act || ['config','show'].includes(act)) return;
 
   let env;
-  if (board_info.envs.length == 1) { // only 1 board is available
+  if (board_info.envs.length === 1) { // only 1 board is available
     env = board_info.envs[0].name;
   } else if (board_info.envs.length > 1 && board_info.envs.map(item => item.name).includes(prefs.default_env())) { // use default env
     env = prefs.default_env();
-  } else if (act == 'clean') {
+  } else if (act === 'clean') {
     let cleanme, cnt = 0;
     board_info.envs.forEach((v) => { if (v.exists) { cleanme = v.name; cnt++; } });
-    if (cnt == 0) {
+    if (cnt === 0) {
       postError('Nothing to clean.');
       return;
     }
-    if (cnt == 1) env = cleanme;
+    if (cnt === 1) env = cleanme;
   }
   if (env)
     pio_command(act, env);
@@ -901,8 +898,8 @@ function runPython(script, needs, args) {
   const aterm = vw.createTerminal({ name: 'ABM Runner', env:process.env }),
       escpath = script_file.replace('"', '\\"');
 
-  var command = `python "${escpath}"`;
-  if (args) command += ' ' + args;
+  let command = `python "${escpath}"`;
+  if (args) command += ` ${args}`;
   command_with_ping(aterm, command);
   terminal_exit_command(aterm);
 }
