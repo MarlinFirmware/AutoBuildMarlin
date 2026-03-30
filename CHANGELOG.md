@@ -2,6 +2,14 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.85
+- Schema: Fix evaluation of true items with numeric value
+- Config Editor: Fix items missing due to incomplete 'true' test
+- Formatter: Format all text with no selection
+- Add extensionKind:workspace for use on remote hosts
+- Add MIGHTYBOARD_LCD to the LCD group
+- Modernize some old-style Javascript in `abm.js`
+
 ## 2.1.84
 - Config Editor: Keep buttons selected after refresh on value change
 - Config Editor: Full refresh for non-contiguous implicit and later dependencies

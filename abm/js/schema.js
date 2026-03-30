@@ -659,8 +659,8 @@ class ConfigSchema {
     // Conditions are general C++ preprocessor macros.
     let cond = initem.requires;
 
-    const istrue = ['', '1', 'true'],
-         isfalse = ['0', 'false'];
+    const istrue = [1, '', '1', 'true'],
+         isfalse = [0, '0', 'false'];
 
     // No evaluation required for simple conditions.
     if (istrue.includes(cond)) return true;
