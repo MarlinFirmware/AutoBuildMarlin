@@ -109,7 +109,7 @@ h1 {
 /* Emojis in place of checkboxes */
 .iconcb {
   input[type="checkbox"] { display: none; }
-  span { margin-left: 1em; cursor: pointer; opacity: 0.25; }
+  span { margin-left: 1em; cursor: pointer; opacity: 0.6; }
   input[type="checkbox"]:checked + span { opacity: 1; }
   }
 
@@ -384,4 +384,42 @@ input:checked + .slider {
     --abm-item-label-width: 30em;
     }
     #left-nav-box { display: block; }
+  }
+
+/**
+ * Custom autocomplete dropdown
+ */
+.abm-autocomplete {
+  position: absolute;
+  z-index: 250;
+  max-height: 15em;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--vscode-editorWidget-border, #555);
+  background: var(--vscode-editorWidget-background, #252526);
+  color: var(--vscode-editorWidget-foreground, #CCC);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  font-family: andale mono, monaco, monospace;
+  font-size: small;
+  }
+.abm-ac-item {
+  padding: 2px 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  }
+.abm-ac-item:hover {
+  background: var(--vscode-list-hoverBackground, #2A2D2E);
+  }
+.abm-ac-highlight {
+  background: var(--vscode-list-activeSelectionBackground, #04395E);
+  color: var(--vscode-list-activeSelectionForeground, #FFF);
+  }
+.abm-ac-item strong {
+  font-weight: bold;
+  background-color: #00FF0080;
+  }
+#config-form input[type="text"][name="MOTHERBOARD"].enum {
+  max-width: var(--abm-field-max-width);
+  width: var(--abm-field-max-width);
   }

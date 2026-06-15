@@ -1811,6 +1811,25 @@ class ConfigSchema {
 }; // end class ConfigSchema
 
 /**
+ * Read boards.h and extract all BOARD_* names.
+ * @param {object} fs - The fs module
+ * @param {object} marlin - The marlin module (provides pathFromArray)
+ * @returns {string[]} Sorted array of board define names (e.g., "BOARD_RAMPS_14_EFB")
+ */
+function loadBoardNames(fs, marlin) {
+  const boardsPath = marlin.pathFromArray(['src', 'core', 'boards.h']);
+  if (!fs.existsSync(boardsPath)) return [];
+  const text = fs.readFileSync(boardsPath, 'utf8');
+  const names = [];
+  const re = /^\s*#define\s+(BOARD_\w+)\s+\d+/gm;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    names.push(m[1]);
+  }
+  return names.sort();
+}
+
+/**
  * combinedSchema - aka "multiSchema" - organizes the content of all config files.
  * Upon loading the extension, read and parse the first config, then conditionals,
  * then the second config. The result is stored in the file scope 'schemas' object
@@ -1860,6 +1879,13 @@ function combinedSchema(marlin, fs, reload=false) {
    */
   const bas = ConfigSchema.newSchemaFromText(config1),
         adv = ConfigSchema.newSchemaFromText(adv_combo, -prefix_lines);
+
+  // Load board names from boards.h and add as autocomplete options for MOTHERBOARD
+  const boardNames = loadBoardNames(fs, marlin);
+  for (const item of bas.iterateItemsWithName('MOTHERBOARD'))
+    if (boardNames.length) item.options = boardNames;
+  for (const item of adv.iterateItemsWithName('MOTHERBOARD'))
+    if (boardNames.length) item.options = boardNames;
 
   ConfigSchema.combined = { basic: bas, advanced: adv };
 

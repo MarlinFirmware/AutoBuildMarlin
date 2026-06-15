@@ -688,25 +688,41 @@ $(function () {
         $cl.append($cb).append($sl).appendTo($linediv);
       }
       else if (item.options) {
-        // Fix loose JSON so it can be parsed
-        var opts = ConfigSchema.cleanOptions(item.options);
-
-        const $select = $("<select>", { name });
-        let options; eval(`options = ${opts}`);
-        if (Array.isArray(options)) {
-          for (const opt of options) {
-            // If the opt is a single char, not a number, then wrap in single ' quotes
-            const optval = /^\D$/.test(opt.toString()) ? `'${opt}'` : opt;
-            $select.append($("<option>", { value: optval }).text(opt));
-          }
+        if (Array.isArray(item.options)) {
+          // Auto-complete with custom dropdown for pre-parsed option arrays (e.g., MOTHERBOARD board list)
+          // Match against the part after "BOARD_", show labels without the "BOARD_" prefix
+          const $input = $("<input>", { type: "text", name, value: val })
+            .bind("change keyup", handleEditField)
+            .bind("blur", finalizeEditField)
+            .bind("focus", (e) => { $(e.target).select(); });
+          if (tclass) $input.addClass(tclass);
+          $input[0].oldtext = val;
+          $linediv.append($input);
+          buildAutocomplete($input, item.options,
+            (opt, term) => opt.replace(/^BOARD_/, '').toLowerCase().includes(term.toLowerCase()),
+          );
         }
         else {
-          for (const [opt, label] of Object.entries(options))
-            $select.append($("<option>", { value: opt }).text(label));
+          // Fix loose JSON so it can be parsed
+          var opts = ConfigSchema.cleanOptions(item.options);
+
+          const $select = $("<select>", { name });
+          let options; eval(`options = ${opts}`);
+          if (Array.isArray(options)) {
+            for (const opt of options) {
+              // If the opt is a single char, not a number, then wrap in single ' quotes
+              const optval = /^\D$/.test(opt.toString()) ? `'${opt}'` : opt;
+              $select.append($("<option>", { value: optval }).text(opt));
+            }
+          }
+          else {
+            for (const [opt, label] of Object.entries(options))
+              $select.append($("<option>", { value: opt }).text(label));
+          }
+          $select.val(val).bind('change', handleSelectField);
+          if (tclass) $select.addClass(tclass);
+          $linediv.append($select);
         }
-        $select.val(val).bind('change', handleSelectField);
-        if (tclass) $select.addClass(tclass);
-        $linediv.append($select);
       }
       else {
         const $input = $("<input>", { type: "text", name: name, value: val }).bind("change keyup", handleEditField).bind("blur", finalizeEditField);
@@ -871,6 +887,137 @@ $(function () {
     }
   }
   window.addEventListener('message', (e) => { handleMessageToUI(e.data); });
+
+  /**
+   * @brief Build a custom autocomplete dropdown for a text input field.
+   * @description Renders a positioned dropdown below the input with matching options.
+   *              Navigable with arrows/Enter/Tab, dismissible with ESC/blur.
+   * @param {jQuery} $input   - The input element to attach autocomplete to.
+   * @param {string[]} options  - Array of full option values (e.g., "BOARD_RAMPS_14_EFB").
+   * @param {function} matchFn - (opt, term) => boolean. Default: case-insensitive includes on full opt.
+   * @param {function} labelFn - (opt) => string. Display label. Default: identity (opt → opt).
+   */
+  function buildAutocomplete($input, options, matchFn, labelFn) {
+    // Default match: case-insensitive includes on full option string
+    if (!matchFn) matchFn = (opt, term) => opt.toLowerCase().replace("board_", "").includes(term.toLowerCase());
+    // Default label: show full option value
+    if (!labelFn) labelFn = (opt) => opt;
+
+    // Create the dropdown container (hidden initially)
+    const $dd = $("<div>", { class: "abm-autocomplete" }).hide().insertAfter($input);
+
+    var $curItem = null, selIndex = -1;
+
+    // Highlight a dropdown item by index
+    function highlightItem(index) {
+      $curItem && $curItem.removeClass('abm-ac-highlight');
+      selIndex = index;
+      $curItem = $dd.children().eq(index);
+      $curItem && $curItem.addClass('abm-ac-highlight');
+      // Scroll highlighted item into view if needed
+      const dd = $dd[0], item = $curItem[0];
+      if (item) {
+        const itemTop = item.offsetTop,
+              itemBot = itemTop + $curItem.outerHeight();
+        if (itemTop < dd.scrollTop)
+          dd.scrollTop = itemTop;
+        else if (itemBot > dd.scrollTop + dd.clientHeight)
+          dd.scrollTop = itemBot - dd.clientHeight;
+      }
+    }
+
+    // Show the dropdown filtered by the current input value
+    function showDropdown() {
+      const val = $input.val(), term = val.trim();
+      let $items = $dd.empty(), count = 0;
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+            hlRe = escaped ? new RegExp('(' + escaped + ')', 'gi') : null;
+      for (const opt of options) {
+        if (!term || matchFn(opt, term)) {
+          const display = labelFn(opt);
+          $items = $items.add(
+            $("<div>", { class: 'abm-ac-item', 'data-value': opt })
+              .append($("<span>"))
+              .html(hlRe ? display.replace(hlRe, '<strong>$1</strong>') : display)
+          );
+          count++;
+        }
+      }
+      if (count > 0) {
+        $dd.empty().append($items).show();
+        highlightItem(0);
+      }
+      else
+        $dd.hide();
+    }
+
+    function hideDropdown() { $dd.hide(); }
+
+    function selectItem(index) {
+      const $item = index != null ? $dd.children().eq(index) : $curItem;
+      if ($item && $item.length) {
+        $input.val($item.attr('data-value'));
+        hideDropdown();
+        $input.trigger('change');
+      }
+    }
+
+    // Position the dropdown below the input
+    function positionDropdown() {
+      const ipos = $input.position();
+      $dd.css({
+        top: ipos.top + $input.outerHeight(),
+        left: ipos.left,
+        width: Math.max($input.outerWidth(), 200)
+      });
+    }
+
+    // --- Event bindings ---
+
+    $input.on('input', showDropdown);
+
+    $input.on('keydown', function(e) {
+      const $items = $dd.children();
+      if (!$dd.is(':visible') || $items.length === 0) {
+        if (e.key === 'Escape') { hideDropdown(); e.preventDefault(); }
+        return;
+      }
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          highlightItem(Math.min(selIndex + 1, $items.length - 1));
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          highlightItem(Math.max(selIndex - 1, 0));
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (selIndex >= 0) selectItem(selIndex);
+          break;
+        case 'Tab':
+          if (selIndex >= 0) selectItem(selIndex);
+          hideDropdown();
+          break;
+        case 'Escape':
+          e.preventDefault();
+          hideDropdown();
+          break;
+      }
+    });
+
+    $dd.on('mousedown', '.abm-ac-item', function(e) {
+      e.preventDefault();
+      $input.val($(this).attr('data-value'));
+      hideDropdown();
+      $input.trigger('change');
+    });
+
+    $input.on('blur', function() { setTimeout(hideDropdown, 150); });
+
+    $input.on('focus', function() { positionDropdown(); if ($input.val()) showDropdown(); });
+    $(window).on('resize', positionDropdown);
+  }
 
   //
   // File Loaded / Tab Revealed
