@@ -699,8 +699,14 @@ $(function () {
           $input[0].oldtext = val;
           $linediv.append($input);
           buildAutocomplete($input, item.options,
-            (opt, term) => opt.replace(/^BOARD_/, '').toLowerCase().includes(term.toLowerCase()),
+            (opt, term) => {
+              const text = opt.replace(/^BOARD_/, '').toLowerCase();
+              return term.toLowerCase().trim()
+                .split(/\s+/)
+                .every(part => text.includes(part));
+            }
           );
+
         }
         else {
           // Fix loose JSON so it can be parsed

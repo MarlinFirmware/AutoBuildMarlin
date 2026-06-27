@@ -2,6 +2,9 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.87
+- Config Editor: Improve `MOTHERBOARD` filter
+
 ## 2.1.86
 - Added `AGENTS.md` for coding harness guidance
 - Config Editor: Autocomplete `MOTHERBOARD` field
