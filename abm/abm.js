@@ -255,6 +255,8 @@ function allFilesAreLoaded() {
   log("Machine Info :", machine_info);
   const extruder_info = marlin.getExtruderSettings();
   log("Extruder Info :", extruder_info);
+  const lcd_info = marlin.getLCDSettings();
+  log("LCD Info :", lcd_info);
   const pindef_info = marlin.getPinDefinitionInfo(mb);
   log("Pin Defs Info :", pindef_info);
   //const sensors = marlin.extractTempSensors();
@@ -273,6 +275,9 @@ function allFilesAreLoaded() {
 
   postValue('extruders', extruder_info.extruders);
   postValue('extruder-desc', extruder_info.description);
+
+  postValue('lcd', lcd_info.name);
+  postValue('lcd-desc', lcd_info.description);
 
   postValue('machine', machine_info.name);
   postValue('machine-desc', machine_info.description);

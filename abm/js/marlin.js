@@ -421,6 +421,151 @@ function getExtruderSettings() {
   return extruder_info;
 }
 
+// LCD option-name to human-readable display-name lookup
+// Populated from marlinfw.org documentation.
+// Anything not listed here falls back to the raw option name.
+var lcd_display_names = {
+  'REPRAP_DISCOUNT_SMART_CONTROLLER': 'RepRapDiscount Smart Controller',
+  'REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER': 'RepRapDiscount Full Graphic Smart Controller',
+  'ULTIMAKERCONTROLLER': 'Ultimaker Controller',
+  'ULTIPANEL': 'ULTIPANEL',
+  'PANEL_ONE': 'PanelOne',
+  'G3D_PANEL': 'Gadgets3D G3D LCD/SD Controller',
+  'RIGIDBOT_PANEL': 'RigidBot Panel V1.0',
+  'ANET_KEYPAD_LCD': 'Anet Keypad LCD',
+  'RA_CONTROL_PANEL': 'Elefu RA Board Control Panel',
+  'LCD_SAINSMART_I2C_1602': 'Sainsmart YWRobot LCD Display (16x2)',
+  'LCD_SAINSMART_I2C_2004': 'Sainsmart YWRobot LCD Display (20x4)',
+  'LCD_I2C_SAINSMART_YWROBOT': 'Sainsmart YWRobot LCM1602 LCD Display',
+  'LCM1602': 'Generic LCM1602 LCD adapter',
+  'LCD_I2C_PANELOLU2': 'PANELOLU2 LCD (with status LEDs, encoder)',
+  'LCD_I2C_VIKI': 'Panucatt VIKI LCD (with status LEDs, encoder)',
+  'SAV_3DLCD': 'Shift Register LCD panel',
+  'FF_INTERFACEBOARD': 'FF Interface Board',
+  'MIGHTYBOARD_LCD': 'MightyBoard LCD',
+  'TFTGLCD_PANEL_SPI': 'TFTGLCD Panel (SPI)',
+  'TFTGLCD_PANEL_I2C': 'TFTGLCD Panel (I2C)',
+  'CARTESIO_UI': 'Cartesio UI',
+  'MAKRPANEL': 'MaKr3D Makr-Panel',
+  'REPRAPWORLD_GRAPHICAL_LCD': 'ReprapWorld Graphical LCD',
+  'VIKI2': 'Panucatt Devices Viki 2.0',
+  'miniVIKI': 'Panucatt mini Viki',
+  'ELB_FULL_GRAPHIC_CONTROLLER': 'Adafruit ST7565 Full Graphic Controller',
+  'MINIPANEL': 'MakerLab Mini Panel',
+  'BQ_LCD_SMART_CONTROLLER': 'BQ LCD Smart Controller',
+  'ANET_FULL_GRAPHICS_LCD': 'Anet Full Graphics LCD',
+  'CTC_A10S_A13': 'CTC A10S/A13 LCD',
+  'AZSMZ_12864': 'Azsmz 12864 LCD',
+  'SILVER_GATE_GLCD_CONTROLLER': 'Silver Gate GLCD Controller',
+  'EMOTION_TECH_LCD': 'Emotion Tech LCD',
+  'U8GLIB_SSD1306': 'SSD1306 OLED full graphics display',
+  'SAV_3DGLCD': 'SAV OLED LCD (SSD1306/SH1106)',
+  'OLED_PANEL_TINYBOY2': 'TinyBoy2 128x64 OLED / Encoder Panel',
+  'MKS_12864OLED': 'MKS 12864 OLED Display',
+  'MKS_12864OLED_SSD1306': 'MKS 12864 OLED SSD1306 Display',
+  'ZONESTAR_12864LCD': 'Zonestar 12864 LCD',
+  'ZONESTAR_12864OLED': 'Zonestar 12864 OLED',
+  'ZONESTAR_12864OLED_SSD1306': 'Zonestar 12864 OLED SSD1306',
+  'U8GLIB_SH1106_EINSTART': 'U8GLib SH1106 Einstart OLED',
+  'OVERLORD_OLED': 'Overlord OLED',
+  'FYSETC_242_OLED_12864': 'FYSETC 2.42" OLED 12864',
+  'K3D_242_OLED_CONTROLLER': 'K3D 242 OLED Controller',
+  'DGUS_LCD_UI': 'DGUS LCD UI',
+  'DGUS_LCD': 'DGUS LCD',
+  'MALYAN_LCD': 'Malyan LCD',
+  'TOUCH_UI_FTDI_EVE': 'Touch UI FTDI EVE',
+  'LULZBOT_TOUCH_UI': 'LulzBot Touch UI',
+  'ANYCUBIC_LCD_CHIRON': 'Anycubic LCD Chiron',
+  'ANYCUBIC_LCD_I3MEGA': 'Anycubic LCD i3 Mega',
+  'ANYCUBIC_LCD_VYPER': 'Anycubic LCD Vyper',
+  'ANYCUBIC_TFT_MODEL': 'Anycubic TFT Model',
+  'SOVOL_SV06_RTS': 'Sovol SV06 RTS Display',
+  'NEXTION_TFT': 'Nextion TFT Display',
+  'EXTENSIBLE_UI': 'Extensible UI',
+  'MKS_TS35_V2_0': 'MKS TS35 V2.0',
+  'MKS_ROBIN_TFT24': 'MKS Robin TFT24',
+  'MKS_ROBIN_TFT28': 'MKS Robin TFT28',
+  'MKS_ROBIN_TFT32': 'MKS Robin TFT32',
+  'MKS_ROBIN_TFT35': 'MKS Robin TFT35',
+  'MKS_ROBIN_TFT43': 'MKS Robin TFT43',
+  'MKS_ROBIN_TFT_V1_1R': 'MKS Robin TFT V1.1R',
+  'MKS_ROBIN_TFT': 'MKS Robin TFT',
+  'TFT_TRONXY_X5SA': 'TFT Tronxy X5SA',
+  'ANYCUBIC_TFT35': 'Anycubic TFT35',
+  'LONGER_LK_TFT28': 'Longer LK TFT28',
+  'ANET_ET4_TFT28': 'Anet ET4 TFT28',
+  'ANET_ET5_TFT35': 'Anet ET5 TFT35',
+  'BIQU_BX_TFT70': 'BIQU BX TFT70',
+  'BTT_TFT35_SPI_V1_0': 'BTT TFT35 SPI V1.0',
+  'TFT_GENERIC': 'Generic TFT Display',
+  'TFT_CLASSIC_UI': 'TFT Classic UI',
+  'TFT_COLOR_UI': 'TFT Color UI',
+  'TFT_LVGL_UI': 'TFT LVGL UI',
+  'TFT_LVGL_UI_FSMC': 'TFT LVGL UI FSMC',
+  'TFT_LVGL_UI_SPI': 'TFT LVGL UI SPI',
+  'FSMC_GRAPHICAL_TFT': 'FSMC Graphical TFT',
+  'SPI_GRAPHICAL_TFT': 'SPI Graphical TFT',
+  'TFT_320x240': 'TFT 320x240',
+  'TFT_320x240_SPI': 'TFT 320x240 SPI',
+  'TFT_480x320': 'TFT 480x320',
+  'TFT_480x320_SPI': 'TFT 480x320 SPI',
+  'DWIN_CREALITY_LCD': 'DWIN CREALITY LCD',
+  'DWIN_LCD_PROUI': 'DWIN LCD ProUI',
+  'DWIN_CREALITY_LCD_JYERSUI': 'DWIN CREALITY LCD JYersUI',
+  'DWIN_MARLINUI_PORTRAIT': 'DWIN MarlinUI Portrait',
+  'DWIN_MARLINUI_LANDSCAPE': 'DWIN MarlinUI Landscape',
+  'BEEZ_MINI_12864': 'Beez Mini 12864',
+  'WYH_L12864': 'WYH L12864 LCD',
+  'K3D_FULL_GRAPHIC_SMART_CONTROLLER': 'K3D Full Graphic Smart Controller',
+  'MKRPANEL': 'MaKr3D Makr-Panel',
+  'MKS_MINI_12864': 'MKS Mini 12864',
+  'MKS_MINI_12864_V3': 'MKS Mini 12864 V3',
+  'MKS_LCD12864A': 'MKS LCD12864A',
+  'MKS_LCD12864B': 'MKS LCD12864B',
+  'FYSETC_MINI_12864_X_X': 'FYSETC Mini 12864 X.X',
+  'FYSETC_MINI_12864_1_2': 'FYSETC Mini 12864 1.2',
+  'FYSETC_MINI_12864_2_0': 'FYSETC Mini 12864 2.0',
+  'FYSETC_MINI_12864_2_1': 'FYSETC Mini 12864 2.1',
+  'FYSETC_GENERIC_12864_1_1': 'FYSETC Generic 12864 1.1',
+  'BTT_MINI_12864': 'BTT Mini 12864',
+  'BTT_MINI_12864_V1': 'BTT Mini 12864 V1',
+  'CR10_STOCKDISPLAY': 'Creality CR10 Stock Display',
+  'ENDER2_STOCKDISPLAY': 'Ender-2 Stock Display',
+  'ULTI_CONTROLLER': 'Ulti Controller',
+  'LCD_FOR_MELZI': 'LCD for Melzi',
+  'SAVE_3DLCD': 'SAV 3D LCD',
+  'MAKEBOARD_MINI_2_LINE_DISPLAY_1602': 'Makeboard Mini 2-Line 1602 Display',
+  'RADDS_DISPLAY': 'RADDS Display',
+  'ULTRA_LCD': 'Ultra LCD',
+  'YHCB2004': 'YHCB2004 LCD',
+  'ZONESTAR_LCD': 'Zonestar LCD',
+};
+
+// Get the LCD controller and related options
+// Return hashed array { name, variant, description }
+//
+var lcd_info;
+function getLCDSettings() {
+  const out = {};
+
+  // Find the enabled LCD from the exclusive LCD options list
+  const lcdOptions = schema.ConfigSchema.exclusive.lcd;
+  for (let i = 0; i < lcdOptions.length; i++) {
+    if (configAnyDefined(lcdOptions[i])) {
+      out.name = lcdOptions[i];
+      const val = configAnyValue(lcdOptions[i]);
+      out.variant = val;
+      // Use the display name lookup, falling back to the raw option name
+      const displayName = lcd_display_names[lcdOptions[i]] || lcdOptions[i];
+      out.description = val ? `${displayName} (${val})` : displayName;
+      break;
+    }
+  }
+
+  lcd_info = out;
+  return lcd_info;
+}
+
 //
 // Re-fetch information from the board's pins file(s)
 // and re-load the pins file contents into files.pindef.text
@@ -452,5 +597,5 @@ module.exports = {
   configValue, confValue, _confValue,
 
   extractVersionInfo, extractTempSensors, extractBoardInfo,
-  getMachineSettings, getExtruderSettings, getPinDefinitionInfo
+  getMachineSettings, getExtruderSettings, getLCDSettings, getPinDefinitionInfo
 };
