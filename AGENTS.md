@@ -55,9 +55,20 @@ There are **two distinct webview systems** that share no code:
 - Alt key toggles `.clean` buttons to `.purge`
 
 **Panel lifecycle:**
+- ABM Panel opens in response to a command such as `abm.show`
 - Panel retains context when hidden (`retainContextWhenHidden: true`)
 - On dispose: clears panel ref, restarts file watcher, stops build watcher, destroys IPC file
 - On view state change: syncs checkbox states
+
+**Panel data flow:**
+- The ABM Panel use exported functions from module `js/marlin` to initiate loading and do simplified scraping of Marlin's config files, `boards.h`, `pins.h`, etc.…
+  - Callbacks are provided for success (`allFilesAreLoaded`) and failure (`readFileError`)
+- On success, when all files are loaded and buffered, it calls back to `allFilesAreLoaded`:
+  - `allFilesAreLoaded` calls various `marlin.<export>` functions to scrape data from Marlin files as structured data
+  - Build information is scraped from Marlin `pins/pins.h` and specific pins files
+  - `allFilesAreLoaded` sends messages to the view
+    - `handleMessageToUI` receives those messages in the view (`js/abmview.js`)
+      updates the row values in the table, populates the build envs and buttons.
 
 ### 2. Config Editor (`editor.html` / `editview.js`)
 
