@@ -431,6 +431,25 @@ a.reveal { font-size: small; color: var(--abm-text-color-link); }
 
 div#usb-note { padding: 1em 0; font-size: small; color: var(--abm-text-color-hey); }
 
+.official-config-import {
+  padding: 1em;
+  margin: 10px;
+
+  h2 {
+    margin: 0 0 0.4em;
+    text-align: left;
+  }
+
+  p {
+    margin: 0 0 0.5em;
+  }
+
+  p.warn {
+    color: var(--abm-text-color-error);
+    font-weight: 600;
+  }
+}
+
 form#showy {
   position: fixed;
   right: calc(var(--abm-social-width) + 20px);

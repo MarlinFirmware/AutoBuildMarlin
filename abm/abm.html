@@ -104,12 +104,23 @@
 <div id="abm-config" class="abm-tool">
   <h1><a href="https://marlinfw.org">Marlin Firmware</a> <span>Configuration Tool</span></h1>
   <div class="subtabs">
-    <button ref="geometry">Geometry</button> <button ref="lcd">LCD</button> <button ref="sd">SD</button> <button ref="more">More...</button>
+    <button ref="official">Official Configs</button> <button ref="geometry">Geometry</button> <button ref="lcd">LCD</button> <button ref="sd">SD</button> <button ref="more">More...</button>
   </div>
   <div class="subpanes">
     ${panes.geometry}
     ${panes.lcd}
     ${panes.sd}
+    <div class="official">
+      <div class="official-config-import">
+        <h2>Load an Official Configuration</h2>
+        <p>
+          Import a preset from <a href="https://github.com/MarlinFirmware/Configurations">MarlinFirmware/Configurations</a>
+          matched to your Marlin version.
+        </p>
+        <p class="warn">This action overwrites local configuration files in Marlin/.</p>
+        <button type="button" onclick="msg({ command:'import-configs' })">Browse and Import Official Configuration...</button>
+      </div>
+    </div>
   </div>
 </div>
 <div id="abm-sidebar">

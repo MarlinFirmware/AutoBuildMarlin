@@ -67,8 +67,8 @@ var ABM = (() => {
       // Activate the "Build" tool
       msg({ command:'tool', tool:'build' }); // abm.js:handleMessageFromUI
 
-      // Un-hide the first subpane
-      abm_pane($('.subpanes>div').first().attr('class'));
+      // Select the first configure subtab by default
+      abm_pane();
 
     },
 

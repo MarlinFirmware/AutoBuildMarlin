@@ -8,6 +8,7 @@
 
 const marlin = require('./js/marlin'),
        prefs = require('./prefs'),
+       configImport = require('./configuration-import'),
         path = require('path'),
           fs = require('fs'),
           os = require('os');
@@ -729,6 +730,19 @@ function handleMessageFromUI(m) {
 
     case 'reveal':            // Reveal the built BIN or HEX file
       reveal_env_build(m.env);
+      return;
+
+    case 'import-configs':
+      // Keep ABM panel logic thin by delegating import workflow to a focused module.
+      configImport.importOfficialConfiguration({
+        marlin,
+        validate,
+        refreshNewData,
+        vw,
+        vc,
+        vscode,
+        fs
+      });
       return;
   }
 }
