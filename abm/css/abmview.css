@@ -266,6 +266,67 @@ button {
   }
 .abm-tool button:hover { background: rgba(1, 107, 120, 1); }
 
+/* Download Config Button */
+
+#config-download {
+  position: relative;
+  display: inline-block;
+
+  a { color: #8ecbff; }
+
+  em {
+    display: block;
+    margin-top: 0.4rem;
+    color: #ffb4b4;
+    font-weight: 600;
+    }
+
+  .tooltip {
+    position: absolute;
+    z-index: 100;
+    left: calc(50%);
+    translate: -50% 0;
+    top: calc(100% + 0.5rem);
+
+    width: max-content;
+    max-width: min(30rem, 90vw);
+    margin: 0;
+    padding: 0.75rem 1rem;
+
+    color: #fff;
+    background: #222D;
+    border-radius: 0.375rem;
+    box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 25%);
+
+    font-size: 0.875rem;
+    line-height: 1.4;
+
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease, transform 150ms ease, visibility 150ms;
+
+    /* Tooltip arrow */
+    &::after {
+      content: "";
+      position: absolute;
+      bottom: 100%;
+      left: calc(50% - 0.4rem);
+      border: 0.4rem solid transparent;
+      border-bottom-color: #222;
+      }
+
+  }
+
+  &:hover .tooltip,
+  &:focus-within .tooltip {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    }
+
+  }
+
 pre.config {
   opacity: 0.5;
   max-height: 60vh;

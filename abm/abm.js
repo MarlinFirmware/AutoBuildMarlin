@@ -8,6 +8,7 @@
 
 const marlin = require('./js/marlin'),
        prefs = require('./prefs'),
+  downloader = require('./downloader'),
         path = require('path'),
           fs = require('fs'),
           os = require('os');
@@ -210,6 +211,7 @@ function allFilesAreLoaded() {
   // Post values to the UI filling them in by ID
   postValue('auth', version_info.auth);
   postValue('vers', version_info.vers);
+  postValue('dlvers', version_info.vers);
 
   const mb = marlin.configValue('MOTHERBOARD');
 
@@ -729,6 +731,10 @@ function handleMessageFromUI(m) {
 
     case 'reveal':            // Reveal the built BIN or HEX file
       reveal_env_build(m.env);
+      return;
+
+    case 'config_download':   // Configuration download has its own module
+      downloader.fetchExampleConfiguration({ marlin, validate, refreshNewData });
       return;
   }
 }
