@@ -737,7 +737,7 @@ function handleMessageFromUI(m) {
 // Open the author's sponsorship page
 //
 function sponsor() {
-  vscode.env.openExternal(vscode.Uri.parse('https://marlinfw.org/donate'));
+  vscode.env.openExternal(vscode.Uri.parse('https://marlinfw.org/donate', true));
 }
 
 //

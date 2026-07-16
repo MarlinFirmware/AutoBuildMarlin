@@ -143,7 +143,7 @@ pre {
 .col12  { float: left; width:  66%; }
 .col123 { float: left; width: 100%; }
 
-/* CSS Grid Layout */
+/* Main Grid Layout */
 
 #abm-layout {
   position: relative;
@@ -252,6 +252,8 @@ button {
   a>span { display: none; }
   a:hover { background: var(--abm-tool-bg-hover); opacity: 1; }
   }
+
+/* Download, Monitor, and Refresh Buttons */
 
 .abm-tool button {
   background: rgba(1, 107, 120, 0.5);

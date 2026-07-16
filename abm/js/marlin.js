@@ -320,14 +320,14 @@ function getMachineSettings() {
 
   const mtypes = [
     'DELTA',
-    'MORGAN_SCARA', 'MP_SCARA', 'AXEL_TPARA',
+    'SCARA', 'MORGAN_SCARA', 'MP_SCARA', 'AXEL_TPARA',
     'COREXY', 'COREXZ', 'COREYZ', 'COREYX', 'COREZX', 'COREZY',
     'MARKFORGED_XY', 'MARKFORGED_YX',
     'ARTICULATED_ROBOT_ARM', 'FOAMCUTTER_XYUV', 'POLAR'
   ];
   const mpretty = [
     'Delta',
-    'Morgan SCARA', 'MP SCARA', 'Axel TPARA',
+    'SCARA', 'Morgan SCARA', 'MP SCARA', 'Axel TPARA',
     'CoreXY', 'CoreXZ', 'CoreYZ', 'CoreYX', 'CoreZX', 'CoreZY',
     'Markforged XY', 'Markforged YX',
     'Robot Arm', 'Foam Cutter', 'Polar'
