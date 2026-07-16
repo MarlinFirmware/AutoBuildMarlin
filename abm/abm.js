@@ -8,7 +8,7 @@
 
 const marlin = require('./js/marlin'),
        prefs = require('./prefs'),
-       configImport = require('./configuration-import'),
+  downloader = require('./downloader'),
         path = require('path'),
           fs = require('fs'),
           os = require('os');
@@ -211,6 +211,7 @@ function allFilesAreLoaded() {
   // Post values to the UI filling them in by ID
   postValue('auth', version_info.auth);
   postValue('vers', version_info.vers);
+  postValue('dlvers', version_info.vers);
 
   const mb = marlin.configValue('MOTHERBOARD');
 
@@ -732,17 +733,8 @@ function handleMessageFromUI(m) {
       reveal_env_build(m.env);
       return;
 
-    case 'import-configs':
-      // Keep ABM panel logic thin by delegating import workflow to a focused module.
-      configImport.importOfficialConfiguration({
-        marlin,
-        validate,
-        refreshNewData,
-        vw,
-        vc,
-        vscode,
-        fs
-      });
+    case 'config_download':   // Configuration download has its own module
+      downloader.fetchExampleConfiguration({ marlin, validate, refreshNewData });
       return;
   }
 }
