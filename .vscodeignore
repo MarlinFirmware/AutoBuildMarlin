@@ -1,1 +1,15 @@
+# Exclude Source maps and debug files
+**/*.map
+**/*.ts
+**/*.test.js
+
+# Exclude dev environments and Git trackers
+.git/
+.github/
+.opencode/
+.gitignore
+.vscode/
+.vsceignore
+
+# Exclude node deps
 node_modules/

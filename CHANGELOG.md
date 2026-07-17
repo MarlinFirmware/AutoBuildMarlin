@@ -2,6 +2,9 @@
 
 The following enhancements and changes have been made to ***Auto Build Marlin***.
 
+## 2.1.88
+- ABM Panel: Download Example Configurations (#101 by @StevilKnevil)
+
 ## 2.1.87
 - Config Editor: Improve `MOTHERBOARD` filter
 
