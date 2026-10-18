@@ -40,7 +40,7 @@ var marlinfwSearch = (() => {
     $resultTemplate, $resultsContainer,
     $foundContainer, $foundTerm, $foundCount,
     self, searchTimer, odd = false,
-    section_head = { gcode:"G-code", basics:"Getting Started", config:"Configuration", feat:"Features", devel:"Developer Guide", setting:"Settings" };
+    section_head = { gcode:"G-code", setting:"Settings", feat:"Features", printers:"Printer Types", basics:"Getting Started", devel:"Developer Guide", config:"Configuration", appendix:"Appendix", hardware:"Hardware" };
 
   const ignore_pattern = /\b(a(ll|nd|re(n't)?)|but|can('t|not)?|d(id|oes)(n't)?|end|for|ha(d|s|ve)(n't)?|it'?s|odd|use[ds]?|even|from|man?y|more|much|some|this|tha[nt]|th[eo]se|the([mny]|ir|re|y're)?|(was|were)(n't)?|wh(at|en|ere|ich|o|y)|will|won't|other|people|(al)?though|users|your?|one|two)\b/g;
 
@@ -154,21 +154,27 @@ var marlinfwSearch = (() => {
       saveWebViewState();
       qmatch = newm;
 
-      let resultsCount = 0, results = '', prevclass = '';
+      // Matching items, with items whose title matches the search listed first within each class
+      // (the feed keeps each class together, so section headings are not repeated).
+      const found = [];
       $.each(searchData, (_, it) => {
         // check if search term is in content or title
-        const comp = `${it.name} ${it.title} ${it.group} ${it.content} ${it.excerpt}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        if (comp.match(qmatch)) {
-          if (it.class != prevclass) {
-            prevclass = it.class;
-            odd = false;
-            let fancy = section_head[it.class];
-            results += '<h2 class="' + it.class + '">' + (fancy ? fancy : it.class.toTitleCase()) + '</h2>';
-          }
-          results += self.populateResultContent($resultTemplate.html(), it);
-          odd = !odd;
-          resultsCount++;
+        const comp = `${it.title} ${it.group ?? ''} ${it.content} ${it.excerpt}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        if (comp.match(qmatch)) found.push({ it, byTitle: `${it.title}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().match(qmatch) ? 0 : 1, at: found.length });
+      });
+      found.sort((a, b) => (a.it.class == b.it.class ? a.byTitle - b.byTitle : 0) || a.at - b.at);
+
+      let resultsCount = 0, results = '', prevclass = '';
+      $.each(found, (_, { it }) => {
+        if (it.class != prevclass) {
+          prevclass = it.class;
+          odd = false;
+          let fancy = section_head[it.class];
+          results += '<h2 class="' + it.class + '">' + (fancy ? fancy : it.class.toTitleCase()) + '</h2>';
         }
+        results += self.populateResultContent($resultTemplate.html(), it);
+        odd = !odd;
+        resultsCount++;
       });
 
       self.populateResultsString(resultsCount);
