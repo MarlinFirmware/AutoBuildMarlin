@@ -321,9 +321,6 @@
       ]
     }
   },
-  "extensionDependencies": [
-    "platformio.platformio-ide"
-  ],
   "devDependencies": {
     "@types/vscode": "^1.34.0",
     "jslint": "^0.12.1",
