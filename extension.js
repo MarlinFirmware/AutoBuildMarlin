@@ -14,6 +14,16 @@ const vscode = require('vscode'),
       editor = require('./abm/editor');
 
 exports.activate = (context) => {
+  const platformioCandidates = [
+    "platformio.platformio-ide",
+    "pioarduino.pioarduino-ide"
+  ];
+
+  const hasPlatformIO = platformioCandidates.some(id => vscode.extensions.getExtension(id) !== undefined);
+  if (!hasPlatformIO) {
+    vscode.window.showErrorMessage("To use this extension, you must install PlatformIO IDE or pioarduino IDE.");
+    return;
+  }
 
   const vc = vscode.commands,
         cs = context.subscriptions;
