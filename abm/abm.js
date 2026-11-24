@@ -513,24 +513,13 @@ function terminal_command(ttl, cmdline, noping) {
 }
 
 //
-// Use a native shell command to open the build folder
+// Reveal the built BIN or HEX in the system file browser
 //
 function reveal_env_build(env) {
   const stat = getBuildStatus(env);
   if (!stat || !stat?.completed || !stat?.filename) return;
-
-  const aterm = vw.createTerminal({ name: 'reveal', env:process.env }),
-      escpath = existingBuildPath(env).replace('"', '\\"');
-
-  let cmd;
-  switch (process.platform) {
-    case 'win32': cmd = `Explorer '/select,${stat.filename}'`; break;
-    case 'darwin': cmd = `open -R ${stat.filename}`; break;
-    default: cmd = '`which xdg-open open other-open | grep -v found | head -n1` .';
-  }
-  command_with_ping(aterm, `cd "${escpath}"`);
-  command_with_ping(aterm, cmd);
-  terminal_exit_command(aterm);
+  const fileuri = vscode.Uri.file(existingBuildPath(env, stat.filename));
+  vscode.commands.executeCommand('revealFileInOS', fileuri);
 }
 
 //
